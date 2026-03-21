@@ -1,12 +1,13 @@
-package org.AdmissionsSystem.view.components;
-
-import org.AdmissionsSystem.view.common.Style;
+package org.AdmissionsSystem.gui.components;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
+
+import org.AdmissionsSystem.gui.common.Style;
+
 import java.awt.*;
 
 public class CustomTable extends JScrollPane {

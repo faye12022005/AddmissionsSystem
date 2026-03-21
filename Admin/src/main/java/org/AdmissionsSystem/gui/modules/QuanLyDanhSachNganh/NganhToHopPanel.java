@@ -1,9 +1,10 @@
-package org.AdmissionsSystem.view.pages;
-
-import org.AdmissionsSystem.view.common.Style;
+package org.AdmissionsSystem.gui.modules.QuanLyDanhSachNganh;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+
+import org.AdmissionsSystem.gui.common.Style;
+
 import java.awt.*;
 
 public class NganhToHopPanel extends JPanel {
@@ -18,7 +19,7 @@ public class NganhToHopPanel extends JPanel {
         String[] cols = {"Mã ngành","Tên ngành","Tổ hợp"};
         Object[][] data = {{"CNTT","Công nghệ thông tin","A00,B00"},{"KT","Kinh tế","C00"}};
         javax.swing.table.DefaultTableModel m = new javax.swing.table.DefaultTableModel(data, cols);
-        org.AdmissionsSystem.view.components.CustomTable ct = new org.AdmissionsSystem.view.components.CustomTable(m);
+        org.AdmissionsSystem.gui.components.CustomTable ct = new org.AdmissionsSystem.gui.components.CustomTable(m);
         add(ct, BorderLayout.CENTER);
     }
 }

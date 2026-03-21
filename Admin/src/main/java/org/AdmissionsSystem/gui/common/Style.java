@@ -1,4 +1,4 @@
-package org.AdmissionsSystem.view.common;
+package org.AdmissionsSystem.gui.common;
 
 import javax.swing.*;
 import javax.swing.table.JTableHeader;

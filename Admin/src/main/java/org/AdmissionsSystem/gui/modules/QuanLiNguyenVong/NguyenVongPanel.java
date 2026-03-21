@@ -1,9 +1,10 @@
-package org.AdmissionsSystem.view.pages;
-
-import org.AdmissionsSystem.view.common.Style;
+package org.AdmissionsSystem.gui.modules.QuanLiNguyenVong;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+
+import org.AdmissionsSystem.gui.common.Style;
+
 import java.awt.*;
 
 public class NguyenVongPanel extends JPanel {
@@ -18,7 +19,7 @@ public class NguyenVongPanel extends JPanel {
         String[] cols = {"ID","Họ và tên","Ngành","Tổ hợp","Điểm xét","Trạng thái"};
         Object[][] data = {{"NV-001","Nguyễn Văn An","CNTT","A00","25.5","Đã trúng tuyển"}};
         javax.swing.table.DefaultTableModel m = new javax.swing.table.DefaultTableModel(data, cols);
-        org.AdmissionsSystem.view.components.CustomTable ct = new org.AdmissionsSystem.view.components.CustomTable(m);
+        org.AdmissionsSystem.gui.components.CustomTable ct = new org.AdmissionsSystem.gui.components.CustomTable(m);
         add(ct, BorderLayout.CENTER);
     }
 }

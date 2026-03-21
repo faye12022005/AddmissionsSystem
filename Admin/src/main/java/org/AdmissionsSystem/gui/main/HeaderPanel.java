@@ -1,9 +1,10 @@
-package org.AdmissionsSystem.view.main;
-
-import org.AdmissionsSystem.view.common.Style;
-import org.AdmissionsSystem.view.components.SearchPanel;
+package org.AdmissionsSystem.gui.main;
 
 import javax.swing.*;
+
+import org.AdmissionsSystem.gui.common.Style;
+import org.AdmissionsSystem.gui.components.SearchPanel;
+
 import java.awt.*;
 import java.awt.event.ActionListener;
 

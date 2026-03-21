@@ -1,4 +1,4 @@
-package org.AdmissionsSystem.view.components;
+package org.AdmissionsSystem.gui.components;
 
 import javax.swing.*;
 import java.awt.*;

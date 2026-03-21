@@ -1,9 +1,10 @@
-package org.AdmissionsSystem.view.pages;
-
-import org.AdmissionsSystem.view.common.Style;
+package org.AdmissionsSystem.gui.modules.QuanLiDiemCong;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+
+import org.AdmissionsSystem.gui.common.Style;
+
 import java.awt.*;
 
 public class DiemCongPanel extends JPanel {
@@ -18,7 +19,7 @@ public class DiemCongPanel extends JPanel {
         String[] cols = {"Mã","Mô tả","Điểm"};
         Object[][] data = {{"DC01","Hộ nghèo",1.0},{"DC02","Thương binh",2.0}};
         javax.swing.table.DefaultTableModel m = new javax.swing.table.DefaultTableModel(data, cols);
-        org.AdmissionsSystem.view.components.CustomTable ct = new org.AdmissionsSystem.view.components.CustomTable(m);
+        org.AdmissionsSystem.gui.components.CustomTable ct = new org.AdmissionsSystem.gui.components.CustomTable(m);
         add(ct, BorderLayout.CENTER);
     }
 }

@@ -1,8 +1,9 @@
-package org.AdmissionsSystem.view.main;
-
-import org.AdmissionsSystem.view.common.Style;
+package org.AdmissionsSystem.gui.main;
 
 import javax.swing.*;
+
+import org.AdmissionsSystem.gui.common.Style;
+
 import java.awt.*;
 
 public class SidebarPanel extends JPanel {

@@ -1,10 +1,11 @@
-package org.AdmissionsSystem.view.pages;
-
-import org.AdmissionsSystem.view.common.Style;
-import org.AdmissionsSystem.view.common.Searchable;
+package org.AdmissionsSystem.gui.modules.QuanLyThiSinh;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+
+import org.AdmissionsSystem.gui.common.Searchable;
+import org.AdmissionsSystem.gui.common.Style;
+
 import java.awt.*;
 
 public class ThisinhPanel extends JPanel implements Searchable {
@@ -19,7 +20,7 @@ public class ThisinhPanel extends JPanel implements Searchable {
         String[] cols = {"ID","Họ và tên","CCCD","Ngày sinh","Giới tính","Trạng thái"};
         Object[][] data = {{"TS-2024-001","Nguyễn Văn An","031098001234","12/05/2006","Nam","Đã nhập học"}};
         javax.swing.table.DefaultTableModel m = new javax.swing.table.DefaultTableModel(data, cols);
-        org.AdmissionsSystem.view.components.CustomTable ct = new org.AdmissionsSystem.view.components.CustomTable(m);
+        org.AdmissionsSystem.gui.components.CustomTable ct = new org.AdmissionsSystem.gui.components.CustomTable(m);
         add(ct, BorderLayout.CENTER);
     }
 

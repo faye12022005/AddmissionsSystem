@@ -1,9 +1,17 @@
-package org.AdmissionsSystem.view.main;
+package org.AdmissionsSystem.gui.main;
 
 import javax.swing.*;
 
-import org.AdmissionsSystem.view.common.Searchable;
-import org.AdmissionsSystem.view.pages.*;
+import org.AdmissionsSystem.gui.common.Searchable;
+import org.AdmissionsSystem.gui.modules.Dashboard.DashboardPanel;
+import org.AdmissionsSystem.gui.modules.QuanLiBangQuyDoi.BangQuyDoiPanel;
+import org.AdmissionsSystem.gui.modules.QuanLiDiem.DiemThisinhPanel;
+import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.DiemCongPanel;
+import org.AdmissionsSystem.gui.modules.QuanLiNguyenVong.NguyenVongPanel;
+import org.AdmissionsSystem.gui.modules.QuanLyDanhSachNganh.NganhToHopPanel;
+import org.AdmissionsSystem.gui.modules.QuanLyNguoiDung.UsersPanel;
+import org.AdmissionsSystem.gui.modules.QuanLyThiSinh.ThisinhPanel;
+import org.AdmissionsSystem.gui.modules.QuanLyToHopMon.ToHopMonPanel;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
