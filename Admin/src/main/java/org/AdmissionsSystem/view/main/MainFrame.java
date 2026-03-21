@@ -1,0 +1,92 @@
+package org.AdmissionsSystem.view.main;
+
+import javax.swing.*;
+
+import org.AdmissionsSystem.view.common.Searchable;
+import org.AdmissionsSystem.view.pages.*;
+
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+public class MainFrame extends JFrame {
+
+    private CardLayout cardLayout = new CardLayout();
+    private JPanel centerPanel = new JPanel(cardLayout);
+
+    public MainFrame() {
+        setTitle("Hệ thống tuyển sinh - Admin");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(1200, 800);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+
+        SidebarPanel sidebar = new SidebarPanel();
+        final HeaderPanel header = new HeaderPanel();
+
+        // create screens
+        centerPanel.add(new DashboardPanel(), "dashboard");
+        centerPanel.add(new UsersPanel(), "users");
+        centerPanel.add(new ThisinhPanel(), "thisinh");
+        centerPanel.add(new NganhToHopPanel(), "nganh");
+        centerPanel.add(new DiemThisinhPanel(), "diem_thisinh");
+        centerPanel.add(new ToHopMonPanel(), "tohop");
+        centerPanel.add(new DiemCongPanel(), "diem_cong");
+        centerPanel.add(new BangQuyDoiPanel(), "bang_quydoi");
+        centerPanel.add(new NguyenVongPanel(), "nguyenvong");
+
+        add(sidebar, BorderLayout.WEST);
+        add(header, BorderLayout.NORTH);
+        add(centerPanel, BorderLayout.CENTER);
+
+        // wire sidebar buttons to cards - find all JButtons under the sidebar in order
+        java.util.List<JButton> buttons = new java.util.ArrayList<>();
+        collectButtons(sidebar, buttons);
+        String[] keys = {"dashboard","users","thisinh","nganh","diem_thisinh","tohop","diem_cong","nguyenvong","bang_quydoi"};
+        for (int i = 0; i < buttons.size() && i < keys.length; i++) {
+            String card = keys[i];
+            JButton btn = buttons.get(i);
+            btn.addActionListener(e -> {
+                cardLayout.show(centerPanel, card);
+                // set per-page placeholder
+                switch (card) {
+                    case "thisinh": header.setPageSearchPlaceholder("tìm kiếm thí sinh (mã, tên)"); break;
+                    case "users": header.setPageSearchPlaceholder("tìm kiếm người dùng (tên, email)"); break;
+                    case "nganh": header.setPageSearchPlaceholder("tìm kiếm ngành / tổ hợp"); break;
+                    case "diem_thisinh": header.setPageSearchPlaceholder("tìm kiếm bằng mã thí sinh hoặc tên"); break;
+                    default: header.setPageSearchPlaceholder(""); break;
+                }
+            });
+        }
+
+        // forward per-page search actions to the currently visible page if it implements Searchable
+        header.addPageSearchListener(e -> {
+            Component current = getCurrentCardComponent();
+            if (current instanceof Searchable) {
+                ((Searchable) current).onSearch(header.getPageSearchText());
+            }
+        });
+    }
+
+    private Component getCurrentCardComponent() {
+        for (Component c : centerPanel.getComponents()) {
+            if (c.isVisible()) return c;
+        }
+        return null;
+    }
+
+    private void collectButtons(Component c, java.util.List<JButton> out) {
+        if (c instanceof JButton) out.add((JButton)c);
+        if (c instanceof Container) {
+            for (Component child : ((Container) c).getComponents()) collectButtons(child, out);
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch (Exception ignored) {}
+            MainFrame f = new MainFrame();
+            f.setVisible(true);
+        });
+    }
+}
