@@ -14,7 +14,7 @@ public class Style {
     public static final Color SURFACE = new Color(250, 251, 253);
     public static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 18);
     public static final Font PANEL_TITLE_FONT = new Font("Segoe UI", Font.BOLD, 16);
-    public static final Font BUTTON_FONT = new Font("Segoe UI", Font.PLAIN, 13);
+    public static final Font BUTTON_FONT = new Font("Arial Unicode MS", Font.PLAIN, 13);
     public static final Font TABLE_FONT = new Font("Segoe UI", Font.PLAIN, 13);
 
     public static void styleButton(JButton b) {

@@ -12,7 +12,7 @@ import org.AdmissionsSystem.gui.modules.QuanLyDanhSachNganh.NganhToHopPanel;
 import org.AdmissionsSystem.gui.modules.QuanLyNguoiDung.UsersPanel;
 import org.AdmissionsSystem.gui.modules.QuanLyThiSinh.ThisinhPanel;
 import org.AdmissionsSystem.gui.modules.QuanLyToHopMon.ToHopMonPanel;
-
+import org.AdmissionsSystem.gui.modules.QuanlyNganh.NganhHocPanel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,7 +23,7 @@ public class MainFrame extends JFrame {
     private JPanel centerPanel = new JPanel(cardLayout);
 
     public MainFrame() {
-        setTitle("Hệ thống tuyển sinh - Admin");
+        setTitle("Hệ thống quản lý tuyển sinh");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 800);
         setLocationRelativeTo(null);
@@ -36,12 +36,13 @@ public class MainFrame extends JFrame {
         centerPanel.add(new DashboardPanel(), "dashboard");
         centerPanel.add(new UsersPanel(), "users");
         centerPanel.add(new ThisinhPanel(), "thisinh");
-        centerPanel.add(new NganhToHopPanel(), "nganh");
-        centerPanel.add(new DiemThisinhPanel(), "diem_thisinh");
+        centerPanel.add(new NganhHocPanel(), "nganh");
         centerPanel.add(new ToHopMonPanel(), "tohop");
+        centerPanel.add(new NganhToHopPanel(), "nganh_tohop");
+        centerPanel.add(new DiemThisinhPanel(), "diem_thisinh");
         centerPanel.add(new DiemCongPanel(), "diem_cong");
-        centerPanel.add(new BangQuyDoiPanel(), "bang_quydoi");
         centerPanel.add(new NguyenVongPanel(), "nguyenvong");
+        centerPanel.add(new BangQuyDoiPanel(), "bang_quydoi");
 
         add(sidebar, BorderLayout.WEST);
         add(header, BorderLayout.NORTH);
@@ -50,8 +51,7 @@ public class MainFrame extends JFrame {
         // wire sidebar buttons to cards - find all JButtons under the sidebar in order
         java.util.List<JButton> buttons = new java.util.ArrayList<>();
         collectButtons(sidebar, buttons);
-        String[] keys = {"dashboard","users","thisinh","nganh","diem_thisinh","tohop","diem_cong","nguyenvong","bang_quydoi"};
-        for (int i = 0; i < buttons.size() && i < keys.length; i++) {
+        String[] keys = {"dashboard","users","thisinh","nganh","tohop","nganh_tohop","diem_thisinh","diem_cong","nguyenvong","bang_quydoi"};        for (int i = 0; i < buttons.size() && i < keys.length; i++) {
             String card = keys[i];
             JButton btn = buttons.get(i);
             btn.addActionListener(e -> {

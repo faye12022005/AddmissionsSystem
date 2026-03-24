@@ -34,12 +34,11 @@ public class SidebarPanel extends JPanel {
 		menu.setOpaque(false);
 		menu.setBorder(BorderFactory.createEmptyBorder(12,8,12,8));
 
-		String[] items = {"Tổng quan","Người dùng","Thí sinh","Ngành học","Môn học","Điểm số","Nguyện vọng","Bảng quy đổi"};
-		String[] icons = {"🏠","👥","🧾","📚","📘","🧮","⭐","🔁"};
-		for (int i=0;i<items.length;i++) {
+		String[] items = {"Tổng quan","Người dùng","Thí sinh","Ngành học","Tổ hợp","Ngành-Tổ hợp","Điểm thi","Điểm cộng","Nguyện vọng","Bảng quy đổi"};
+		String[] icons = {"📊", "👥", "👨‍🎓", "📚", "📋", "🧮", "📝", "➕", "📋", "🔄"};		for (int i=0;i<items.length;i++) {
 			JButton b = new JButton(icons[i]+"  "+items[i]);
 			b.setAlignmentX(Component.LEFT_ALIGNMENT);
-			b.setMaximumSize(new Dimension(Integer.MAX_VALUE,44));
+			b.setMaximumSize(new Dimension(Integer.MAX_VALUE,40));
 			Style.styleSidebarButton(b);
 			if (i==0) {
 				b.setBackground(Style.SELECT_BG);
