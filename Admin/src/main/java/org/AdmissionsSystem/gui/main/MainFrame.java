@@ -62,6 +62,7 @@ public class MainFrame extends JFrame {
                     case "users": header.setPageSearchPlaceholder("tìm kiếm người dùng (tên, email)"); break;
                     case "nganh": header.setPageSearchPlaceholder("tìm kiếm ngành / tổ hợp"); break;
                     case "diem_thisinh": header.setPageSearchPlaceholder("tìm kiếm bằng mã thí sinh hoặc tên"); break;
+                    case "diem_cong": header.setPageSearchPlaceholder("tìm kiếm điểm cộng"); break;
                     default: header.setPageSearchPlaceholder(""); break;
                 }
             });
@@ -74,6 +75,10 @@ public class MainFrame extends JFrame {
                 ((Searchable) current).onSearch(header.getPageSearchText());
             }
         });
+
+        // show diem_cong panel by default
+        cardLayout.show(centerPanel, "diem_cong");
+        header.setPageSearchPlaceholder("tìm kiếm điểm cộng");
     }
 
     private Component getCurrentCardComponent() {
