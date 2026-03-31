@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<title>Hệ thống Tuyển sinh - Quản lý Nguyện vọng</title>
+<style>
+        body { font-family: 'Lexend', sans-serif; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-slate-900 flex flex-col h-full">
+<div class="p-6 flex items-center gap-3">
+<div class="bg-primary p-2 rounded-lg">
+<span class="material-symbols-outlined text-white text-2xl">school</span>
+</div>
+<div>
+<h1 class="text-sm font-bold uppercase tracking-wider text-primary">Hệ thống Tuyển sinh</h1>
+<p class="text-[10px] text-slate-500 font-medium">QUẢN TRỊ VIÊN</p>
+</div>
+</div>
+<nav class="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm">Tổng quan</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm">Người dùng</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">person_search</span>
+<span class="text-sm">Thí sinh</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="text-sm">Ngành học</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">book</span>
+<span class="text-sm">Môn học</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">grade</span>
+<span class="text-sm">Điểm số</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary font-semibold transition-colors" href="#">
+<span class="material-symbols-outlined">checklist</span>
+<span class="text-sm">Nguyện vọng</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">table_view</span>
+<span class="text-sm">Bảng quy đổi</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-3 px-3 py-2">
+<div class="size-9 rounded-full bg-slate-200 dark:bg-slate-700 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBmF1sys3OkgruBePkxOQhNe0Br7uE3IGszJf0__K8Gd_g38xzuJeWNF6UJM-u-GZyGmQBxlTb1pLY6TXihVSGuOm8Saih7-bYd2Z3oADtNBH_ra-u3-f444u4vWTW6IaTzrXaGdUPrMDMxvWHygy-6oL8_c0Bp4qOWbU0fEVJtYMK3H_LahcpObuuJ4D7SaPjdHiQA8MKK-iYjXUeD25rAqvGuON9J1kooA_qHjmm1ZRTPe_AYZK6pqk5i93_wzLK11hJ2DPr3Z1s')"></div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium truncate">Admin User</p>
+<p class="text-[11px] text-slate-500">Quản trị viên</p>
+</div>
+<span class="material-symbols-outlined text-slate-400 cursor-pointer hover:text-primary">logout</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+<!-- Header -->
+<header class="h-16 border-b border-primary/10 bg-white dark:bg-slate-900 px-8 flex items-center justify-between">
+<div class="flex items-center flex-1 max-w-xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+<input class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl pl-11 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Tìm kiếm thí sinh..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4 ml-6">
+<button class="size-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="size-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-8">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="text-3xl font-bold tracking-tight">Danh sách Nguyện vọng Thí sinh</h2>
+<p class="text-slate-500 mt-1">Kỳ xét tuyển đại học chính quy - Năm học 2024-2025</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-lg">play_circle</span> Chạy xét tuyển hệ thống
+                        </button>
+</div>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+<div class="flex items-center justify-between mb-2">
+<div class="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600">
+<span class="material-symbols-outlined">groups</span>
+</div>
+</div>
+<p class="text-sm font-medium text-slate-500 mb-1">Tổng nguyện vọng</p>
+<h3 class="text-2xl font-bold">12,450</h3>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+<div class="flex items-center justify-between mb-2">
+<div class="p-2 bg-amber-50 dark:bg-amber-900/30 rounded-lg text-amber-600">
+<span class="material-symbols-outlined">pending</span>
+</div>
+</div>
+<p class="text-sm font-medium text-slate-500 mb-1">Đang chờ xử lý</p>
+<h3 class="text-2xl font-bold">8,120</h3>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+<div class="flex items-center justify-between mb-2">
+<div class="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg text-emerald-600">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+</div>
+<p class="text-sm font-medium text-slate-500 mb-1">Đã trúng tuyển</p>
+<h3 class="text-2xl font-bold">3,240</h3>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+<div class="flex items-center justify-between mb-2">
+<div class="p-2 bg-rose-50 dark:bg-rose-900/30 rounded-lg text-rose-600">
+<span class="material-symbols-outlined">cancel</span>
+</div>
+</div>
+<p class="text-sm font-medium text-slate-500 mb-1">Đã trượt</p>
+<h3 class="text-2xl font-bold">1,090</h3>
+</div>
+</div>
+<!-- Filters -->
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm mb-6">
+<div class="flex flex-wrap gap-4 items-center">
+<div class="flex-1 min-w-[200px] relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">filter_alt</span>
+<select class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-primary/20">
+<option>Tất cả các ngành</option>
+<option>Khoa học máy tính</option>
+<option>Kỹ thuật phần mềm</option>
+</select>
+</div>
+<div class="flex-1 min-w-[200px] relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">hotel_class</span>
+<select class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-primary/20">
+<option>Mọi mức điểm</option>
+<option>Dưới 20 điểm</option>
+<option>20 - 25 điểm</option>
+<option>Trên 25 điểm</option>
+</select>
+</div>
+<div class="flex-1 min-w-[200px] relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">sort</span>
+<select class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-primary/20">
+<option>Thứ tự ưu tiên</option>
+<option>Điểm từ cao xuống thấp</option>
+<option>Mới nhất trước</option>
+</select>
+</div>
+<div class="flex gap-2">
+<button class="bg-primary/10 text-primary px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/20 transition-all">Lọc kết quả</button>
+<button class="text-slate-500 px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">Đặt lại</button>
+</div>
+</div>
+</div>
+<!-- Candidates Table -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Thứ tự</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Thí sinh</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Mã ngành</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Tên ngành</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Tổng điểm</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Trạng thái</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-50 dark:divide-slate-800">
+<!-- Row 1 -->
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<span class="inline-flex items-center justify-center size-8 rounded-full bg-primary text-white text-xs font-bold">01</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-9 rounded-full bg-slate-200 overflow-hidden">
+<img alt="Student" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdQNBQvuw-NDpRDNy1rNhcRK_7AAJJWPPMCjANHB2zrIY7WZ7U_c4c2_rq5sSgxLymVRKqsMtvgYrXGEP6vtJre9apHv62eK5-_aowkcGeThXy2DD_-Yb-3MA3944ZI-HS136jvb0GejFl1rYZjWdNB8vojyt7C2FRGpwBetPRNaG660-gFp8_TDGWxN0hbHYMR0eW6qiOyAjmf8XkoBvuNudJPE5AASSjVmiMAM5M_-rXj06o3jdOTGvVcdCdeQ1JX3armjggSk8"/>
+</div>
+<div>
+<p class="text-sm font-bold">Nguyễn Văn A</p>
+<p class="text-[10px] text-slate-500">SBD: 2400015</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm font-medium text-slate-600 dark:text-slate-400">7480101</td>
+<td class="px-6 py-4 text-sm font-medium">Khoa học máy tính</td>
+<td class="px-6 py-4 text-center">
+<span class="text-sm font-black text-primary">28.50</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">
+<span class="size-1.5 rounded-full bg-emerald-500"></span> Trúng tuyển
+                                    </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<span class="inline-flex items-center justify-center size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 text-xs font-bold">02</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-9 rounded-full bg-slate-200 overflow-hidden">
+<img alt="Student" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2OjGdbtBG-xGJz_CCxlUIvcd0QQMtKfqWp0mL_qvzkLdwEEybY80w40-8F1khsR882Wk54nm9IBj8AYhEEVp2F9YC-D0k5UU2eyvRGn6fPj8z4-TjilxzCsSgblzDUZ3HvXd8iNSDOgzRggV1XUK6Rv6NfG6jh1SuDIo5xVcYEtMGsUn-H-PHFWdxnojKUUriedO_E3Mr39spamJKFzhLFAMoxrBlG2zaYVsdGuwrJU2NQ2M-8jQE2_tYNdoyVUKhiPZ0vhjnk2A"/>
+</div>
+<div>
+<p class="text-sm font-bold">Lê Thị B</p>
+<p class="text-[10px] text-slate-500">SBD: 2400288</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm font-medium text-slate-600 dark:text-slate-400">7480103</td>
+<td class="px-6 py-4 text-sm font-medium">Kỹ thuật phần mềm</td>
+<td class="px-6 py-4 text-center">
+<span class="text-sm font-black text-primary">26.25</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[11px] font-bold">
+<span class="size-1.5 rounded-full bg-amber-500"></span> Đang chờ
+                                    </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Pagination -->
+<div class="bg-slate-50/50 dark:bg-slate-800/50 px-6 py-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+<p class="text-xs text-slate-500">Hiển thị <span class="font-bold text-slate-700 dark:text-slate-300">1-10</span> trong số <span class="font-bold text-slate-700 dark:text-slate-300">1,240</span> bản ghi</p>
+<div class="flex items-center gap-2">
+<button class="size-8 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-lg">chevron_left</span>
+</button>
+<button class="size-8 rounded-lg bg-primary text-white text-xs font-bold">1</button>
+<button class="size-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 text-xs font-bold">2</button>
+<button class="size-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 text-xs font-bold">3</button>
+<span class="text-slate-400 px-1">...</span>
+<button class="size-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 text-xs font-bold">124</button>
+<button class="size-8 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400">
+<span class="material-symbols-outlined text-lg">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<footer class="mt-8 py-6 text-center border-t border-slate-100 dark:border-slate-800">
+<p class="text-[11px] text-slate-500">© 2024 Trung Tâm Quản Lý Đào Tạo - Hệ Thống Xét Tuyển Đại Học Tự Động. Tất cả quyền được bảo lưu.</p>
+</footer>
+</div>
+</main>
+</div>
+</body></html>

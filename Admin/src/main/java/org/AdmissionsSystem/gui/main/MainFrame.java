@@ -50,7 +50,7 @@ public class MainFrame extends JFrame {
         // wire sidebar buttons to cards - find all JButtons under the sidebar in order
         java.util.List<JButton> buttons = new java.util.ArrayList<>();
         collectButtons(sidebar, buttons);
-        String[] keys = {"dashboard","users","thisinh","nganh","diem_thisinh","tohop","diem_cong","nguyenvong","bang_quydoi"};
+        String[] keys = {"dashboard","users","thisinh","nganh","diem_thisinh","tohop","nguyenvong","bang_quydoi"};
         for (int i = 0; i < buttons.size() && i < keys.length; i++) {
             String card = keys[i];
             JButton btn = buttons.get(i);
