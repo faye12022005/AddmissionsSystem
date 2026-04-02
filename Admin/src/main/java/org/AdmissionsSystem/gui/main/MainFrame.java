@@ -86,6 +86,10 @@ public class MainFrame extends JFrame {
                 ((Searchable) current).onSearch(header.getPageSearchText());
             }
         });
+
+        // show diem_cong panel by default
+        cardLayout.show(centerPanel, "diem_cong");
+        header.setPageSearchPlaceholder("tìm kiếm điểm cộng");
     }
 
     private Component getCurrentCardComponent() {
