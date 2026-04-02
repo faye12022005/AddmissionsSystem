@@ -1,10 +1,6 @@
 package org.AdmissionsSystem.gui.main;
-
 import javax.swing.*;
-
-import org.AdmissionsSystem.gui.common.Style;
 import org.AdmissionsSystem.gui.components.SearchPanel;
-
 import java.awt.*;
 import java.awt.event.ActionListener;
 
@@ -12,33 +8,23 @@ public class HeaderPanel extends JPanel {
 
 	public HeaderPanel() {
 		setLayout(new BorderLayout());
-		setPreferredSize(new Dimension(0, 72));
+		setPreferredSize(new Dimension(0, 65));
 		setBackground(Color.WHITE);
 
 		// Header layout: left spacer (sidebar contains logo), centered search, right icons
-		setBorder(BorderFactory.createMatteBorder(0,0,1,0,new Color(230,230,230)));
+		setBorder(BorderFactory.createMatteBorder(1,0,1,0,new Color(230,230,230)));
 
-		// left: logo area (icon + app name)
-		JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT,12,16));
+		// left spacer: header no longer renders title/logo
+		JPanel leftPanel = new JPanel();
 		leftPanel.setOpaque(false);
-		JLabel iconBox = new JLabel("📘");
-		iconBox.setOpaque(true);
-		iconBox.setBackground(Style.PRIMARY);
-		iconBox.setForeground(Color.WHITE);
-		iconBox.setPreferredSize(new Dimension(44,44));
-		iconBox.setHorizontalAlignment(SwingConstants.CENTER);
-		JLabel appLabel = new JLabel("HỆ THỐNG TUYỂN SINH");
-		appLabel.setFont(Style.PANEL_TITLE_FONT);
-		appLabel.setBorder(BorderFactory.createEmptyBorder(0,6,0,0));
-		leftPanel.add(iconBox);
-		leftPanel.add(appLabel);
+		leftPanel.setPreferredSize(new Dimension(12, 0));
 
 		// Center: global search + per-page search
 		JPanel center = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 12));
 		center.setOpaque(false);
 		SearchPanel globalSearch = new SearchPanel(560, "Tìm kiếm thí sinh, hồ sơ hoặc mã ngành...", null);
-		SearchPanel pageSearch = new SearchPanel(320, "", "Tìm");
-		center.add(globalSearch);
+		SearchPanel pageSearch = new SearchPanel(520, "", "Tìm");
+		// center.add(globalSearch);
 		center.add(pageSearch);
 
 		// Right: small icon buttons
@@ -70,7 +56,7 @@ public class HeaderPanel extends JPanel {
 		add(center, BorderLayout.CENTER);
 		add(right, BorderLayout.EAST);
 		this.pageSearch = pageSearch;
-		this.globalSearch = globalSearch;
+		// this.globalSearch = globalSearch;
 	}
 
 	private SearchPanel pageSearch;

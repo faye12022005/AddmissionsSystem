@@ -87,10 +87,11 @@ public class ThisinhPanel extends JPanel {
     }
 
     private void applyStyle(JButton btn) {
-        Style.styleButton(btn);
-        btn.setOpaque(true);
-        btn.setBorderPainted(false);
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        Style.styleFunctionButton(btn);
+    }
+
+    private void applyStyle(JButton btn, Color color) {
+        Style.styleFunctionButton(btn, color);
     }
 
     private JPanel buildCrudPanel() {
@@ -107,9 +108,9 @@ public class ThisinhPanel extends JPanel {
         JButton btnExport = new JButton("Export");
         JButton btnResetFilter = new JButton("Xóa lọc");
 
-        applyStyle(btnImport);
-        applyStyle(btnExport);
-        applyStyle(btnResetFilter);
+        applyStyle(btnImport, Style.BTN_IMPORT);
+        applyStyle(btnExport, Style.BTN_EXPORT);
+        applyStyle(btnResetFilter, Style.BTN_FILTER_RESET);
 
         btnImport.addActionListener(e -> onImportExcel());
         btnExport.addActionListener(e -> onExportExcel());
@@ -132,10 +133,10 @@ public class ThisinhPanel extends JPanel {
         JButton btnDelete = new JButton("Xóa");
         JButton btnClear = new JButton("Làm mới");
 
-        applyStyle(btnAdd);
-        applyStyle(btnUpdate);
-        applyStyle(btnDelete);
-        applyStyle(btnClear);
+        applyStyle(btnAdd, Style.BTN_ADD);
+        applyStyle(btnUpdate, Style.BTN_UPDATE);
+        applyStyle(btnDelete, Style.BTN_DELETE);
+        applyStyle(btnClear, Style.BTN_CLEAR);
 
         btnAdd.addActionListener(e -> onAdd());
         btnUpdate.addActionListener(e -> onUpdate());
@@ -198,8 +199,9 @@ public class ThisinhPanel extends JPanel {
         JButton btnPrev = new JButton("< Trang trước");
         JButton btnNext = new JButton("Trang sau >");
 
-        applyStyle(btnPrev);
-        applyStyle(btnNext);
+        Style.stylePaginationButton(btnPrev);
+        Style.stylePaginationButton(btnNext);
+        Style.stylePaginationInfoLabel(lblPageInfo);
 
         btnPrev.addActionListener(e -> {
             if (currentPage > 1) {

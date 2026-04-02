@@ -1,7 +1,5 @@
 package org.AdmissionsSystem.gui.main;
-
 import javax.swing.*;
-
 import org.AdmissionsSystem.gui.common.Searchable;
 import org.AdmissionsSystem.gui.modules.Dashboard.DashboardPanel;
 import org.AdmissionsSystem.gui.modules.QuanLiBangQuyDoi.BangQuyDoiPanel;
@@ -37,14 +35,18 @@ public class MainFrame extends JFrame {
         centerPanel.add(new NganhHocPanel(), "nganh");
         centerPanel.add(new ToHopMonPanel(), "tohop");
         centerPanel.add(new NganhToHopPanel(), "nganh_tohop");
-        centerPanel.add(new DiemThisinhPanel(), "diem_thisinh");
+        centerPanel.add(new DiemThiSinhPanel(), "diem_thisinh");
         centerPanel.add(new DiemCongPanel(), "diem_cong");
         centerPanel.add(new NguyenVongPanel(), "nguyenvong");
         centerPanel.add(new BangQuyDoiPanel(), "bang_quydoi");
 
+        // right content area: shared header + center content
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.add(header, BorderLayout.NORTH);
+        contentPanel.add(centerPanel, BorderLayout.CENTER);
+
         add(sidebar, BorderLayout.WEST);
-        add(header, BorderLayout.NORTH);
-        add(centerPanel, BorderLayout.CENTER);
+        add(contentPanel, BorderLayout.CENTER);
 
         // wire sidebar buttons to cards - find all JButtons under the sidebar in order
         java.util.List<JButton> buttons = new java.util.ArrayList<>();
@@ -57,19 +59,19 @@ public class MainFrame extends JFrame {
                 // set per-page placeholder
                 switch (card) {
                     case "thisinh":
-                        header.setPageSearchPlaceholder("tìm kiếm thí sinh (mã, tên)");
+                        header.setPageSearchPlaceholder("Tìm kiếm thí sinh (mã, tên)");
                         break;
                     case "users":
-                        header.setPageSearchPlaceholder("tìm kiếm người dùng (tên, email)");
+                        header.setPageSearchPlaceholder("Tìm kiếm người dùng (tên, email)");
                         break;
                     case "nganh":
-                        header.setPageSearchPlaceholder("tìm kiếm ngành / tổ hợp");
+                        header.setPageSearchPlaceholder("Tìm kiếm ngành / tổ hợp");
                         break;
                     case "tohop":
-                        header.setPageSearchPlaceholder("tìm kiếm môn học / tổ hợp môn");
+                        header.setPageSearchPlaceholder("Tìm kiếm môn học / tổ hợp môn");
                         break;
                     case "diem_thisinh":
-                        header.setPageSearchPlaceholder("tìm kiếm bằng mã thí sinh hoặc tên");
+                        header.setPageSearchPlaceholder("Tìm kiếm bằng mã thí sinh hoặc tên");
                         break;
                     default:
                         header.setPageSearchPlaceholder("");
@@ -87,9 +89,9 @@ public class MainFrame extends JFrame {
             }
         });
 
-        // show diem_cong panel by default
-        cardLayout.show(centerPanel, "diem_cong");
-        header.setPageSearchPlaceholder("tìm kiếm điểm cộng");
+        // // show diem_cong panel by default
+        // cardLayout.show(centerPanel, "diem_cong");
+        // header.setPageSearchPlaceholder("tìm kiếm điểm cộng");
     }
 
     private Component getCurrentCardComponent() {

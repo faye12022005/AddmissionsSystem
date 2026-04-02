@@ -108,9 +108,9 @@ public class NganhHocPanel extends JPanel {
         JButton btnResetFilter = new JButton("Xóa lọc");
         JButton btnImport = new JButton("Import CSV");
         JButton btnExport = new JButton("Export CSV");
-        Style.styleButton(btnResetFilter);
-        Style.styleButton(btnImport);
-        Style.styleButton(btnExport);
+        Style.styleFunctionButton(btnResetFilter, Style.BTN_FILTER_RESET);
+        Style.styleFunctionButton(btnImport, Style.BTN_IMPORT);
+        Style.styleFunctionButton(btnExport, Style.BTN_EXPORT);
         btnResetFilter.addActionListener(e -> {
             searchPanel.setSearchText("");
             applyFilter("");
@@ -132,10 +132,10 @@ public class NganhHocPanel extends JPanel {
         JButton btnUpdate = new JButton("Cập nhật");
         JButton btnDelete = new JButton("Xóa");
         JButton btnClear = new JButton("Làm mới");
-        Style.styleButton(btnAdd);
-        Style.styleButton(btnUpdate);
-        Style.styleButton(btnDelete);
-        Style.styleButton(btnClear);
+        Style.styleFunctionButton(btnAdd, Style.BTN_ADD);
+        Style.styleFunctionButton(btnUpdate, Style.BTN_UPDATE);
+        Style.styleFunctionButton(btnDelete, Style.BTN_DELETE);
+        Style.styleFunctionButton(btnClear, Style.BTN_CLEAR);
 
         btnAdd.addActionListener(e -> onAdd());
         btnUpdate.addActionListener(e -> onUpdate());
@@ -200,12 +200,14 @@ public class NganhHocPanel extends JPanel {
     private JPanel buildPaginationPanel() {
         JPanel pager = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 6));
         pager.setOpaque(false);
-
-        JLabel lblSize = new JLabel("Số dòng/trang");
+        // JLabel lblSize = new JLabel("Số dòng/trang");
         JButton btnPrev = new JButton("<");
         JButton btnNext = new JButton(">");
-        Style.styleButton(btnPrev);
-        Style.styleButton(btnNext);
+        // Style.stylePaginationInfoLabel(lblSize);
+        Style.stylePaginationInfoLabel(lblPageInfo);
+        Style.stylePaginationCombo(cboPageSize);
+        Style.stylePaginationButton(btnPrev);
+        Style.stylePaginationButton(btnNext);
 
         cboPageSize.setSelectedItem(pageSize);
         cboPageSize.addActionListener(e -> {
@@ -230,7 +232,7 @@ public class NganhHocPanel extends JPanel {
             }
         });
 
-        pager.add(lblSize);
+        // pager.add(lblSize);
         pager.add(cboPageSize);
         pager.add(btnPrev);
         pager.add(btnNext);
@@ -399,7 +401,7 @@ public class NganhHocPanel extends JPanel {
             tableModel.addRow(filteredRows.get(i));
         }
 
-        lblPageInfo.setText("Trang " + currentPage + "/" + totalPages + " - Tổng " + filteredRows.size() + " bản ghi");
+        lblPageInfo.setText("Trang " + currentPage + "/" + filteredRows.size());
     }
 
     private int getTotalPages() {
