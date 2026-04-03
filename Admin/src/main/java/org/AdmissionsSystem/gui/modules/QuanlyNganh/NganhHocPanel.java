@@ -1,5 +1,7 @@
 package org.AdmissionsSystem.gui.modules.QuanlyNganh;
 import org.AdmissionsSystem.gui.common.Style;
+import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocFormPanel;
+import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocPaginationPanel;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocSearchPanel;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocTable;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.service.NganhHocCsvService;
@@ -7,23 +9,15 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 import javax.swing.JFileChooser;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -42,27 +36,12 @@ public class NganhHocPanel extends JPanel {
     private final DefaultTableModel tableModel;
     private final NganhHocTable tableView;
     private final NganhHocSearchPanel searchPanel;
+    private final NganhHocFormPanel formPanel;
+    private final NganhHocPaginationPanel paginationPanel;
     private final NganhHocCsvService csvService = new NganhHocCsvService();
-    private final JLabel lblPageInfo = new JLabel("Trang 1/1", SwingConstants.RIGHT);
-    private final JComboBox<Integer> cboPageSize = new JComboBox<>(new Integer[]{10, 20, 50, 100});
 
     private int currentPage = 1;
     private int pageSize = 20;
-
-    private final JTextField txtMa = new JTextField(12);
-    private final JTextField txtTen = new JTextField(24);
-    private final JTextField txtToHopGoc = new JTextField(10);
-    private final JTextField txtChiTieu = new JTextField(6);
-    private final JTextField txtDiemSan = new JTextField(6);
-    private final JTextField txtDiemTrungTuyen = new JTextField(6);
-    private final JCheckBox chkTuyenThang = new JCheckBox("Tuyển thẳng");
-    private final JCheckBox chkDGNL = new JCheckBox("Sử dụng DGNL");
-    private final JCheckBox chkTHPT = new JCheckBox("Sử dụng THPT");
-    private final JCheckBox chkVSAT = new JCheckBox("Sử dụng VSAT");
-    private final JTextField txtSlXetTuyen = new JTextField(8);
-    private final JTextField txtSlDGNL = new JTextField(8);
-    private final JTextField txtSlVSAT = new JTextField(8);
-    private final JTextField txtSlTHPT = new JTextField(8);
 
     private String selectedMaNganh;
 
@@ -84,13 +63,15 @@ public class NganhHocPanel extends JPanel {
 
         tableView = new NganhHocTable(tableModel);
         searchPanel = new NganhHocSearchPanel();
+    formPanel = new NganhHocFormPanel();
+    paginationPanel = new NganhHocPaginationPanel(pageSize);
 
         JPanel body = new JPanel(new BorderLayout(8, 8));
         body.setOpaque(false);
         body.setBorder(BorderFactory.createEmptyBorder(0, 8, 8, 8));
         body.add(buildCrudPanel(), BorderLayout.NORTH);
         body.add(tableView, BorderLayout.CENTER);
-        body.add(buildPaginationPanel(), BorderLayout.SOUTH);
+    body.add(paginationPanel, BorderLayout.SOUTH);
         add(body, BorderLayout.CENTER);
 
         bindEvents();
@@ -155,94 +136,31 @@ public class NganhHocPanel extends JPanel {
         topRow.add(filterRow, BorderLayout.WEST);
         topRow.add(actionPanel, BorderLayout.EAST);
 
-        JPanel formRow = new JPanel(new GridBagLayout());
-        formRow.setOpaque(false);
-        formRow.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new java.awt.Color(230, 230, 230)),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)));
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(4, 6, 4, 6);
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        int r = 0;
-        addField(formRow, gbc, r, "Mã ngành", txtMa, 0);
-        addField(formRow, gbc, r, "Tên ngành", txtTen, 2);
-        addField(formRow, gbc, r, "Tổ hợp gốc", txtToHopGoc, 4);
-        r++;
-        addField(formRow, gbc, r, "Chỉ tiêu", txtChiTieu, 0);
-        addField(formRow, gbc, r, "Điểm sàn", txtDiemSan, 2);
-        addField(formRow, gbc, r, "Điểm trúng tuyển", txtDiemTrungTuyen, 4);
-        r++;
-        addField(formRow, gbc, r, "SL xét tuyển", txtSlXetTuyen, 0);
-        addField(formRow, gbc, r, "SL DGNL", txtSlDGNL, 2);
-        addField(formRow, gbc, r, "SL VSAT", txtSlVSAT, 4);
-        r++;
-        addField(formRow, gbc, r, "SL THPT", txtSlTHPT, 0);
-
-        JPanel checkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        checkPanel.setOpaque(false);
-        checkPanel.add(chkTuyenThang);
-        checkPanel.add(chkDGNL);
-        checkPanel.add(chkTHPT);
-        checkPanel.add(chkVSAT);
-        gbc.gridx = 2;
-        gbc.gridy = r;
-        gbc.gridwidth = 4;
-        formRow.add(checkPanel, gbc);
-
         wrapper.add(topRow, BorderLayout.NORTH);
-        wrapper.add(formRow, BorderLayout.CENTER);
+        wrapper.add(formPanel, BorderLayout.CENTER);
         return wrapper;
-    }
-
-    private JPanel buildPaginationPanel() {
-        JPanel pager = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 6));
-        pager.setOpaque(false);
-        // JLabel lblSize = new JLabel("Số dòng/trang");
-        JButton btnPrev = new JButton("<");
-        JButton btnNext = new JButton(">");
-        // Style.stylePaginationInfoLabel(lblSize);
-        Style.stylePaginationInfoLabel(lblPageInfo);
-        Style.stylePaginationCombo(cboPageSize);
-        Style.stylePaginationButton(btnPrev);
-        Style.stylePaginationButton(btnNext);
-
-        cboPageSize.setSelectedItem(pageSize);
-        cboPageSize.addActionListener(e -> {
-            Integer selected = (Integer) cboPageSize.getSelectedItem();
-            if (selected != null) {
-                pageSize = selected;
-                currentPage = 1;
-                loadPage();
-            }
-        });
-
-        btnPrev.addActionListener(e -> {
-            if (currentPage > 1) {
-                currentPage--;
-                loadPage();
-            }
-        });
-        btnNext.addActionListener(e -> {
-            if (currentPage < getTotalPages()) {
-                currentPage++;
-                loadPage();
-            }
-        });
-
-        // pager.add(lblSize);
-        pager.add(cboPageSize);
-        pager.add(btnPrev);
-        pager.add(btnNext);
-        pager.add(lblPageInfo);
-        return pager;
     }
 
     private void bindEvents() {
         searchPanel.addActionListener(e -> applyFilter(searchPanel.getSearchText()));
         tableView.getTable().getSelectionModel().addListSelectionListener(this::onTableRowSelected);
+        paginationPanel.setOnPageSizeChange(selected -> {
+            pageSize = selected;
+            currentPage = 1;
+            loadPage();
+        });
+        paginationPanel.setOnPrev(() -> {
+            if (currentPage > 1) {
+                currentPage--;
+                loadPage();
+            }
+        });
+        paginationPanel.setOnNext(() -> {
+            if (currentPage < getTotalPages()) {
+                currentPage++;
+                loadPage();
+            }
+        });
     }
 
     private void onTableRowSelected(ListSelectionEvent e) {
@@ -254,27 +172,18 @@ public class NganhHocPanel extends JPanel {
             return;
         }
 
-        txtMa.setText(asText(tableModel.getValueAt(row, 0)));
-        txtTen.setText(asText(tableModel.getValueAt(row, 1)));
-        txtToHopGoc.setText(asText(tableModel.getValueAt(row, 2)));
-        txtChiTieu.setText(asText(tableModel.getValueAt(row, 3)));
-        txtDiemSan.setText(asText(tableModel.getValueAt(row, 4)));
-        txtDiemTrungTuyen.setText(asText(tableModel.getValueAt(row, 5)));
-        chkTuyenThang.setSelected("Y".equals(asText(tableModel.getValueAt(row, 6))));
-        chkDGNL.setSelected("Y".equals(asText(tableModel.getValueAt(row, 7))));
-        chkTHPT.setSelected("Y".equals(asText(tableModel.getValueAt(row, 8))));
-        chkVSAT.setSelected("Y".equals(asText(tableModel.getValueAt(row, 9))));
-        txtSlXetTuyen.setText(asText(tableModel.getValueAt(row, 10)));
-        txtSlDGNL.setText(asText(tableModel.getValueAt(row, 11)));
-        txtSlVSAT.setText(asText(tableModel.getValueAt(row, 12)));
-        txtSlTHPT.setText(asText(tableModel.getValueAt(row, 13)));
+        Object[] selectedRow = new Object[COLS.length];
+        for (int i = 0; i < COLS.length; i++) {
+            selectedRow[i] = tableModel.getValueAt(row, i);
+        }
 
-        selectedMaNganh = txtMa.getText().trim();
+        formPanel.setFormDataFromRow(selectedRow);
+        selectedMaNganh = formPanel.getMaNganh();
     }
 
     private void onAdd() {
         try {
-            Object[] row = collectFormData();
+            Object[] row = formPanel.collectFormData();
             String ma = asText(row[0]);
             if (findIndexByMa(ma) >= 0) {
                 JOptionPane.showMessageDialog(this, "Mã ngành đã tồn tại.");
@@ -294,7 +203,7 @@ public class NganhHocPanel extends JPanel {
             return;
         }
         try {
-            Object[] row = collectFormData();
+            Object[] row = formPanel.collectFormData();
             String newMa = asText(row[0]);
 
             int selectedIndex = findIndexByMa(selectedMaNganh);
@@ -332,31 +241,6 @@ public class NganhHocPanel extends JPanel {
         clearForm();
     }
 
-    private Object[] collectFormData() {
-        String ma = txtMa.getText().trim();
-        String ten = txtTen.getText().trim();
-        String toHop = txtToHopGoc.getText().trim();
-
-        if (ma.isEmpty() || ten.isEmpty() || toHop.isEmpty()) {
-            throw new IllegalArgumentException("Mã ngành, Tên ngành, Tổ hợp gốc là bắt buộc.");
-        }
-
-        int chiTieu = parseInt(txtChiTieu, "Chỉ tiêu");
-        double diemSan = parseDouble(txtDiemSan, "Điểm sàn");
-        double diemTrungTuyen = parseDouble(txtDiemTrungTuyen, "Điểm trúng tuyển");
-        int slXetTuyen = parseInt(txtSlXetTuyen, "SL xét tuyển");
-        int slDGNL = parseInt(txtSlDGNL, "SL DGNL");
-        int slVSAT = parseInt(txtSlVSAT, "SL VSAT");
-        int slTHPT = parseInt(txtSlTHPT, "SL THPT");
-
-        return new Object[]{
-                ma, ten, toHop, chiTieu, diemSan, diemTrungTuyen,
-                toYN(chkTuyenThang.isSelected()), toYN(chkDGNL.isSelected()),
-                toYN(chkTHPT.isSelected()), toYN(chkVSAT.isSelected()),
-                slXetTuyen, slDGNL, slVSAT, slTHPT
-        };
-    }
-
     private void seedData() {
         allRows.clear();
         allRows.add(new Object[]{"CNTT", "Công nghệ thông tin", "A00", 100, 20.0, 25.0, "N", "Y", "Y", "N", 1000, 200, 50, 750});
@@ -386,7 +270,8 @@ public class NganhHocPanel extends JPanel {
     private void loadPage() {
         tableModel.setRowCount(0);
         if (filteredRows.isEmpty()) {
-            lblPageInfo.setText("Trang 1/1 - Tổng 0 bản ghi");
+            paginationPanel.setPageInfo(1, 1, 0);
+            paginationPanel.setNavigationEnabled(false, false);
             return;
         }
 
@@ -401,7 +286,8 @@ public class NganhHocPanel extends JPanel {
             tableModel.addRow(filteredRows.get(i));
         }
 
-        lblPageInfo.setText("Trang " + currentPage + "/" + filteredRows.size());
+        paginationPanel.setPageInfo(currentPage, totalPages, filteredRows.size());
+        paginationPanel.setNavigationEnabled(currentPage > 1, currentPage < totalPages);
     }
 
     private int getTotalPages() {
@@ -412,20 +298,7 @@ public class NganhHocPanel extends JPanel {
     }
 
     private void clearForm() {
-        txtMa.setText("");
-        txtTen.setText("");
-        txtToHopGoc.setText("");
-        txtChiTieu.setText("");
-        txtDiemSan.setText("");
-        txtDiemTrungTuyen.setText("");
-        txtSlXetTuyen.setText("");
-        txtSlDGNL.setText("");
-        txtSlVSAT.setText("");
-        txtSlTHPT.setText("");
-        chkTuyenThang.setSelected(false);
-        chkDGNL.setSelected(false);
-        chkTHPT.setSelected(false);
-        chkVSAT.setSelected(false);
+        formPanel.clearForm();
         selectedMaNganh = null;
         tableView.getTable().clearSelection();
     }
@@ -515,48 +388,8 @@ public class NganhHocPanel extends JPanel {
         return copy;
     }
 
-    private int parseInt(JTextField field, String fieldName) {
-        String text = field.getText().trim();
-        if (text.isEmpty()) {
-            throw new IllegalArgumentException(fieldName + " không được để trống.");
-        }
-        try {
-            return Integer.parseInt(text);
-        } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException(fieldName + " phải là số nguyên.");
-        }
-    }
-
-    private double parseDouble(JTextField field, String fieldName) {
-        String text = field.getText().trim();
-        if (text.isEmpty()) {
-            throw new IllegalArgumentException(fieldName + " không được để trống.");
-        }
-        try {
-            return Double.parseDouble(text);
-        } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException(fieldName + " phải là số thực.");
-        }
-    }
-
-    private void addField(JPanel panel, GridBagConstraints gbc, int row, String label, JTextField field, int col) {
-        gbc.gridx = col;
-        gbc.gridy = row;
-        gbc.gridwidth = 1;
-        panel.add(new JLabel(label), gbc);
-
-        gbc.gridx = col + 1;
-        gbc.weightx = 0.4;
-        panel.add(field, gbc);
-        gbc.weightx = 0;
-    }
-
     private String asText(Object value) {
         return value == null ? "" : value.toString();
-    }
-
-    private String toYN(boolean selected) {
-        return selected ? "Y" : "N";
     }
 }
 

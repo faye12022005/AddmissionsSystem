@@ -8,6 +8,7 @@ import javax.swing.table.TableModel;
 import org.AdmissionsSystem.gui.common.Style;
 
 import java.awt.*;
+import java.awt.event.MouseEvent;
 
 public class CustomTable extends JScrollPane {
     private static final Color HEADER_TEXT = new Color(60, 70, 90);
@@ -49,7 +50,19 @@ public class CustomTable extends JScrollPane {
         table.setAutoCreateRowSorter(true);
         table.setRowMargin(0);
 
-        JTableHeader header = table.getTableHeader();
+        JTableHeader header = new JTableHeader(table.getColumnModel()) {
+            @Override
+            public String getToolTipText(MouseEvent e) {
+                int viewColumn = columnAtPoint(e.getPoint());
+                if (viewColumn < 0) {
+                    return null;
+                }
+                int modelColumn = table.convertColumnIndexToModel(viewColumn);
+                String columnName = table.getModel().getColumnName(modelColumn);
+                return (columnName == null || columnName.isBlank()) ? null : columnName;
+            }
+        };
+        table.setTableHeader(header);
         if (header != null) {
             header.setBackground(HEADER_BG);
             header.setForeground(HEADER_TEXT);

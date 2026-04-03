@@ -3,10 +3,18 @@ import javax.swing.*;
 import org.AdmissionsSystem.gui.components.SearchPanel;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.util.Objects;
 
 public class HeaderPanel extends JPanel {
+	private final SearchPanel pageSearch;
+	private final SearchPanel globalSearch;
+	private final JButton gearButton;
 
 	public HeaderPanel() {
+		this(null);
+	}
+
+	public HeaderPanel(Runnable logoutAction) {
 		setLayout(new BorderLayout());
 		setPreferredSize(new Dimension(0, 65));
 		setBackground(Color.WHITE);
@@ -22,8 +30,8 @@ public class HeaderPanel extends JPanel {
 		// Center: global search + per-page search
 		JPanel center = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 12));
 		center.setOpaque(false);
-		SearchPanel globalSearch = new SearchPanel(560, "Tìm kiếm thí sinh, hồ sơ hoặc mã ngành...", null);
-		SearchPanel pageSearch = new SearchPanel(520, "", "Tìm");
+		globalSearch = new SearchPanel(560, "Tìm kiếm thí sinh, hồ sơ hoặc mã ngành...", null);
+		pageSearch = new SearchPanel(520, "", "Tìm");
 		// center.add(globalSearch);
 		center.add(pageSearch);
 
@@ -36,11 +44,17 @@ public class HeaderPanel extends JPanel {
 		bell.setFocusPainted(false);
 		bell.setBorder(BorderFactory.createEmptyBorder(6,6,6,6));
 
-		JButton gear = new JButton("⚙️");
-		gear.setPreferredSize(new Dimension(40,40));
-		gear.setBackground(new Color(245,246,250));
-		gear.setFocusPainted(false);
-		gear.setBorder(BorderFactory.createEmptyBorder(6,6,6,6));
+		gearButton = new JButton("🚪");
+		gearButton.setPreferredSize(new Dimension(40,40));
+		gearButton.setBackground(new Color(245,246,250));
+		gearButton.setFocusPainted(false);
+		gearButton.setBorder(BorderFactory.createEmptyBorder(6,6,6,6));
+		gearButton.setToolTipText("Đăng xuất");
+		gearButton.addActionListener(e -> {
+			if (logoutAction != null) {
+				logoutAction.run();
+			}
+		});
 
 		JLabel avatar = new JLabel("LA");
 		avatar.setOpaque(true);
@@ -49,18 +63,13 @@ public class HeaderPanel extends JPanel {
 		avatar.setHorizontalAlignment(SwingConstants.CENTER);
 
 		right.add(bell);
-		right.add(gear);
+		right.add(gearButton);
 		right.add(avatar);
 
 		add(leftPanel, BorderLayout.WEST);
 		add(center, BorderLayout.CENTER);
 		add(right, BorderLayout.EAST);
-		this.pageSearch = pageSearch;
-		// this.globalSearch = globalSearch;
 	}
-
-	private SearchPanel pageSearch;
-	private SearchPanel globalSearch;
 
 	public void setPageSearchPlaceholder(String placeholder) {
 		if (pageSearch != null) pageSearch.setPlaceholder(placeholder);

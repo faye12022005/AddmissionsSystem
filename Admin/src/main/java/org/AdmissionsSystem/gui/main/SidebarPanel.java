@@ -12,8 +12,16 @@ import java.util.List;
 
 public class SidebarPanel extends JPanel {
 	private SidebarMenuButton selectedButton;
+	private final String displayName;
+	private final String role;
 
 	public SidebarPanel() {
+		this("Lê Minh Anh", "Admin");
+	}
+
+	public SidebarPanel(String displayName, String role) {
+		this.displayName = safeText(displayName, "Người dùng");
+		this.role = safeText(role, "User");
 		setLayout(new BorderLayout());
 		setPreferredSize(new Dimension(220, 0));
 		setBackground(Color.WHITE);
@@ -30,9 +38,9 @@ public class SidebarPanel extends JPanel {
 		logo.setOpaque(true);
 		logo.setBackground(new Color(10, 102, 204));
 		logo.setForeground(Color.WHITE);
-		logo.setPreferredSize(new Dimension(44, 44));
+		logo.setPreferredSize(new Dimension(50, 50));
 		logo.setHorizontalAlignment(SwingConstants.CENTER);
-		Icon logoIcon = loadPngIcon("/icons/image.png", 43, 43);
+		Icon logoIcon = loadPngIcon("/icons/image.png", 49, 49);
 		if (logoIcon != null) {
 			logo.setIcon(logoIcon);
 		} else {
@@ -43,6 +51,7 @@ public class SidebarPanel extends JPanel {
 		nameBox.setOpaque(false);
 		JLabel name = new JLabel("TUYỂN SINH 247");
 		name.setFont(new Font("Segoe UI", Font.BOLD, 13));
+		name.setForeground(new Color(10, 102, 204));
 		JLabel sub = new JLabel("QUẢN TRỊ VIÊN");
 		sub.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 		sub.setForeground(new Color(110, 120, 140));
@@ -107,9 +116,9 @@ public class SidebarPanel extends JPanel {
 
 		JPanel userBox = new JPanel(new GridLayout(2, 1));
 		userBox.setOpaque(false);
-		JLabel userName = new JLabel("Lê Minh Anh");
+		JLabel userName = new JLabel(this.displayName);
 		userName.setFont(new Font("Segoe UI", Font.BOLD, 12));
-		JLabel roleLabel = new JLabel("Admin");
+		JLabel roleLabel = new JLabel(this.role);
 		roleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 		roleLabel.setForeground(new Color(120, 130, 150));
 		userBox.add(userName);
@@ -145,5 +154,12 @@ public class SidebarPanel extends JPanel {
 		} catch (Exception ex) {
 			return null;
 		}
+	}
+
+	private String safeText(String value, String fallback) {
+		if (value == null || value.isBlank()) {
+			return fallback;
+		}
+		return value.trim();
 	}
 }

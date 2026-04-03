@@ -1,6 +1,7 @@
 package org.AdmissionsSystem.gui.main;
 import javax.swing.*;
 import org.AdmissionsSystem.gui.common.Searchable;
+import org.AdmissionsSystem.gui.modules.Login.LoginFrame;
 import org.AdmissionsSystem.gui.modules.Dashboard.DashboardPanel;
 import org.AdmissionsSystem.gui.modules.QuanLiBangQuyDoi.BangQuyDoiPanel;
 import org.AdmissionsSystem.gui.modules.QuanLiDiem.DiemThiSinhPanel;
@@ -17,16 +18,22 @@ public class MainFrame extends JFrame {
 
     private CardLayout cardLayout = new CardLayout();
     private JPanel centerPanel = new JPanel(cardLayout);
+    private final LoginFrame loginFrame;
 
     public MainFrame() {
+        this(null, "Lê Minh Anh", "Admin");
+    }
+
+    public MainFrame(LoginFrame loginFrame, String displayName, String role) {
+        this.loginFrame = loginFrame;
         setTitle("Hệ thống quản lý tuyển sinh");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(1200, 800);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        SidebarPanel sidebar = new SidebarPanel();
-        final HeaderPanel header = new HeaderPanel();
+        SidebarPanel sidebar = new SidebarPanel(displayName, role);
+        final HeaderPanel header = new HeaderPanel(this::logoutToLogin);
 
         // create screens
         centerPanel.add(new DashboardPanel(), "dashboard");
@@ -111,14 +118,20 @@ public class MainFrame extends JFrame {
         }
     }
 
+    private void logoutToLogin() {
+        dispose();
+        if (loginFrame != null) {
+            loginFrame.showLoginScreen();
+        }
+    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             } catch (Exception ignored) {
             }
-            MainFrame f = new MainFrame();
-            f.setVisible(true);
+            new LoginFrame().setVisible(true);
         });
     }
 }

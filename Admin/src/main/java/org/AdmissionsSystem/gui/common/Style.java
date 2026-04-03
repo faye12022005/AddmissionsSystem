@@ -12,24 +12,24 @@ import java.awt.event.MouseEvent;
 public class Style {
     private static final String HOVER_STYLE_INSTALLED_KEY = "style.hover.installed";
 
-    public static final Color PRIMARY = new Color(10, 102, 204);
-    public static final Color ACCENT = new Color(0, 150, 136);
-    public static final Color PRIMARY_SOFT = new Color(224, 242, 255);
-    public static final Color BORDER_SOFT = new Color(220, 228, 238);
-    public static final Color FUNCTION_BG = new Color(30, 111, 214);
-    public static final Color FUNCTION_BORDER = new Color(24, 92, 176);
+    public static final Color PRIMARY = new Color(37, 99, 235);
+    public static final Color ACCENT = new Color(20, 184, 166);
+    public static final Color PRIMARY_SOFT = new Color(239, 246, 255);
+    public static final Color BORDER_SOFT = new Color(214, 223, 236);
+    public static final Color FUNCTION_BG = new Color(59, 130, 246);
+    public static final Color FUNCTION_BORDER = new Color(37, 99, 235);
     public static final Color BTN_ADD = new Color(22, 163, 74);
-    public static final Color BTN_UPDATE = new Color(37, 99, 235);
-    public static final Color BTN_DELETE = new Color(220, 38, 38);
+    public static final Color BTN_UPDATE = new Color(59, 130, 246);
+    public static final Color BTN_DELETE = new Color(239, 68, 68);
     public static final Color BTN_CLEAR = new Color(100, 116, 139);
-    public static final Color BTN_IMPORT = new Color(14, 116, 144);
-    public static final Color BTN_EXPORT = new Color(79, 70, 229);
+    public static final Color BTN_IMPORT = new Color(6, 182, 212);
+    public static final Color BTN_EXPORT = new Color(99, 102, 241);
     public static final Color BTN_FILTER_RESET = new Color(71, 85, 105);
-    public static final Color PAGINATION_TEXT = new Color(40, 76, 138);
-    public static final Color SIDEBAR_BG = new Color(18, 66, 135);
-    public static final Color SIDEBAR_LIGHT = new Color(250, 252, 254);
-    public static final Color SELECT_BG = new Color(232, 246, 255);
-    public static final Color SURFACE = new Color(250, 251, 253);
+    public static final Color PAGINATION_TEXT = new Color(51, 65, 85);
+    public static final Color SIDEBAR_BG = new Color(30, 64, 175);
+    public static final Color SIDEBAR_LIGHT = new Color(248, 250, 252);
+    public static final Color SELECT_BG = new Color(219, 234, 254);
+    public static final Color SURFACE = new Color(248, 250, 252);
     public static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 18);
     public static final Font PANEL_TITLE_FONT = new Font("Segoe UI", Font.BOLD, 16);
     public static final Font BUTTON_FONT = new Font("Arial Unicode MS", Font.PLAIN, 13);
@@ -37,13 +37,13 @@ public class Style {
 
     public static void styleButton(JButton b) {
         applyButtonBase(b);
-        b.setFont(BUTTON_FONT);
+        b.setFont(BUTTON_FONT.deriveFont(Font.BOLD));
         b.setBackground(PRIMARY);
         b.setForeground(Color.WHITE);
         b.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(darken(PRIMARY, 0.18f), 1, true),
-                BorderFactory.createEmptyBorder(6, 12, 6, 12)));
-        installHoverStyle(b, PRIMARY, darken(PRIMARY, 0.12f), Color.WHITE, Color.WHITE);
+            BorderFactory.createEmptyBorder(7, 14, 7, 14)));
+        installHoverStyle(b, PRIMARY, darken(PRIMARY, 0.08f), Color.WHITE, Color.WHITE);
     }
 
 
@@ -57,29 +57,29 @@ public class Style {
 
     public static void styleFunctionButton(JButton b, Color backgroundColor, Color textColor) {
         applyButtonBase(b);
-        b.setFont(BUTTON_FONT.deriveFont(12f));
+        b.setFont(BUTTON_FONT.deriveFont(Font.BOLD, 12f));
         b.setBackground(backgroundColor);
         b.setForeground(textColor);
         b.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(darken(backgroundColor, 0.18f), 1, true),
-                BorderFactory.createEmptyBorder(5, 10, 5, 10)));
+            BorderFactory.createEmptyBorder(6, 12, 6, 12)));
         b.setMargin(new Insets(0, 0, 0, 0));
         Dimension pref = b.getPreferredSize();
         b.setPreferredSize(new Dimension(pref.width + 2, 30));
-        installHoverStyle(b, backgroundColor, darken(backgroundColor, 0.12f), textColor, textColor);
+        installHoverStyle(b, backgroundColor, darken(backgroundColor, 0.08f), textColor, textColor);
     }
 
     public static void stylePaginationButton(JButton b) {
         applyButtonBase(b);
-        b.setFont(BUTTON_FONT.deriveFont(12f));
+        b.setFont(BUTTON_FONT.deriveFont(Font.BOLD, 12.5f));
         b.setBackground(Color.WHITE);
         b.setForeground(PAGINATION_TEXT);
         b.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(BORDER_SOFT, 1, true),
-                BorderFactory.createEmptyBorder(4, 9, 4, 9)));
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)));
         b.setMargin(new Insets(0, 0, 0, 0));
         Dimension pref = b.getPreferredSize();
-        b.setPreferredSize(new Dimension(Math.max(34, pref.width + 2), 30));
+        b.setPreferredSize(new Dimension(Math.max(30, pref.width + 3), 33));
         installHoverStyle(b, Color.WHITE, PRIMARY_SOFT, PAGINATION_TEXT, PRIMARY);
     }
 
