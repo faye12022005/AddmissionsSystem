@@ -37,9 +37,14 @@ public class DiemCongPanel extends JPanel {
             }
         };
 
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setOpaque(false);
+        contentPanel.add(createFormPanel(), BorderLayout.NORTH);
+
         CustomTable table = new CustomTable(model);
-        add(table, BorderLayout.CENTER);
-        add(createFormPanel(), BorderLayout.SOUTH);
+        contentPanel.add(table, BorderLayout.CENTER);
+
+        add(contentPanel, BorderLayout.CENTER);
     }
 
     private JPanel createActionPanel() {
