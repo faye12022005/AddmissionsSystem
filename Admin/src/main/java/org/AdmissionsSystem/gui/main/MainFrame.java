@@ -1,5 +1,9 @@
 package org.AdmissionsSystem.gui.main;
 import javax.swing.*;
+import javafx.embed.swing.JFXPanel;
+import javafx.application.Platform;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import org.AdmissionsSystem.gui.common.Searchable;
 import org.AdmissionsSystem.gui.modules.Login.LoginFrame;
 import org.AdmissionsSystem.gui.modules.Dashboard.DashboardPanel;
@@ -44,8 +48,24 @@ public class MainFrame extends JFrame {
         centerPanel.add(new NganhToHopPanel(), "nganh_tohop");
         centerPanel.add(new DiemThiSinhPanel(), "diem_thisinh");
         centerPanel.add(new DiemCongPanel(), "diem_cong");
-        centerPanel.add(new NguyenVongPanel(), "nguyenvong");
-        centerPanel.add(new BangQuyDoiPanel(), "bang_quydoi");
+        // embed JavaFX NguyenVong panel using JFXPanel
+        JFXPanel jfxNguyenVong = new JFXPanel();
+        centerPanel.add(jfxNguyenVong, "nguyenvong");
+        // embed JavaFX BangQuyDoi panel using JFXPanel
+        JFXPanel jfxBang = new JFXPanel();
+        centerPanel.add(jfxBang, "bang_quydoi");
+
+        // initialize JavaFX scene for the embedded panel
+        Platform.runLater(() -> {
+            Parent fxContent = NguyenVongPanel.createContent();
+            Scene fxScene = new Scene(fxContent);
+            jfxNguyenVong.setScene(fxScene);
+
+            // BangQuyDoi
+            Parent fxBang = BangQuyDoiPanel.createContent();
+            Scene fxSceneBang = new Scene(fxBang);
+            jfxBang.setScene(fxSceneBang);
+        });
 
         // right content area: shared header + center content
         JPanel contentPanel = new JPanel(new BorderLayout());
