@@ -44,10 +44,12 @@ public class MainFrame extends JFrame {
         centerPanel.add(new UsersPanel(), "users");
         centerPanel.add(new ThisinhPanel(), "thisinh");
         centerPanel.add(new NganhHocPanel(), "nganh");
-        centerPanel.add(new ToHopMonPanel(), "tohop");
         centerPanel.add(new NganhToHopPanel(), "nganh_tohop");
         centerPanel.add(new DiemThiSinhPanel(), "diem_thisinh");
         centerPanel.add(new DiemCongPanel(), "diem_cong");
+        // embed JavaFX ToHopMon panel using JFXPanel
+        JFXPanel jfxToHopMon = new JFXPanel();
+        centerPanel.add(jfxToHopMon, "tohop");
         // embed JavaFX NguyenVong panel using JFXPanel
         JFXPanel jfxNguyenVong = new JFXPanel();
         centerPanel.add(jfxNguyenVong, "nguyenvong");
@@ -57,6 +59,10 @@ public class MainFrame extends JFrame {
 
         // initialize JavaFX scene for the embedded panel
         Platform.runLater(() -> {
+            Parent fxToHop = ToHopMonPanel.createContent();
+            Scene fxSceneToHop = new Scene(fxToHop);
+            jfxToHopMon.setScene(fxSceneToHop);
+
             Parent fxContent = NguyenVongPanel.createContent();
             Scene fxScene = new Scene(fxContent);
             jfxNguyenVong.setScene(fxScene);
