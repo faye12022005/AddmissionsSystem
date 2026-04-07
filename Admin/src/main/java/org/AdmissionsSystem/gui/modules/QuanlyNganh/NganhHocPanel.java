@@ -1,10 +1,12 @@
 package org.AdmissionsSystem.gui.modules.QuanlyNganh;
+import org.AdmissionsSystem.controller.NganhHocController;
 import org.AdmissionsSystem.gui.common.Style;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocFormPanel;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocPaginationPanel;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocSearchPanel;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocTable;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.service.NganhHocCsvService;
+import org.AdmissionsSystem.models.XtNganh;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -30,8 +32,9 @@ public class NganhHocPanel extends JPanel {
             "SL xét tuyển", "SL DGNL", "SL VSAT", "SL THPT"
     };
 
-    private final List<Object[]> allRows = new ArrayList<>();
-    private List<Object[]> filteredRows = new ArrayList<>();
+    private List<XtNganh> filteredRows = new ArrayList<>();
+    private List<XtNganh> currentPageRows = new ArrayList<>();
+    private final NganhHocController nganhHocController = new NganhHocController();
 
     private final DefaultTableModel tableModel;
     private final NganhHocTable tableView;
@@ -75,7 +78,6 @@ public class NganhHocPanel extends JPanel {
         add(body, BorderLayout.CENTER);
 
         bindEvents();
-        seedData();
         applyFilter("");
     }
 
@@ -168,28 +170,19 @@ public class NganhHocPanel extends JPanel {
             return;
         }
         int row = tableView.getTable().getSelectedRow();
-        if (row < 0) {
+        if (row < 0 || row >= currentPageRows.size()) {
             return;
         }
 
-        Object[] selectedRow = new Object[COLS.length];
-        for (int i = 0; i < COLS.length; i++) {
-            selectedRow[i] = tableModel.getValueAt(row, i);
-        }
-
-        formPanel.setFormDataFromRow(selectedRow);
-        selectedMaNganh = formPanel.getMaNganh();
+        XtNganh selectedRow = currentPageRows.get(row);
+        formPanel.setFormData(selectedRow);
+        selectedMaNganh = selectedRow.getManganh();
     }
 
     private void onAdd() {
         try {
-            Object[] row = formPanel.collectFormData();
-            String ma = asText(row[0]);
-            if (findIndexByMa(ma) >= 0) {
-                JOptionPane.showMessageDialog(this, "Mã ngành đã tồn tại.");
-                return;
-            }
-            allRows.add(row);
+            XtNganh model = formPanel.collectFormData();
+            nganhHocController.add(model);
             applyFilter(searchPanel.getSearchText());
             clearForm();
         } catch (IllegalArgumentException ex) {
@@ -203,23 +196,9 @@ public class NganhHocPanel extends JPanel {
             return;
         }
         try {
-            Object[] row = formPanel.collectFormData();
-            String newMa = asText(row[0]);
-
-            int selectedIndex = findIndexByMa(selectedMaNganh);
-            if (selectedIndex < 0) {
-                JOptionPane.showMessageDialog(this, "Không tìm thấy bản ghi cần cập nhật.");
-                return;
-            }
-
-            int duplicateIndex = findIndexByMa(newMa);
-            if (duplicateIndex >= 0 && duplicateIndex != selectedIndex) {
-                JOptionPane.showMessageDialog(this, "Mã ngành mới đã tồn tại.");
-                return;
-            }
-
-            allRows.set(selectedIndex, row);
-            selectedMaNganh = newMa;
+            XtNganh model = formPanel.collectFormData();
+            nganhHocController.update(selectedMaNganh, model);
+            selectedMaNganh = model.getManganh();
             applyFilter(searchPanel.getSearchText());
         } catch (IllegalArgumentException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage());
@@ -231,44 +210,24 @@ public class NganhHocPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Chọn dòng cần xóa trước.");
             return;
         }
-        int index = findIndexByMa(selectedMaNganh);
-        if (index < 0) {
-            JOptionPane.showMessageDialog(this, "Không tìm thấy bản ghi cần xóa.");
-            return;
+        try {
+            nganhHocController.deleteByMaNganh(selectedMaNganh);
+            applyFilter(searchPanel.getSearchText());
+            clearForm();
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage());
         }
-        allRows.remove(index);
-        applyFilter(searchPanel.getSearchText());
-        clearForm();
-    }
-
-    private void seedData() {
-        allRows.clear();
-        allRows.add(new Object[]{"CNTT", "Công nghệ thông tin", "A00", 100, 20.0, 25.0, "N", "Y", "Y", "N", 1000, 200, 50, 750});
-        allRows.add(new Object[]{"KT", "Kinh tế", "C00", 80, 18.0, 22.0, "N", "N", "Y", "N", 800, 0, 0, 800});
-        allRows.add(new Object[]{"DTVT", "Điện tử viễn thông", "A01", 70, 19.0, 23.0, "N", "Y", "Y", "N", 650, 120, 30, 500});
-        allRows.add(new Object[]{"QTKD", "Quản trị kinh doanh", "D01", 120, 18.0, 24.0, "Y", "N", "Y", "Y", 1200, 0, 100, 1100});
-        allRows.add(new Object[]{"TCKT", "Tài chính kế toán", "A00", 95, 18.5, 23.5, "N", "Y", "Y", "N", 900, 140, 20, 740});
-        allRows.add(new Object[]{"SPTOAN", "Sư phạm Toán", "A00", 60, 19.0, 24.0, "Y", "N", "Y", "N", 420, 0, 0, 420});
-        allRows.add(new Object[]{"SPANH", "Sư phạm Anh", "D01", 55, 19.5, 24.8, "Y", "N", "Y", "Y", 410, 0, 80, 330});
     }
 
     private void applyFilter(String keyword) {
-        String q = keyword == null ? "" : keyword.trim().toLowerCase();
-        filteredRows = new ArrayList<>();
-        for (Object[] row : allRows) {
-            String ma = asText(row[0]).toLowerCase();
-            String ten = asText(row[1]).toLowerCase();
-            String toHop = asText(row[2]).toLowerCase();
-            if (q.isEmpty() || ma.contains(q) || ten.contains(q) || toHop.contains(q)) {
-                filteredRows.add(cloneRow(row));
-            }
-        }
+        filteredRows = nganhHocController.search(keyword);
         currentPage = 1;
         loadPage();
     }
 
     private void loadPage() {
         tableModel.setRowCount(0);
+        currentPageRows = new ArrayList<>();
         if (filteredRows.isEmpty()) {
             paginationPanel.setPageInfo(1, 1, 0);
             paginationPanel.setNavigationEnabled(false, false);
@@ -283,7 +242,9 @@ public class NganhHocPanel extends JPanel {
         int from = (currentPage - 1) * pageSize;
         int to = Math.min(from + pageSize, filteredRows.size());
         for (int i = from; i < to; i++) {
-            tableModel.addRow(filteredRows.get(i));
+            XtNganh model = filteredRows.get(i);
+            currentPageRows.add(model);
+            tableModel.addRow(nganhHocController.toRow(model));
         }
 
         paginationPanel.setPageInfo(currentPage, totalPages, filteredRows.size());
@@ -330,13 +291,7 @@ public class NganhHocPanel extends JPanel {
         }
 
         for (Object[] imported : importedRows) {
-            String ma = asText(imported[0]);
-            int index = findIndexByMa(ma);
-            if (index >= 0) {
-                allRows.set(index, imported);
-            } else {
-                allRows.add(imported);
-            }
+            nganhHocController.upsert(nganhHocController.fromRow(imported));
         }
 
         applyFilter(searchPanel.getSearchText());
@@ -344,7 +299,10 @@ public class NganhHocPanel extends JPanel {
     }
 
     private void onExportCsv() {
-        List<Object[]> source = filteredRows.isEmpty() ? allRows : filteredRows;
+        List<Object[]> source = new ArrayList<>();
+        for (XtNganh model : filteredRows) {
+            source.add(nganhHocController.toRow(model));
+        }
         if (source.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Không có dữ liệu để export.");
             return;
@@ -371,25 +329,6 @@ public class NganhHocPanel extends JPanel {
         }
 
         JOptionPane.showMessageDialog(this, "Export thành công " + source.size() + " dòng.");
-    }
-
-    private int findIndexByMa(String maNganh) {
-        for (int i = 0; i < allRows.size(); i++) {
-            if (asText(allRows.get(i)[0]).equalsIgnoreCase(maNganh)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private Object[] cloneRow(Object[] row) {
-        Object[] copy = new Object[row.length];
-        System.arraycopy(row, 0, copy, 0, row.length);
-        return copy;
-    }
-
-    private String asText(Object value) {
-        return value == null ? "" : value.toString();
     }
 }
 

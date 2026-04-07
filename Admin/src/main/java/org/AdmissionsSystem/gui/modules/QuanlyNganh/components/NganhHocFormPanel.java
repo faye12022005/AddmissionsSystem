@@ -1,5 +1,6 @@
 package org.AdmissionsSystem.gui.modules.QuanlyNganh.components;
 
+import java.math.BigDecimal;
 import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
@@ -9,6 +10,7 @@ import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import org.AdmissionsSystem.models.XtNganh;
 
 public class NganhHocFormPanel extends JPanel {
     private final JTextField txtMa = new JTextField(12);
@@ -66,7 +68,7 @@ public class NganhHocFormPanel extends JPanel {
         add(checkPanel, gbc);
     }
 
-    public Object[] collectFormData() {
+    public XtNganh collectFormData() {
         String ma = txtMa.getText().trim();
         String ten = txtTen.getText().trim();
         String toHop = txtToHopGoc.getText().trim();
@@ -76,36 +78,50 @@ public class NganhHocFormPanel extends JPanel {
         }
 
         int chiTieu = parseInt(txtChiTieu, "Chỉ tiêu");
-        double diemSan = parseDouble(txtDiemSan, "Điểm sàn");
-        double diemTrungTuyen = parseDouble(txtDiemTrungTuyen, "Điểm trúng tuyển");
+        BigDecimal diemSan = parseBigDecimal(txtDiemSan, "Điểm sàn");
+        BigDecimal diemTrungTuyen = parseBigDecimal(txtDiemTrungTuyen, "Điểm trúng tuyển");
         int slXetTuyen = parseInt(txtSlXetTuyen, "SL xét tuyển");
         int slDGNL = parseInt(txtSlDGNL, "SL DGNL");
         int slVSAT = parseInt(txtSlVSAT, "SL VSAT");
         int slTHPT = parseInt(txtSlTHPT, "SL THPT");
 
-        return new Object[]{
-                ma, ten, toHop, chiTieu, diemSan, diemTrungTuyen,
-                toYN(chkTuyenThang.isSelected()), toYN(chkDGNL.isSelected()),
-                toYN(chkTHPT.isSelected()), toYN(chkVSAT.isSelected()),
-                slXetTuyen, slDGNL, slVSAT, slTHPT
-        };
+        XtNganh model = new XtNganh();
+        model.setManganh(ma);
+        model.setTennganh(ten);
+        model.setNTohopgoc(toHop);
+        model.setNChitieu(chiTieu);
+        model.setNDiemsan(diemSan);
+        model.setNDiemtrungtuyen(diemTrungTuyen);
+        model.setNTuyenthang(toYN(chkTuyenThang.isSelected()));
+        model.setNDgnl(toYN(chkDGNL.isSelected()));
+        model.setNThpt(toYN(chkTHPT.isSelected()));
+        model.setNVsat(toYN(chkVSAT.isSelected()));
+        model.setSlXtt(slXetTuyen);
+        model.setSlDgnl(slDGNL);
+        model.setSlVsat(slVSAT);
+        model.setSlThpt(String.valueOf(slTHPT));
+        return model;
     }
 
-    public void setFormDataFromRow(Object[] row) {
-        txtMa.setText(asText(row[0]));
-        txtTen.setText(asText(row[1]));
-        txtToHopGoc.setText(asText(row[2]));
-        txtChiTieu.setText(asText(row[3]));
-        txtDiemSan.setText(asText(row[4]));
-        txtDiemTrungTuyen.setText(asText(row[5]));
-        chkTuyenThang.setSelected("Y".equals(asText(row[6])));
-        chkDGNL.setSelected("Y".equals(asText(row[7])));
-        chkTHPT.setSelected("Y".equals(asText(row[8])));
-        chkVSAT.setSelected("Y".equals(asText(row[9])));
-        txtSlXetTuyen.setText(asText(row[10]));
-        txtSlDGNL.setText(asText(row[11]));
-        txtSlVSAT.setText(asText(row[12]));
-        txtSlTHPT.setText(asText(row[13]));
+    public void setFormData(XtNganh model) {
+        if (model == null) {
+            clearForm();
+            return;
+        }
+        txtMa.setText(asText(model.getManganh()));
+        txtTen.setText(asText(model.getTennganh()));
+        txtToHopGoc.setText(asText(model.getNTohopgoc()));
+        txtChiTieu.setText(asText(model.getNChitieu()));
+        txtDiemSan.setText(asText(model.getNDiemsan()));
+        txtDiemTrungTuyen.setText(asText(model.getNDiemtrungtuyen()));
+        chkTuyenThang.setSelected("Y".equals(asText(model.getNTuyenthang())));
+        chkDGNL.setSelected("Y".equals(asText(model.getNDgnl())));
+        chkTHPT.setSelected("Y".equals(asText(model.getNThpt())));
+        chkVSAT.setSelected("Y".equals(asText(model.getNVsat())));
+        txtSlXetTuyen.setText(asText(model.getSlXtt()));
+        txtSlDGNL.setText(asText(model.getSlDgnl()));
+        txtSlVSAT.setText(asText(model.getSlVsat()));
+        txtSlTHPT.setText(asText(model.getSlThpt()));
     }
 
     public void clearForm() {
@@ -153,13 +169,13 @@ public class NganhHocFormPanel extends JPanel {
         }
     }
 
-    private double parseDouble(JTextField field, String fieldName) {
+    private BigDecimal parseBigDecimal(JTextField field, String fieldName) {
         String text = field.getText().trim();
         if (text.isEmpty()) {
             throw new IllegalArgumentException(fieldName + " không được để trống.");
         }
         try {
-            return Double.parseDouble(text);
+            return new BigDecimal(text);
         } catch (NumberFormatException ex) {
             throw new IllegalArgumentException(fieldName + " phải là số thực.");
         }
