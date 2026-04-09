@@ -55,7 +55,7 @@ public class NguyenVongPanel extends Application {
     // removed unused SIDEBAR_BG
     private static final String TEXT_DARK    = "#0f172a";
     private static final String TEXT_MUTED   = "#94a3b8";
-    private static final String BORDER_COLOR = "#e2e8f0";
+    private static final String BORDER_COLOR = "#cbd5e1";
 
     // ==================== MAIN ====================
     public static void main(String[] args) { 
@@ -196,10 +196,10 @@ public class NguyenVongPanel extends Application {
         grid.setVgap(16);
 
         String[][] stats = {
-            {"👥", "#eff6ff", "#3b82f6", "Tổng nguyện vọng", "12,450"},
-            {"⏳", "#fffbeb", "#f59e0b", "Đang chờ xử lý",   "8,120"},
-            {"✅", "#f0fdf4", "#22c55e", "Đã trúng tuyển",    "3,240"},
-            {"❌", "#fff1f2", "#ef4444", "Đã trượt",           "1,090"},
+            {"👥", "#bfdbfe", "#1e40af", "Tổng nguyện vọng", "12,450"},
+            {"⏳", "#ffedd5", "#b45309", "Đang chờ xử lý",   "8,120"},
+            {"✅", "#bbf7d0", "#15803d", "Đã trúng tuyển",    "3,240"},
+            {"❌", "#fecaca", "#dc2626", "Đã trượt",           "1,090"},
         };
 
         for (int i = 0; i < stats.length; i++) {
@@ -232,7 +232,12 @@ public class NguyenVongPanel extends Application {
             "-fx-background-radius: 8;"
         );
         Label iconLbl = new Label(icon);
-        iconLbl.setFont(Font.font(16));
+        iconLbl.setFont(Font.font(18));
+        iconBox.setStyle(
+            "-fx-background-color: " + bgColor + ";" +
+            "-fx-background-radius: 10;" +
+            "-fx-padding: 6;"
+        );
         iconBox.getChildren().add(iconLbl);
 
         HBox iconRow = new HBox();
@@ -520,6 +525,4 @@ public class NguyenVongPanel extends Application {
         }
         return btn;
     }
-
-    
 }

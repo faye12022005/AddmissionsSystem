@@ -33,24 +33,15 @@ public class ChiTietNguyenVong {
     // Open a modal window showing details for the given data
     public void show() {
         Stage stage = new Stage();
-
-        // ── Background mờ (giả lập danh sách phía sau) ───────
-        VBox background = buildBackground();
-        background.setEffect(new GaussianBlur(6));
-
-        // ── Overlay tối ───────────────────────────────────────
-        StackPane overlay = new StackPane();
-        overlay.setStyle("-fx-background-color: rgba(15,23,42,0.45);");
-
-        // ── Modal ─────────────────────────────────────────────
+        // Build only the main modal (remove blurred background/overlay)
         VBox modal = buildModal(stage);
         StackPane.setAlignment(modal, Pos.CENTER);
-        StackPane.setMargin(modal, new Insets(32));
 
-        overlay.getChildren().add(modal);
-
-        // ── Root ──────────────────────────────────────────────
-        StackPane root = new StackPane(background, overlay);
+        // Root contains only the modal frame. Bind modal size exactly to root
+        // so the modal matches the frame size (no margins).
+        StackPane root = new StackPane(modal);
+        modal.prefWidthProperty().bind(root.widthProperty());
+        modal.prefHeightProperty().bind(root.heightProperty());
 
         Scene scene = new Scene(root, 1200, 780);
         stage.setTitle("Chi tiết Nguyện vọng");
@@ -59,50 +50,12 @@ public class ChiTietNguyenVong {
     }
 
     // ══════════════════════════════════════════════════════════
-    //  BACKGROUND GIẢ LẬP
-    // ══════════════════════════════════════════════════════════
-    private VBox buildBackground() {
-        VBox bg = new VBox();
-        bg.setStyle("-fx-background-color: " + BG + ";");
-
-        // giả header
-        HBox header = new HBox(32);
-        header.setPrefHeight(56);
-        header.setPadding(new Insets(0, 32, 0, 32));
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-width: 0 0 1 0;");
-        Label logo = new Label("Azure Scholar");
-        logo.setFont(Font.font("System", FontWeight.BOLD, 18));
-        logo.setStyle("-fx-text-fill: " + PRIMARY + ";");
-        header.getChildren().add(logo);
-
-        // giả bảng
-        VBox tableArea = new VBox(16);
-        tableArea.setPadding(new Insets(32));
-        Label title = new Label("Aspiration Management");
-        title.setFont(Font.font("System", FontWeight.BOLD, 26));
-
-        VBox fakeTable = new VBox();
-        fakeTable.setStyle("-fx-background-color: white; -fx-background-radius: 10;");
-        for (int i = 0; i < 6; i++) {
-            HBox row = new HBox();
-            row.setPrefHeight(44);
-            row.setStyle(i % 2 == 0 ? "-fx-background-color: white;" : "-fx-background-color: #f8fafc;");
-            tableArea.getChildren().add(row);
-        }
-        tableArea.getChildren().addAll(0, java.util.List.of(title, fakeTable));
-
-        bg.getChildren().addAll(header, tableArea);
-        VBox.setVgrow(tableArea, Priority.ALWAYS);
-        return bg;
-    }
-
-    // ══════════════════════════════════════════════════════════
     //  MODAL CHÍNH
     // ══════════════════════════════════════════════════════════
     private VBox buildModal(Stage stage) {
         VBox modal = new VBox();
-        modal.setMaxWidth(980);
+        modal.setMaxWidth(Double.MAX_VALUE);
+        modal.setMaxHeight(Double.MAX_VALUE);
         modal.setStyle(
             "-fx-background-color: white;" +
             "-fx-background-radius: 14;" +
