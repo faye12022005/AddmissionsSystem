@@ -1,31 +1,25 @@
 package org.AdmissionsSystem.gui.modules.QuanLiBangQuyDoi;
 
-import javafx.application.Application;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.geometry.*;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.*;
-import javafx.stage.Stage;
+import javax.swing.*;
+import javax.swing.border.*;
+import javax.swing.table.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.geom.RoundRectangle2D;
 
-public class BangQuyDoiPanel extends Application {
+public class BangQuyDoiPanel extends JPanel {
 
     // ── Màu sắc ──────────────────────────────────────────────
-    private static final String PRIMARY      = "#137fec";
-    private static final String WHITE        = "#ffffff";
-    private static final String BG           = "#f6f7f8";
-    private static final String BORDER       = "#e2e8f0";
-    private static final String TEXT_DARK    = "#0f172a";
-    private static final String TEXT_MUTED   = "#64748b";
-    private static final String TEXT_LIGHT   = "#94a3b8";
-    private static final String SURFACE      = "#f1f5f9";
-    private static final String ERROR        = "#ef4444";
-    private static final String SUCCESS      = "#10b981";
+    private static final Color PRIMARY      = new Color(0x13, 0x7f, 0xec);
+    private static final Color WHITE        = new Color(0xff, 0xff, 0xff);
+    private static final Color BG           = new Color(0xf6, 0xf7, 0xf8);
+    private static final Color BORDER       = new Color(0xe2, 0xe8, 0xf0);
+    private static final Color TEXT_DARK    = new Color(0x0f, 0x17, 0x2a);
+    private static final Color TEXT_MUTED   = new Color(0x64, 0x74, 0x8b);
+    private static final Color TEXT_LIGHT   = new Color(0x94, 0xa3, 0xb8);
+    private static final Color SURFACE      = new Color(0xf1, 0xf5, 0xf9);
+    private static final Color ERROR        = new Color(0xef, 0x44, 0x44);
+    private static final Color SUCCESS      = new Color(0x10, 0xb9, 0x81);
 
     // ── Data Model ───────────────────────────────────────────
     public static class QuyTac {
@@ -45,469 +39,484 @@ public class BangQuyDoiPanel extends Application {
         public String getQuyDoi()     { return quyDoi; }
     }
 
-    public static void main(String[] args) { launch(args); }
+    private static final String[] COLS = {
+        "ID", "LOẠI", "PHƯƠNG THỨC", "TỔ HỢP", "MÔN", "KHOẢNG ĐIỂM", "QUY ĐỔI", "HÀNH ĐỘNG"
+    };
 
-    @Override
-    public void start(Stage stage) {
-        ScrollPane scroll = new ScrollPane(buildMainPanel());
-        scroll.setFitToWidth(true);
-        scroll.setStyle("-fx-background: " + BG + "; -fx-background-color: " + BG + "; -fx-border-color: transparent;");
+    private static final QuyTac[] DATA = new QuyTac[] {
+        new QuyTac("QD-001", "Chứng chỉ",    "IELTS",      "-", "Tiếng Anh", "8.0 - 9.0",  "10.0"),
+        new QuyTac("QD-002", "Chứng chỉ",    "TOEFL iBT",  "-", "Tiếng Anh", "95 - 120",   "10.0"),
+        new QuyTac("QD-003", "Điểm ưu tiên", "Đối tượng",  "-", "-",         "Nhóm 1",     "+2.0"),
+        new QuyTac("QD-004", "Chứng chỉ",    "VSTEP",      "-", "Tiếng Anh", "8.5 - 10.0", "9.0")
+    };
 
-        Scene scene = new Scene(scroll, 1000, 780);
-        stage.setTitle("Quản lý Bảng quy đổi");
-        stage.setScene(scene);
-        stage.show();
+    public BangQuyDoiPanel() {
+        setLayout(new BorderLayout());
+        setBackground(BG);
+
+        JPanel content = buildMainPanel();
+        JScrollPane scroll = new JScrollPane(content);
+        scroll.setBorder(null);
+        scroll.getViewport().setBackground(BG);
+        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        add(scroll, BorderLayout.CENTER);
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("Quản lý Bảng quy đổi");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(1000, 780);
+            frame.setLocationRelativeTo(null);
+            frame.setContentPane(new BangQuyDoiPanel());
+            frame.setVisible(true);
+        });
     }
 
     // ══════════════════════════════════════════════════════════
     //  MAIN PANEL
     // ══════════════════════════════════════════════════════════
-    private VBox buildMainPanel() {
-        VBox panel = new VBox(28);
-        panel.setPadding(new Insets(32));
-        panel.setStyle("-fx-background-color: " + BG + ";");
+    private JPanel buildMainPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(BG);
+        panel.setBorder(new EmptyBorder(32, 32, 32, 32));
 
-        panel.getChildren().addAll(
-            buildPageHeader(),
-            buildFilterBar(),
-            buildTable(),
-            buildStatsRow()
-        );
+        panel.add(buildPageHeader());
+        panel.add(Box.createVerticalStrut(24));
+        panel.add(buildFilterBar());
+        panel.add(Box.createVerticalStrut(24));
+        panel.add(buildTable());
+        panel.add(Box.createVerticalStrut(24));
+        panel.add(buildStatsRow());
         return panel;
-    }
-
-    // Public factory to allow embedding this panel inside a JFXPanel
-    public static javafx.scene.layout.Region createContent() {
-        return new BangQuyDoiPanel().buildMainPanel();
     }
 
     // ══════════════════════════════════════════════════════════
     //  1. PAGE HEADER
     // ══════════════════════════════════════════════════════════
-    private HBox buildPageHeader() {
-        HBox row = new HBox();
-        row.setAlignment(Pos.CENTER_LEFT);
+    private JPanel buildPageHeader() {
+        JPanel row = new JPanel(new BorderLayout(12, 0));
+        row.setOpaque(false);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
 
-        VBox titleBlock = new VBox(5);
-        HBox.setHgrow(titleBlock, Priority.ALWAYS);
+        JPanel titleBlock = new JPanel();
+        titleBlock.setLayout(new BoxLayout(titleBlock, BoxLayout.Y_AXIS));
+        titleBlock.setOpaque(false);
 
-        Label title = new Label("Quản lý Bảng quy đổi");
-        title.setFont(Font.font("System", FontWeight.BOLD, 28));
-        title.setStyle("-fx-text-fill: " + TEXT_DARK + ";");
+        JLabel title = new JLabel("Quản lý Bảng quy đổi");
+        title.setFont(new Font("SansSerif", Font.BOLD, 28));
+        title.setForeground(TEXT_DARK);
 
-        Label subtitle = new Label("Cấu hình quy tắc đổi điểm chứng chỉ và điểm ưu tiên cho kỳ tuyển sinh 2024");
-        subtitle.setFont(Font.font(13));
-        subtitle.setStyle("-fx-text-fill: " + TEXT_MUTED + ";");
+        JLabel subtitle = new JLabel("Cấu hình quy tắc đổi điểm chứng chỉ và điểm ưu tiên cho kỳ tuyển sinh 2024");
+        subtitle.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        subtitle.setForeground(TEXT_MUTED);
 
-        titleBlock.getChildren().addAll(title, subtitle);
+        titleBlock.add(title);
+        titleBlock.add(Box.createVerticalStrut(4));
+        titleBlock.add(subtitle);
 
-        Button importBtn = new Button("📄  Import Excel");
-        importBtn.setFont(Font.font("System", FontWeight.SEMI_BOLD, 13));
-        importBtn.setPadding(new Insets(10, 20, 10, 20));
-        importBtn.setStyle(
-            "-fx-background-color: " + WHITE + ";" +
-            "-fx-text-fill: " + TEXT_DARK + ";" +
-            "-fx-background-radius: 10;" +
-            "-fx-border-color: " + BORDER + ";" +
-            "-fx-border-radius: 10;" +
-            "-fx-cursor: hand;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 6, 0, 0, 2);"
-        );
-        styleHover(importBtn,
-            "-fx-background-color: #f8fafc; -fx-text-fill: " + TEXT_DARK + "; -fx-background-radius: 10; -fx-border-color: " + BORDER + "; -fx-border-radius: 10; -fx-cursor: hand;",
-            "-fx-background-color: " + WHITE + "; -fx-text-fill: " + TEXT_DARK + "; -fx-background-radius: 10; -fx-border-color: " + BORDER + "; -fx-border-radius: 10; -fx-cursor: hand;"
-        );
+        JButton importBtn = makeOutlineButton("📄  Import Excel");
 
-        row.getChildren().addAll(titleBlock, importBtn);
+        row.add(titleBlock, BorderLayout.CENTER);
+        row.add(importBtn, BorderLayout.EAST);
         return row;
     }
 
     // ══════════════════════════════════════════════════════════
     //  2. FILTER BAR
     // ══════════════════════════════════════════════════════════
-    private VBox buildFilterBar() {
-        VBox card = new VBox();
-        card.setPadding(new Insets(18, 20, 18, 20));
-        card.setStyle(cardStyle());
+    private JPanel buildFilterBar() {
+        JPanel card = makeCard();
+        card.setLayout(new BorderLayout());
+        card.setBorder(new CompoundBorder(card.getBorder(), new EmptyBorder(18, 20, 18, 20)));
 
-        HBox row = new HBox(14);
-        row.setAlignment(Pos.BOTTOM_CENTER);
+        JPanel row = new JPanel(new GridBagLayout());
+        row.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, 0, 12);
+        gbc.weighty = 1;
 
-        VBox f1 = buildFilterGroup("LOẠI QUY ĐỔI",  new String[]{"Tất cả loại", "Chứng chỉ", "Điểm ưu tiên"});
-        VBox f2 = buildFilterGroup("PHƯƠNG THỨC",    new String[]{"Chọn phương thức", "IELTS", "TOEFL iBT", "VSTEP"});
-        VBox f3 = buildFilterGroup("TỔ HỢP",         new String[]{"Tất cả tổ hợp", "A00", "D01"});
-        VBox f4 = buildFilterGroup("MÔN",            new String[]{"Tất cả môn", "Toán", "Tiếng Anh"});
+        JPanel f1 = buildFilterGroup("LOẠI QUY ĐỔI",  new String[]{"Tất cả loại", "Chứng chỉ", "Điểm ưu tiên"});
+        JPanel f2 = buildFilterGroup("PHƯƠNG THỨC",    new String[]{"Chọn phương thức", "IELTS", "TOEFL iBT", "VSTEP"});
+        JPanel f3 = buildFilterGroup("TỔ HỢP",         new String[]{"Tất cả tổ hợp", "A00", "D01"});
+        JPanel f4 = buildFilterGroup("MÔN",            new String[]{"Tất cả môn", "Toán", "Tiếng Anh"});
 
-        HBox.setHgrow(f1, Priority.ALWAYS);
-        HBox.setHgrow(f2, Priority.ALWAYS);
-        HBox.setHgrow(f3, Priority.ALWAYS);
-        HBox.setHgrow(f4, Priority.ALWAYS);
+        gbc.weightx = 1; gbc.gridx = 0; row.add(f1, gbc);
+        gbc.gridx = 1; row.add(f2, gbc);
+        gbc.gridx = 2; row.add(f3, gbc);
+        gbc.gridx = 3; row.add(f4, gbc);
 
-        Button addBtn = new Button("＋  Thêm mới");
-        addBtn.setFont(Font.font("System", FontWeight.BOLD, 13));
-        addBtn.setPadding(new Insets(10, 22, 10, 22));
-        addBtn.setStyle(
-            "-fx-background-color: " + PRIMARY + ";" +
-            "-fx-text-fill: white;" +
-            "-fx-background-radius: 10;" +
-            "-fx-border-color: transparent;" +
-            "-fx-cursor: hand;" +
-            "-fx-effect: dropshadow(gaussian, rgba(19,127,236,0.3), 10, 0, 0, 3);"
-        );
-        styleHover(addBtn,
-            "-fx-background-color: #0f6fd4; -fx-text-fill: white; -fx-background-radius: 10; -fx-border-color: transparent; -fx-cursor: hand;",
-            "-fx-background-color: " + PRIMARY + "; -fx-text-fill: white; -fx-background-radius: 10; -fx-border-color: transparent; -fx-cursor: hand;"
-        );
+        JButton addBtn = makePrimaryButton("＋  Thêm mới");
+        gbc.weightx = 0; gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.gridx = 4; row.add(addBtn, gbc);
 
-        row.getChildren().addAll(f1, f2, f3, f4, addBtn);
-        card.getChildren().add(row);
+        card.add(row, BorderLayout.CENTER);
         return card;
     }
 
-    private VBox buildFilterGroup(String label, String[] options) {
-        VBox group = new VBox(6);
+    private JPanel buildFilterGroup(String label, String[] options) {
+        JPanel group = new JPanel();
+        group.setLayout(new BoxLayout(group, BoxLayout.Y_AXIS));
+        group.setOpaque(false);
 
-        Label lbl = new Label(label);
-        lbl.setFont(Font.font("System", FontWeight.BOLD, 9.5));
-        lbl.setStyle("-fx-text-fill: " + TEXT_LIGHT + "; -fx-letter-spacing: 0.08em;");
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 10));
+        lbl.setForeground(TEXT_LIGHT);
 
-        ComboBox<String> cb = new ComboBox<>(FXCollections.observableArrayList(options));
-        cb.getSelectionModel().selectFirst();
-        cb.setMaxWidth(Double.MAX_VALUE);
-        cb.setPrefHeight(36);
-        cb.setStyle(
-            "-fx-background-color: " + SURFACE + ";" +
-            "-fx-background-radius: 8;" +
-            "-fx-border-color: transparent;" +
-            "-fx-font-size: 12;" +
-            "-fx-font-weight: 500;"
-        );
+        JComboBox<String> cb = new JComboBox<>(options);
+        cb.setSelectedIndex(0);
+        cb.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        cb.setPreferredSize(new Dimension(180, 36));
+        cb.setBackground(SURFACE);
+        cb.setBorder(new EmptyBorder(4, 8, 4, 8));
 
-        group.getChildren().addAll(lbl, cb);
+        group.add(lbl);
+        group.add(Box.createVerticalStrut(6));
+        group.add(cb);
         return group;
     }
 
     // ══════════════════════════════════════════════════════════
     //  3. TABLE
     // ══════════════════════════════════════════════════════════
-    private VBox buildTable() {
-        VBox card = new VBox();
-        card.setStyle(cardStyle());
+    private JPanel buildTable() {
+        JPanel card = makeCard();
+        card.setLayout(new BorderLayout());
 
-        TableView<QuyTac> table = new TableView<>();
-        table.setStyle(
-            "-fx-background-color: transparent;" +
-            "-fx-border-color: transparent;" +
-            "-fx-table-cell-border-color: #f1f5f9;" +
-            "-fx-font-size: 13;"
-        );
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.setPrefHeight(260);
+        JTable table = new JTable(new AbstractTableModel() {
+            @Override public int getRowCount() { return DATA.length; }
+            @Override public int getColumnCount() { return COLS.length; }
+            @Override public String getColumnName(int c) { return COLS[c]; }
+            @Override public Object getValueAt(int r, int c) {
+                QuyTac q = DATA[r];
+                return switch (c) {
+                    case 0 -> q.getId();
+                    case 1 -> q.getLoai();
+                    case 2 -> q.getPhuongThuc();
+                    case 3 -> q.getToHop();
+                    case 4 -> q.getMon();
+                    case 5 -> q.getKhoangDiem();
+                    case 6 -> q.getQuyDoi();
+                    default -> "";
+                };
+            }
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        });
 
-        // ── Columns ──
-        // ID
-        TableColumn<QuyTac, String> colId = new TableColumn<>("ID");
-        colId.setCellValueFactory(new PropertyValueFactory<>("id"));
-        colId.setMinWidth(80);
-        colId.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(String v, boolean empty) {
-                super.updateItem(v, empty);
-                if (empty || v == null) { setText(null); return; }
-                setText(v);
-                setFont(Font.font("System", FontWeight.BOLD, 12));
-                setStyle("-fx-text-fill: " + PRIMARY + ";");
+        table.setRowHeight(42);
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(false);
+        table.setGridColor(SURFACE);
+        table.setBackground(WHITE);
+        table.setSelectionBackground(new Color(0xef, 0xf6, 0xff));
+        table.setSelectionForeground(TEXT_DARK);
+        table.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        table.setFocusable(false);
+
+        JTableHeader header = table.getTableHeader();
+        header.setBackground(new Color(0xf8, 0xfa, 0xfc));
+        header.setForeground(TEXT_MUTED);
+        header.setFont(new Font("SansSerif", Font.BOLD, 10));
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER));
+        header.setReorderingAllowed(false);
+        header.setPreferredSize(new Dimension(0, 36));
+
+        int[] widths = {80, 110, 140, 80, 110, 140, 90, 120};
+        for (int i = 0; i < widths.length; i++) {
+            table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+        }
+
+        // Col ID
+        table.getColumnModel().getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
+                JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, v, s, f, r, c);
+                lbl.setFont(new Font("SansSerif", Font.BOLD, 12));
+                lbl.setForeground(PRIMARY);
+                return lbl;
             }
         });
 
-        // Loại
-        TableColumn<QuyTac, String> colLoai = new TableColumn<>("LOẠI");
-        colLoai.setCellValueFactory(new PropertyValueFactory<>("loai"));
-        colLoai.setMinWidth(110);
-        colLoai.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(String v, boolean empty) {
-                super.updateItem(v, empty);
-                if (empty || v == null) { setGraphic(null); setText(null); return; }
-                boolean isCC = v.equals("Chứng chỉ");
-                Label badge = new Label(v);
-                badge.setFont(Font.font("System", FontWeight.BOLD, 10));
-                badge.setPadding(new Insets(3, 9, 3, 9));
-                badge.setStyle(
-                    "-fx-background-radius: 6;" +
-                    (isCC
-                        ? "-fx-background-color: #eff6ff; -fx-text-fill: #2563eb;"
-                        : "-fx-background-color: #fffbeb; -fx-text-fill: #d97706;")
-                );
-                setGraphic(badge);
-                setText(null);
+        // Col Loại (badge)
+        table.getColumnModel().getColumn(1).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
+                JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 6));
+                p.setOpaque(true);
+                p.setBackground(s ? t.getSelectionBackground() : WHITE);
+                if (v == null) return p;
+                boolean isCC = "Chứng chỉ".equals(v.toString());
+                JLabel badge = new JLabel(v.toString());
+                badge.setFont(new Font("SansSerif", Font.BOLD, 10));
+                badge.setBorder(new EmptyBorder(2, 8, 2, 8));
+                badge.setOpaque(true);
+                badge.setBackground(isCC ? new Color(0xef, 0xf6, 0xff) : new Color(0xff, 0xfb, 0xeb));
+                badge.setForeground(isCC ? new Color(0x25, 0x63, 0xeb) : new Color(0xd9, 0x77, 0x06));
+                p.add(badge);
+                return p;
             }
         });
 
-        // Phương thức
-        TableColumn<QuyTac, String> colPT = makeTextCol("PHƯƠNG THỨC", "phuongThuc", 120, FontWeight.SEMI_BOLD, TEXT_DARK);
-        // Tổ hợp
-        TableColumn<QuyTac, String> colTH = makeTextCol("TỔ HỢP", "toHop", 80, FontWeight.NORMAL, TEXT_LIGHT);
-        // Môn
-        TableColumn<QuyTac, String> colMon = makeTextCol("MÔN", "mon", 100, FontWeight.NORMAL, TEXT_DARK);
-        // Khoảng điểm
-        TableColumn<QuyTac, String> colKD = makeTextCol("KHOẢNG ĐIỂM", "khoangDiem", 120, FontWeight.BOLD, TEXT_DARK);
+        // Default renderers for other cols
+        DefaultTableCellRenderer textCol = new DefaultTableCellRenderer();
+        textCol.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        textCol.setForeground(TEXT_DARK);
+        table.getColumnModel().getColumn(2).setCellRenderer(textCol);
 
-        // Quy đổi
-        TableColumn<QuyTac, String> colQD = new TableColumn<>("QUY ĐỔI");
-        colQD.setCellValueFactory(new PropertyValueFactory<>("quyDoi"));
-        colQD.setMinWidth(90);
-        colQD.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(String v, boolean empty) {
-                super.updateItem(v, empty);
-                if (empty || v == null) { setText(null); return; }
-                setText(v);
-                setFont(Font.font("System", FontWeight.BOLD, 13));
-                boolean isPlus = v.startsWith("+");
-                setStyle("-fx-text-fill: " + (isPlus ? SUCCESS : PRIMARY) + "; -fx-alignment: CENTER-RIGHT;");
+        DefaultTableCellRenderer lightCol = new DefaultTableCellRenderer();
+        lightCol.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        lightCol.setForeground(TEXT_LIGHT);
+        table.getColumnModel().getColumn(3).setCellRenderer(lightCol);
+
+        table.getColumnModel().getColumn(4).setCellRenderer(textCol);
+
+        DefaultTableCellRenderer boldCol = new DefaultTableCellRenderer();
+        boldCol.setFont(new Font("SansSerif", Font.BOLD, 13));
+        boldCol.setForeground(TEXT_DARK);
+        table.getColumnModel().getColumn(5).setCellRenderer(boldCol);
+
+        // Col Quy đổi
+        table.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
+                JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, v, s, f, r, c);
+                lbl.setFont(new Font("SansSerif", Font.BOLD, 13));
+                String val = v == null ? "" : v.toString();
+                lbl.setHorizontalAlignment(SwingConstants.RIGHT);
+                lbl.setForeground(val.startsWith("+") ? SUCCESS : PRIMARY);
+                return lbl;
             }
         });
 
-        // Hành động
-        TableColumn<QuyTac, String> colAction = new TableColumn<>("HÀNH ĐỘNG");
-        colAction.setMinWidth(100);
-        colAction.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(String v, boolean empty) {
-                super.updateItem(v, empty);
-                if (empty) { setGraphic(null); return; }
-
-                Button editBtn = buildActionBtn("✏", PRIMARY, "#eff6ff");
-                Button delBtn  = buildActionBtn("🗑", ERROR, "#fff1f2");
-
-                HBox btns = new HBox(6, editBtn, delBtn);
-                btns.setAlignment(Pos.CENTER);
-                setGraphic(btns);
-                setText(null);
+        // Col Hành động
+        table.getColumnModel().getColumn(7).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
+                JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 6));
+                p.setOpaque(true);
+                p.setBackground(s ? t.getSelectionBackground() : WHITE);
+                p.add(makeActionButton("✏", new Color(0xef, 0xf6, 0xff)));
+                p.add(makeActionButton("🗑", new Color(0xff, 0xf1, 0xf2)));
+                return p;
             }
         });
 
-        table.getColumns().addAll(colId, colLoai, colPT, colTH, colMon, colKD, colQD, colAction);
+        JScrollPane tableScroll = new JScrollPane(table);
+        tableScroll.setBorder(null);
+        tableScroll.getViewport().setBackground(WHITE);
 
-        // ── Data ──
-        ObservableList<QuyTac> data = FXCollections.observableArrayList(
-            new QuyTac("QD-001", "Chứng chỉ",    "IELTS",      "-", "Tiếng Anh", "8.0 - 9.0",  "10.0"),
-            new QuyTac("QD-002", "Chứng chỉ",    "TOEFL iBT",  "-", "Tiếng Anh", "95 - 120",   "10.0"),
-            new QuyTac("QD-003", "Điểm ưu tiên", "Đối tượng",  "-", "-",         "Nhóm 1",     "+2.0"),
-            new QuyTac("QD-004", "Chứng chỉ",    "VSTEP",      "-", "Tiếng Anh", "8.5 - 10.0", "9.0")
-        );
-        table.setItems(data);
-
-        // Pagination
-        HBox pagination = buildPagination();
-
-        card.getChildren().addAll(table, new Separator(), pagination);
+        card.add(tableScroll, BorderLayout.CENTER);
+        card.add(new JSeparator(), BorderLayout.SOUTH);
+        
+        JPanel pagination = buildPagination();
+        card.add(pagination, BorderLayout.SOUTH);
         return card;
     }
 
-    private TableColumn<QuyTac, String> makeTextCol(String title, String field, double minW,
-                                                     FontWeight fw, String color) {
-        TableColumn<QuyTac, String> col = new TableColumn<>(title);
-        col.setCellValueFactory(new PropertyValueFactory<>(field));
-        col.setMinWidth(minW);
-        col.setCellFactory(c -> new TableCell<>() {
-            @Override protected void updateItem(String v, boolean empty) {
-                super.updateItem(v, empty);
-                if (empty || v == null) { setText(null); return; }
-                setText(v);
-                setFont(Font.font("System", fw, 13));
-                setStyle("-fx-text-fill: " + color + ";");
-            }
-        });
-        return col;
-    }
+    private JPanel buildPagination() {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setOpaque(false);
+        row.setBorder(new EmptyBorder(10, 16, 10, 16));
 
-    private Button buildActionBtn(String icon, String hoverColor, String hoverBg) {
-        Button btn = new Button(icon);
-        btn.setPrefSize(30, 30);
-        btn.setFont(Font.font(13));
-        btn.setStyle(
-            "-fx-background-color: transparent;" +
-            "-fx-background-radius: 7;" +
-            "-fx-border-color: transparent;" +
-            "-fx-cursor: hand;"
-        );
-        btn.setOnMouseEntered(e -> btn.setStyle(
-            "-fx-background-color: " + hoverBg + ";" +
-            "-fx-background-radius: 7; -fx-border-color: transparent; -fx-cursor: hand;"
-        ));
-        btn.setOnMouseExited(e -> btn.setStyle(
-            "-fx-background-color: transparent; -fx-background-radius: 7; -fx-border-color: transparent; -fx-cursor: hand;"
-        ));
-        return btn;
-    }
+        JLabel info = new JLabel("Hiển thị 1 - 4 trong tổng số 42 quy tắc");
+        info.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        info.setForeground(TEXT_MUTED);
 
-    private HBox buildPagination() {
-        HBox box = new HBox(6);
-        box.setPadding(new Insets(12, 20, 12, 20));
-        box.setAlignment(Pos.CENTER_RIGHT);
-
-        Label info = new Label("Hiển thị 1 - 4 trong tổng số 42 quy tắc");
-        info.setFont(Font.font(11));
-        info.setStyle("-fx-text-fill: " + TEXT_MUTED + ";");
-        HBox.setHgrow(info, Priority.ALWAYS);
-
-        String[] pages = {"‹", "1", "2", "3", "...", "12", "›"};
-        for (String p : pages) {
-            if (p.equals("...")) {
-                Label dots = new Label("...");
-                dots.setPadding(new Insets(0, 4, 0, 4));
-                dots.setStyle("-fx-text-fill: " + TEXT_LIGHT + ";");
-                box.getChildren().add(dots);
+        JPanel pages = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        pages.setOpaque(false);
+        String[] items = {"‹", "1", "2", "3", "...", "12", "›"};
+        for (String p : items) {
+            if ("...".equals(p)) {
+                JLabel dots = new JLabel("...");
+                dots.setForeground(TEXT_LIGHT);
+                pages.add(dots);
             } else {
-                boolean active = p.equals("1");
-                Button btn = new Button(p);
-                btn.setPrefSize(32, 32);
-                btn.setFont(Font.font("System", active ? FontWeight.BOLD : FontWeight.NORMAL, 12));
-                btn.setStyle(
-                    "-fx-background-color: " + (active ? PRIMARY : "transparent") + ";" +
-                    "-fx-text-fill: " + (active ? "white" : TEXT_MUTED) + ";" +
-                    "-fx-background-radius: 8; -fx-border-color: transparent; -fx-cursor: hand;"
-                );
+                JButton btn = new JButton(p);
+                btn.setPreferredSize(new Dimension(32, 32));
+                btn.setFocusPainted(false);
+                btn.setBorderPainted(false);
+                btn.setContentAreaFilled(true);
+                boolean active = "1".equals(p);
+                btn.setBackground(active ? PRIMARY : WHITE);
+                btn.setForeground(active ? WHITE : TEXT_MUTED);
+                btn.setFont(new Font("SansSerif", active ? Font.BOLD : Font.PLAIN, 12));
                 if (!active) {
-                    styleHover(btn,
-                        "-fx-background-color: " + SURFACE + "; -fx-text-fill: " + TEXT_DARK + "; -fx-background-radius: 8; -fx-border-color: transparent; -fx-cursor: hand;",
-                        "-fx-background-color: transparent; -fx-text-fill: " + TEXT_MUTED + "; -fx-background-radius: 8; -fx-border-color: transparent; -fx-cursor: hand;"
-                    );
+                    btn.addMouseListener(new HoverAdapter(btn, WHITE, SURFACE));
                 }
-                box.getChildren().add(btn);
+                pages.add(btn);
             }
         }
 
-        HBox result = new HBox();
-        result.setAlignment(Pos.CENTER_LEFT);
-        result.getChildren().addAll(info);
-
-        HBox full = new HBox();
-        full.setPadding(new Insets(12, 20, 12, 20));
-        full.setAlignment(Pos.CENTER);
-        HBox.setHgrow(info, Priority.ALWAYS);
-        full.getChildren().addAll(info);
-        full.getChildren().addAll(box.getChildren());
-        return full;
-    }
-
-    // ══════════════════════════════════════════════════════════
-    //  4. STATS ROW (3 thẻ)
-    // ══════════════════════════════════════════════════════════
-    private HBox buildStatsRow() {
-        HBox row = new HBox(16);
-
-        // Thẻ 1: Tổng quy tắc
-        HBox card1 = buildInfoCard(
-            "📋", "#eff6ff", "#2563eb",
-            "TỔNG QUY TẮC", "42", "+3 từ tuần trước", SUCCESS
-        );
-
-        // Thẻ 2: Cập nhật cuối
-        HBox card2 = buildInfoCard(
-            "🔄", "#fffbeb", "#d97706",
-            "CẬP NHẬT CUỐI", "15:30, 20/10/2023", "bởi Admin: Nguyen Minh", TEXT_MUTED
-        );
-
-        HBox.setHgrow(card1, Priority.ALWAYS);
-        HBox.setHgrow(card2, Priority.ALWAYS);
-
-        // Thẻ 3: Kiểm tra Logic (xanh)
-        VBox card3 = buildLogicCard();
-        HBox.setHgrow(card3, Priority.ALWAYS);
-
-        row.getChildren().addAll(card1, card2, card3);
+        row.add(info, BorderLayout.WEST);
+        row.add(pages, BorderLayout.EAST);
         return row;
     }
 
-    private HBox buildInfoCard(String icon, String iconBg, String iconColor,
-                                String label, String value, String sub, String subColor) {
-        HBox card = new HBox(16);
-        card.setPadding(new Insets(22));
-        card.setAlignment(Pos.TOP_LEFT);
-        card.setStyle(cardStyle());
+    // ══════════════════════════════════════════════════════════
+    //  4. STATS ROW
+    // ══════════════════════════════════════════════════════════
+    private JPanel buildStatsRow() {
+        JPanel row = new JPanel(new GridLayout(1, 3, 16, 0));
+        row.setOpaque(false);
 
-        // Icon box
-        StackPane iconBox = new StackPane();
-        iconBox.setPrefSize(48, 48);
-        iconBox.setMinSize(48, 48);
-        iconBox.setStyle("-fx-background-color: " + iconBg + "; -fx-background-radius: 12;");
-        Label iconLbl = new Label(icon);
-        iconLbl.setFont(Font.font(20));
-        iconBox.getChildren().add(iconLbl);
+        row.add(buildInfoCard("📋", new Color(0xef, 0xf6, 0xff),
+            "TỔNG QUY TẮC", "42", "+3 từ tuần trước", SUCCESS));
 
-        VBox info = new VBox(4);
-        Label lbl = new Label(label);
-        lbl.setFont(Font.font("System", FontWeight.BOLD, 9.5));
-        lbl.setStyle("-fx-text-fill: " + TEXT_LIGHT + "; -fx-letter-spacing: 0.08em;");
-        Label val = new Label(value);
-        val.setFont(Font.font("System", FontWeight.BOLD, value.length() < 5 ? 24 : 15));
-        val.setStyle("-fx-text-fill: " + TEXT_DARK + ";");
-        Label subLbl = new Label(sub);
-        subLbl.setFont(Font.font("System", FontWeight.SEMI_BOLD, 11));
-        subLbl.setStyle("-fx-text-fill: " + subColor + ";");
-        info.getChildren().addAll(lbl, val, subLbl);
+        row.add(buildInfoCard("🔄", new Color(0xff, 0xfb, 0xeb),
+            "CẬP NHẬT CUỐI", "15:30, 20/10/2023", "bởi Admin: Nguyen Minh", TEXT_MUTED));
 
-        card.getChildren().addAll(iconBox, info);
+        row.add(buildLogicCard());
+        return row;
+    }
+
+    private JPanel buildInfoCard(String icon, Color iconBg,
+                                 String label, String value, String sub, Color subColor) {
+        JPanel card = makeCard();
+        card.setLayout(new BorderLayout(12, 0));
+        card.setBorder(new CompoundBorder(card.getBorder(), new EmptyBorder(20, 20, 20, 20)));
+
+        JPanel iconBox = new JPanel(new GridBagLayout());
+        iconBox.setPreferredSize(new Dimension(48, 48));
+        iconBox.setBackground(iconBg);
+        iconBox.setBorder(new RoundedBorder(12, iconBg));
+        JLabel iconLbl = new JLabel(icon);
+        iconLbl.setFont(new Font("SansSerif", Font.PLAIN, 20));
+        iconBox.add(iconLbl);
+
+        JPanel info = new JPanel();
+        info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
+        info.setOpaque(false);
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 10));
+        lbl.setForeground(TEXT_LIGHT);
+        JLabel val = new JLabel(value);
+        val.setFont(new Font("SansSerif", Font.BOLD, value.length() < 5 ? 24 : 15));
+        val.setForeground(TEXT_DARK);
+        JLabel subLbl = new JLabel(sub);
+        subLbl.setFont(new Font("SansSerif", Font.BOLD, 11));
+        subLbl.setForeground(subColor);
+
+        info.add(lbl);
+        info.add(Box.createVerticalStrut(2));
+        info.add(val);
+        info.add(Box.createVerticalStrut(2));
+        info.add(subLbl);
+
+        card.add(iconBox, BorderLayout.WEST);
+        card.add(info, BorderLayout.CENTER);
         return card;
     }
 
-    private VBox buildLogicCard() {
-        VBox card = new VBox(10);
-        card.setPadding(new Insets(22));
-        card.setStyle(
-            "-fx-background-color: " + PRIMARY + ";" +
-            "-fx-background-radius: 14;" +
-            "-fx-effect: dropshadow(gaussian, rgba(19,127,236,0.35), 18, 0, 0, 5);"
-        );
+    private JPanel buildLogicCard() {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(PRIMARY);
+        card.setBorder(new CompoundBorder(new RoundedBorder(14, PRIMARY), new EmptyBorder(20, 20, 20, 20)));
 
-        Label title = new Label("Kiểm tra Logic");
-        title.setFont(Font.font("System", FontWeight.BOLD, 17));
-        title.setStyle("-fx-text-fill: white;");
+        JLabel title = new JLabel("Kiểm tra Logic");
+        title.setFont(new Font("SansSerif", Font.BOLD, 17));
+        title.setForeground(WHITE);
 
-        Label desc = new Label("Hệ thống phát hiện 2 quy tắc\ncó thể bị trùng lặp khoảng điểm.");
-        desc.setFont(Font.font(12));
-        desc.setStyle("-fx-text-fill: rgba(255,255,255,0.85);");
-        desc.setWrapText(true);
+        JLabel desc = new JLabel("<html>Hệ thống phát hiện 2 quy tắc<br/>có thể bị trùng lặp khoảng điểm.</html>");
+        desc.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        desc.setForeground(new Color(255, 255, 255, 217));
 
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
+        JButton detailBtn = makeGhostButton("Xem chi tiết");
 
-        Button detailBtn = new Button("Xem chi tiết");
-        detailBtn.setFont(Font.font("System", FontWeight.BOLD, 12));
-        detailBtn.setPadding(new Insets(8, 18, 8, 18));
-        detailBtn.setStyle(
-            "-fx-background-color: rgba(255,255,255,0.2);" +
-            "-fx-text-fill: white;" +
-            "-fx-background-radius: 8;" +
-            "-fx-border-color: transparent;" +
-            "-fx-cursor: hand;"
-        );
-        detailBtn.setOnMouseEntered(e -> detailBtn.setStyle(
-            "-fx-background-color: rgba(255,255,255,0.32); -fx-text-fill: white;" +
-            "-fx-background-radius: 8; -fx-border-color: transparent; -fx-cursor: hand;"
-        ));
-        detailBtn.setOnMouseExited(e -> detailBtn.setStyle(
-            "-fx-background-color: rgba(255,255,255,0.2); -fx-text-fill: white;" +
-            "-fx-background-radius: 8; -fx-border-color: transparent; -fx-cursor: hand;"
-        ));
-
-        card.getChildren().addAll(title, desc, spacer, detailBtn);
+        card.add(title);
+        card.add(Box.createVerticalStrut(6));
+        card.add(desc);
+        card.add(Box.createVerticalGlue());
+        card.add(detailBtn);
         return card;
     }
 
     // ══════════════════════════════════════════════════════════
     //  HELPERS
     // ══════════════════════════════════════════════════════════
-    private String cardStyle() {
-        return "-fx-background-color: " + WHITE + ";" +
-               "-fx-background-radius: 14;" +
-               "-fx-border-color: " + BORDER + ";" +
-               "-fx-border-radius: 14;" +
-               "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8, 0, 0, 2);";
+    private JPanel makeCard() {
+        JPanel card = new JPanel();
+        card.setOpaque(true);
+        card.setBackground(WHITE);
+        card.setBorder(new CompoundBorder(new RoundedBorder(14, BORDER), new EmptyBorder(0, 0, 0, 0)));
+        return card;
     }
 
-    private void styleHover(Button btn, String hoverStyle, String normalStyle) {
-        btn.setOnMouseEntered(e -> btn.setStyle(hoverStyle));
-        btn.setOnMouseExited(e -> btn.setStyle(normalStyle));
+    private JButton makeOutlineButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFocusPainted(false);
+        btn.setBackground(WHITE);
+        btn.setForeground(TEXT_DARK);
+        btn.setBorder(new CompoundBorder(new RoundedBorder(10, BORDER), new EmptyBorder(8, 18, 8, 18)));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.addMouseListener(new HoverAdapter(btn, WHITE, new Color(0xf8, 0xfa, 0xfc)));
+        return btn;
+    }
+
+    private JButton makePrimaryButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFocusPainted(false);
+        btn.setBackground(PRIMARY);
+        btn.setForeground(WHITE);
+        btn.setBorder(new CompoundBorder(new RoundedBorder(10, PRIMARY), new EmptyBorder(8, 18, 8, 18)));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.addMouseListener(new HoverAdapter(btn, PRIMARY, new Color(0x0f, 0x6f, 0xd4)));
+        return btn;
+    }
+
+    private JButton makeGhostButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFocusPainted(false);
+        btn.setBackground(new Color(255, 255, 255, 51));
+        btn.setForeground(WHITE);
+        btn.setBorder(new CompoundBorder(new RoundedBorder(8, new Color(255, 255, 255, 51)), new EmptyBorder(6, 16, 6, 16)));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.addMouseListener(new HoverAdapter(btn, new Color(255, 255, 255, 51), new Color(255, 255, 255, 82)));
+        return btn;
+    }
+
+    private JButton makeActionButton(String icon, Color hoverBg) {
+        JButton btn = new JButton(icon);
+        btn.setPreferredSize(new Dimension(30, 30));
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setContentAreaFilled(true);
+        btn.setBackground(new Color(0, 0, 0, 0));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.addMouseListener(new HoverAdapter(btn, new Color(0, 0, 0, 0), hoverBg));
+        return btn;
+    }
+
+    private static class HoverAdapter extends MouseAdapter {
+        private final AbstractButton button;
+        private final Color normal;
+        private final Color hover;
+
+        HoverAdapter(AbstractButton button, Color normal, Color hover) {
+            this.button = button;
+            this.normal = normal;
+            this.hover = hover;
+        }
+
+        @Override public void mouseEntered(MouseEvent e) { button.setBackground(hover); }
+        @Override public void mouseExited(MouseEvent e)  { button.setBackground(normal); }
+    }
+
+    private static class RoundedBorder extends AbstractBorder {
+        private final int radius;
+        private final Color color;
+
+        RoundedBorder(int radius, Color color) {
+            this.radius = radius;
+            this.color = color;
+        }
+
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(color);
+            g2.drawRoundRect(x, y, w - 1, h - 1, radius * 2, radius * 2);
+            g2.dispose();
+        }
     }
 }
 

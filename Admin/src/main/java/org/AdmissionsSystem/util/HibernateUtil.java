@@ -2,7 +2,6 @@ package org.AdmissionsSystem.util;
 
 import java.util.Properties;
 import org.AdmissionsSystem.config.AppConfig;
-import org.AdmissionsSystem.models.ToHopMon;
 import org.AdmissionsSystem.models.Users;
 import org.AdmissionsSystem.models.XtBangquydoi;
 import org.AdmissionsSystem.models.XtDiemcongxetuyen;
@@ -73,7 +72,6 @@ public class HibernateUtil {
 
     private static void registerAnnotatedClasses(Configuration configuration) {
         configuration.addAnnotatedClass(Users.class);
-        configuration.addAnnotatedClass(ToHopMon.class);
         configuration.addAnnotatedClass(XtBangquydoi.class);
         configuration.addAnnotatedClass(XtDiemcongxetuyen.class);
         configuration.addAnnotatedClass(XtDiemthixettuyen.class);

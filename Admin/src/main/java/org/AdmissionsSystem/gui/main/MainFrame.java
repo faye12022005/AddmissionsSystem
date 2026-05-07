@@ -14,7 +14,7 @@ import org.AdmissionsSystem.gui.modules.QuanLiNguyenVong.NguyenVongPanel;
 import org.AdmissionsSystem.gui.modules.QuanLyDanhSachNganh.NganhToHopPanel;
 import org.AdmissionsSystem.gui.modules.QuanLyNguoiDung.UsersPanel;
 import org.AdmissionsSystem.gui.modules.QuanLyThiSinh.ThisinhPanel;
-import org.AdmissionsSystem.gui.modules.QuanLyToHopMon.ToHopMonPanel;
+import org.AdmissionsSystem.gui.modules.QuanLyToHopMon.ToHopMonPanelSwing;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.NganhHocPanel;
 import java.awt.*;
 
@@ -47,31 +47,10 @@ public class MainFrame extends JFrame {
         centerPanel.add(new NganhToHopPanel(), "nganh_tohop");
         centerPanel.add(new DiemThiSinhPanel(), "diem_thisinh");
         centerPanel.add(new DiemCongPanel(), "diem_cong");
-        // embed JavaFX ToHopMon panel using JFXPanel
-        JFXPanel jfxToHopMon = new JFXPanel();
-        centerPanel.add(jfxToHopMon, "tohop");
-        // embed JavaFX NguyenVong panel using JFXPanel
-        JFXPanel jfxNguyenVong = new JFXPanel();
-        centerPanel.add(jfxNguyenVong, "nguyenvong");
-        // embed JavaFX BangQuyDoi panel using JFXPanel
-        JFXPanel jfxBang = new JFXPanel();
-        centerPanel.add(jfxBang, "bang_quydoi");
+        centerPanel.add(new ToHopMonPanelSwing(), "tohop");
+        centerPanel.add(new NguyenVongPanel(), "nguyenvong");
+        centerPanel.add(new BangQuyDoiPanel(), "bang_quydoi");
 
-        // initialize JavaFX scene for the embedded panel
-        Platform.runLater(() -> {
-            Parent fxToHop = ToHopMonPanel.createContent();
-            Scene fxSceneToHop = new Scene(fxToHop);
-            jfxToHopMon.setScene(fxSceneToHop);
-
-            Parent fxContent = NguyenVongPanel.createContent();
-            Scene fxScene = new Scene(fxContent);
-            jfxNguyenVong.setScene(fxScene);
-
-            // BangQuyDoi
-            Parent fxBang = BangQuyDoiPanel.createContent();
-            Scene fxSceneBang = new Scene(fxBang);
-            jfxBang.setScene(fxSceneBang);
-        });
 
         // right content area: shared header + center content
         JPanel contentPanel = new JPanel(new BorderLayout());
