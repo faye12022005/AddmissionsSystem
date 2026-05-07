@@ -3,7 +3,7 @@ package org.AdmissionsSystem.gui.modules.QuanLiDiem;
 import org.AdmissionsSystem.gui.common.Searchable;
 import org.AdmissionsSystem.gui.common.Style;
 import org.AdmissionsSystem.gui.components.CustomTable;
-import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.Toast;
+import org.AdmissionsSystem.gui.components.Toast;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -259,25 +259,32 @@ public class DiemThiSinhPanel extends JPanel implements Searchable {
     }
 
     private void reloadTable() {
-        String selectedLoai = selectedFilterValue(cboLoaiDiemFilter);
-        String selectedMon = selectedFilterValue(cboMonFilter);
+        try {
+            String selectedLoai = selectedFilterValue(cboLoaiDiemFilter);
+            String selectedMon = selectedFilterValue(cboMonFilter);
 
-        currentRows = controller.getDanhSach(currentSearchText, selectedLoai, selectedMon);
+            currentRows = controller.getDanhSach(currentSearchText, selectedLoai, selectedMon);
 
-        tableModel.setRowCount(0);
-        for (DiemService.DiemRecord row : currentRows) {
-            tableModel.addRow(new Object[] {
-                    row.id(),
-                    row.cccd(),
-                    row.soBaoDanh(),
-                    row.hoTen(),
-                    row.loaiDiem(),
-                    row.mon(),
-                    scoreFormat.format(row.diem())
-            });
+            tableModel.setRowCount(0);
+            for (DiemService.DiemRecord row : currentRows) {
+                tableModel.addRow(new Object[] {
+                        row.id(),
+                        row.cccd(),
+                        row.soBaoDanh(),
+                        row.hoTen(),
+                        row.loaiDiem(),
+                        row.mon(),
+                        scoreFormat.format(row.diem())
+                });
+            }
+
+            lblTongBanGhi.setText("Tổng bản ghi: " + currentRows.size());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            showError("Lỗi khi tải dữ liệu điểm: " + ex.getMessage());
+            tableModel.setRowCount(0);
+            lblTongBanGhi.setText("Tổng bản ghi: 0 (Lỗi)");
         }
-
-        lblTongBanGhi.setText("Tổng bản ghi: " + currentRows.size());
     }
 
     private Integer selectedId() {

@@ -2,6 +2,7 @@ package org.AdmissionsSystem.gui.modules.QuanLyToHopMon;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 
 public class EditToHopDialog extends JDialog {
     private final JTextField codeField = new JTextField(20);
@@ -14,14 +15,19 @@ public class EditToHopDialog extends JDialog {
 
     public EditToHopDialog(Frame owner, String code, String name, String s1, String s2, String s3, String status) {
         super(owner, "Chỉnh sửa tổ hợp môn", true);
-        codeField.setText(code);
-        codeField.setEditable(false);
-        nameField.setText(name);
-        subj1.setText(s1);
-        subj2.setText(s2);
-        subj3.setText(s3);
-        if (status != null) statusBox.setSelectedItem(status);
         initUI();
+        // Populate initial values
+        codeField.setText(code);
+        codeField.setEditable(false);  // Code không thể sửa
+        nameField.setText(name != null ? name : "");
+        subj1.setText(s1 != null ? s1 : "");
+        subj2.setText(s2 != null ? s2 : "");
+        subj3.setText(s3 != null ? s3 : "");
+        if (status != null && !status.isEmpty()) {
+            statusBox.setSelectedItem(status);
+        } else {
+            statusBox.setSelectedIndex(0);
+        }
     }
 
     private void initUI() {
@@ -32,48 +38,147 @@ public class EditToHopDialog extends JDialog {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6,6,6,6);
         gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
         int row = 0;
-        gbc.gridx = 0; gbc.gridy = row; fields.add(new JLabel("Mã tổ hợp:"), gbc);
-        gbc.gridx = 1; fields.add(codeField, gbc); row++;
+        
+        // Mã tổ hợp (không thể sửa)
+        gbc.gridx = 0; gbc.gridy = row; 
+        JLabel codeLbl = new JLabel("Mã tổ hợp:");
+        codeLbl.setFont(new Font("System", Font.BOLD, 12));
+        fields.add(codeLbl, gbc);
+        
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        codeField.setFont(new Font("System", Font.PLAIN, 12));
+        codeField.setEditable(false);  // Read-only
+        codeField.setBackground(new Color(240, 240, 240));
+        fields.add(codeField, gbc); 
+        row++;
 
-        gbc.gridx = 0; gbc.gridy = row; fields.add(new JLabel("Tên tổ hợp:"), gbc);
-        gbc.gridx = 1; fields.add(nameField, gbc); row++;
+        // Tên tổ hợp
+        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
+        JLabel nameLbl = new JLabel("Tên tổ hợp:");
+        nameLbl.setFont(new Font("System", Font.BOLD, 12));
+        fields.add(nameLbl, gbc);
+        
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        nameField.setFont(new Font("System", Font.PLAIN, 12));
+        fields.add(nameField, gbc); 
+        row++;
 
-        gbc.gridx = 0; gbc.gridy = row; fields.add(new JLabel("Môn 1:"), gbc);
-        gbc.gridx = 1; fields.add(subj1, gbc); row++;
+        // Môn 1
+        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
+        JLabel subj1Lbl = new JLabel("Môn 1:");
+        subj1Lbl.setFont(new Font("System", Font.BOLD, 12));
+        fields.add(subj1Lbl, gbc);
+        
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        subj1.setFont(new Font("System", Font.PLAIN, 12));
+        fields.add(subj1, gbc); 
+        row++;
 
-        gbc.gridx = 0; gbc.gridy = row; fields.add(new JLabel("Môn 2:"), gbc);
-        gbc.gridx = 1; fields.add(subj2, gbc); row++;
+        // Môn 2
+        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
+        JLabel subj2Lbl = new JLabel("Môn 2:");
+        subj2Lbl.setFont(new Font("System", Font.BOLD, 12));
+        fields.add(subj2Lbl, gbc);
+        
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        subj2.setFont(new Font("System", Font.PLAIN, 12));
+        fields.add(subj2, gbc); 
+        row++;
 
-        gbc.gridx = 0; gbc.gridy = row; fields.add(new JLabel("Môn 3:"), gbc);
-        gbc.gridx = 1; fields.add(subj3, gbc); row++;
+        // Môn 3
+        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
+        JLabel subj3Lbl = new JLabel("Môn 3:");
+        subj3Lbl.setFont(new Font("System", Font.BOLD, 12));
+        fields.add(subj3Lbl, gbc);
+        
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        subj3.setFont(new Font("System", Font.PLAIN, 12));
+        fields.add(subj3, gbc); 
+        row++;
 
-        gbc.gridx = 0; gbc.gridy = row; fields.add(new JLabel("Trạng thái:"), gbc);
-        gbc.gridx = 1; fields.add(statusBox, gbc);
+        // Trạng thái
+        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
+        JLabel statusLbl = new JLabel("Trạng thái:");
+        statusLbl.setFont(new Font("System", Font.BOLD, 12));
+        fields.add(statusLbl, gbc);
+        
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        statusBox.setFont(new Font("System", Font.PLAIN, 12));
+        fields.add(statusBox, gbc);
 
         panel.add(fields, BorderLayout.CENTER);
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton save = new JButton("Lưu");
+        // Buttons
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JButton save = new JButton("Cập nhật");
         JButton cancel = new JButton("Hủy");
+        
+        // Styling
+        save.setFont(new Font("System", Font.BOLD, 12));
+        cancel.setFont(new Font("System", Font.PLAIN, 12));
+        save.setPreferredSize(new Dimension(100, 32));
+        cancel.setPreferredSize(new Dimension(80, 32));
+        
+        save.setMnemonic(KeyEvent.VK_U);
+        cancel.setMnemonic(KeyEvent.VK_C);
+        
+        save.addActionListener(e -> onSave());
+        cancel.addActionListener(e -> onCancel());
+        
+        // Close dialog on ESC
+        getRootPane().registerKeyboardAction(e -> onCancel(), 
+            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), 
+            JComponent.WHEN_IN_FOCUSED_WINDOW);
+
         btnRow.add(cancel);
         btnRow.add(save);
-
-        save.addActionListener(e -> {
-            saved = true;
-            setVisible(false);
-        });
-        cancel.addActionListener(e -> {
-            saved = false;
-            setVisible(false);
-        });
 
         panel.add(btnRow, BorderLayout.SOUTH);
 
         setContentPane(panel);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         pack();
         setLocationRelativeTo(getOwner());
+        setResizable(false);
+    }
+
+    private void onSave() {
+        if (validateInput()) {
+            saved = true;
+            setVisible(false);
+        }
+    }
+
+    private void onCancel() {
+        saved = false;
+        setVisible(false);
+    }
+
+    private boolean validateInput() {
+        if (nameField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Tên tổ hợp không được để trống!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            nameField.requestFocus();
+            return false;
+        }
+        if (subj1.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Môn 1 không được để trống!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            subj1.requestFocus();
+            return false;
+        }
+        if (subj2.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Môn 2 không được để trống!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            subj2.requestFocus();
+            return false;
+        }
+        if (subj3.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Môn 3 không được để trống!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            subj3.requestFocus();
+            return false;
+        }
+        return true;
     }
 
     public boolean isSaved() { return saved; }

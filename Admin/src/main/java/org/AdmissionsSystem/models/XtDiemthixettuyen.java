@@ -1,4 +1,4 @@
-﻿package org.AdmissionsSystem.models;
+package org.AdmissionsSystem.models;
 
 import java.io.Serializable;
 import javax.persistence.Column;
