@@ -1,7 +1,6 @@
 package org.AdmissionsSystem.bus.service;
 
 import java.util.List;
-import java.util.Locale;
 import org.AdmissionsSystem.dao.ToHopMonDao;
 import org.AdmissionsSystem.models.XtTohopMonthi;
 
@@ -18,7 +17,7 @@ public class ToHopMonService {
     }
 
     public XtTohopMonthi findByMaToHop(String maToHop) {
-        return dao.findByMaToHop(maToHop);
+        return dao.timTheoMaToHop(maToHop);
     }
 
     public List<XtTohopMonthi> search(String keyword) {
@@ -30,11 +29,12 @@ public class ToHopMonService {
 
     public void add(XtTohopMonthi entity) {
         validateRequired(entity);
-        if (dao.findByMaToHop(entity.getMatohop()) != null) {
+        if (dao.timTheoMaToHop(entity.getMatohop()) != null) {
             throw new IllegalArgumentException("Mã tổ hợp đã tồn tại.");
         }
+        // ID is auto-increment in DB, but if needed manual:
         if (entity.getIdtohop() == null || entity.getIdtohop() == 0) {
-            entity.setIdtohop(dao.getNextId());
+            entity.setIdtohop(dao.layIdTiepTheo());
         }
         dao.save(entity);
     }
@@ -61,20 +61,6 @@ public class ToHopMonService {
         dao.delete(existing);
     }
 
-    public void upsert(XtTohopMonthi entity) {
-        validateRequired(entity);
-        XtTohopMonthi existing = dao.findByMaToHop(entity.getMatohop());
-        if (existing == null) {
-            if (entity.getIdtohop() == null || entity.getIdtohop() == 0) {
-                entity.setIdtohop(dao.getNextId());
-            }
-            dao.save(entity);
-        } else {
-            entity.setIdtohop(existing.getIdtohop());
-            update(entity);
-        }
-    }
-
     public long count() {
         return dao.count();
     }
@@ -85,6 +71,11 @@ public class ToHopMonService {
         }
         if (entity.getMatohop() == null || entity.getMatohop().trim().isEmpty()) {
             throw new IllegalArgumentException("Mã tổ hợp không được để trống.");
+        }
+        if (entity.getMon1() == null || entity.getMon1().trim().isEmpty() ||
+            entity.getMon2() == null || entity.getMon2().trim().isEmpty() ||
+            entity.getMon3() == null || entity.getMon3().trim().isEmpty()) {
+            throw new IllegalArgumentException("Các môn học không được để trống.");
         }
     }
 }

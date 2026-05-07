@@ -52,37 +52,37 @@ public class XtNganhTohop implements Serializable {
     @Column(name = "tb_keys")
     private String tbKeys;
 
-    @Column(name = "N1")
+    @Column(name = "`N1`")
     private Boolean n1;
 
-    @Column(name = "TO")
+    @Column(name = "`TO`")
     private Boolean to;
 
-    @Column(name = "LI")
+    @Column(name = "`LI`")
     private Boolean li;
 
-    @Column(name = "HO")
+    @Column(name = "`HO`")
     private Boolean ho;
 
-    @Column(name = "SI")
+    @Column(name = "`SI`")
     private Boolean si;
 
-    @Column(name = "VA")
+    @Column(name = "`VA`")
     private Boolean va;
 
-    @Column(name = "SU")
+    @Column(name = "`SU`")
     private Boolean su;
 
-    @Column(name = "DI")
+    @Column(name = "`DI`")
     private Boolean di;
 
-    @Column(name = "TI")
+    @Column(name = "`TI`")
     private Boolean ti;
 
-    @Column(name = "KHAC")
+    @Column(name = "`KHAC`")
     private Boolean khac;
 
-    @Column(name = "KTPL")
+    @Column(name = "`KTPL`")
     private Boolean ktpl;
 
     @Column(name = "dolech")
