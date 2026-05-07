@@ -31,9 +31,33 @@ public class NganhHocFormPanel extends JPanel {
     public NganhHocFormPanel() {
         setOpaque(false);
         setLayout(new GridBagLayout());
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new java.awt.Color(230, 230, 230)),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)));
+        
+        setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new java.awt.Color(200, 200, 200)),
+                "Thông tin chi tiết",
+                javax.swing.border.TitledBorder.LEFT,
+                javax.swing.border.TitledBorder.TOP,
+                new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12),
+                new java.awt.Color(36, 56, 102)
+        ));
+
+        // Make fields read-only
+        txtMa.setEditable(false);
+        txtTen.setEditable(false);
+        txtToHopGoc.setEditable(false);
+        txtChiTieu.setEditable(false);
+        txtDiemSan.setEditable(false);
+        txtDiemTrungTuyen.setEditable(false);
+        txtSlXetTuyen.setEditable(false);
+        txtSlDGNL.setEditable(false);
+        txtSlVSAT.setEditable(false);
+        txtSlTHPT.setEditable(false);
+        
+        // Disable checkboxes for display only
+        chkTuyenThang.setEnabled(false);
+        chkDGNL.setEnabled(false);
+        chkTHPT.setEnabled(false);
+        chkVSAT.setEnabled(false);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 6, 4, 6);

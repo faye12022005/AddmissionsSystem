@@ -32,8 +32,9 @@ public class MainFrame extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        SidebarPanel sidebar = new SidebarPanel(displayName, role);
-        final HeaderPanel header = new HeaderPanel(this::logoutToLogin);
+        centerPanel.setBackground(new Color(248, 250, 252));
+
+        SidebarPanel sidebar = new SidebarPanel(displayName, role, this::logoutToLogin);
 
         // create screens
         centerPanel.add(new DashboardPanel(), "dashboard");
@@ -48,13 +49,9 @@ public class MainFrame extends JFrame {
         centerPanel.add(new BangQuyDoiPanel(), "bang_quydoi");
 
 
-        // right content area: shared header + center content
-        JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.add(header, BorderLayout.NORTH);
-        contentPanel.add(centerPanel, BorderLayout.CENTER);
-
+        // right content area: just center content
         add(sidebar, BorderLayout.WEST);
-        add(contentPanel, BorderLayout.CENTER);
+        add(centerPanel, BorderLayout.CENTER);
 
         // Wire sidebar buttons to card panels using client property
         // SidebarPanel stores the original menu index on each button
@@ -79,37 +76,8 @@ public class MainFrame extends JFrame {
             final String finalCard = card;
             btn.addActionListener(e -> {
                 cardLayout.show(centerPanel, finalCard);
-                switch (finalCard) {
-                    case "thisinh":
-                        header.setPageSearchPlaceholder("Tìm kiếm thí sinh (mã, tên)");
-                        break;
-                    case "users":
-                        header.setPageSearchPlaceholder("Tìm kiếm người dùng (tên, email)");
-                        break;
-                    case "nganh":
-                        header.setPageSearchPlaceholder("Tìm kiếm ngành / tổ hợp");
-                        break;
-                    case "tohop":
-                        header.setPageSearchPlaceholder("Tìm kiếm môn học / tổ hợp môn");
-                        break;
-                    case "diem_thisinh":
-                        header.setPageSearchPlaceholder("Tìm kiếm bằng mã thí sinh hoặc tên");
-                        break;
-                    default:
-                        header.setPageSearchPlaceholder("");
-                        break;
-                }
             });
         }
-
-        // forward per-page search actions to the currently visible page if it
-        // implements Searchable
-        header.addPageSearchListener(e -> {
-            Component current = getCurrentCardComponent();
-            if (current instanceof Searchable) {
-                ((Searchable) current).onSearch(header.getPageSearchText());
-            }
-        });
 
         // // show diem_cong panel by default
         // cardLayout.show(centerPanel, "diem_cong");

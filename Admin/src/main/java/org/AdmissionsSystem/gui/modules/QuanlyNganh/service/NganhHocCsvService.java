@@ -39,6 +39,8 @@ public class NganhHocCsvService {
 
     public void writeRows(Path out, String[] headers, List<Object[]> rows) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(out, StandardCharsets.UTF_8)) {
+            // Write BOM for Excel compatibility
+            writer.write('\uFEFF');
             writer.write(String.join(",", headers));
             writer.newLine();
 

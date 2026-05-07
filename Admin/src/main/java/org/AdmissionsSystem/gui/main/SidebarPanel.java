@@ -14,14 +14,16 @@ public class SidebarPanel extends JPanel {
 	private SidebarMenuButton selectedButton;
 	private final String displayName;
 	private final String role;
+	private final Runnable logoutAction;
 
 	public SidebarPanel() {
-		this("Lê Minh Anh", "Admin");
+		this("Lê Minh Anh", "Admin", () -> {});
 	}
 
-	public SidebarPanel(String displayName, String role) {
+	public SidebarPanel(String displayName, String role, Runnable logoutAction) {
 		this.displayName = safeText(displayName, "Người dùng");
 		this.role = safeText(role, "User");
+		this.logoutAction = logoutAction;
 		setLayout(new BorderLayout());
 		setPreferredSize(new Dimension(220, 0));
 		setBackground(Color.WHITE);
@@ -29,9 +31,9 @@ public class SidebarPanel extends JPanel {
 		JPanel wrapper = new JPanel(new BorderLayout());
 		wrapper.setOpaque(true);
 		wrapper.setBackground(Color.WHITE);
-		wrapper.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 1, new Color(230, 230, 230)));
+		wrapper.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(203, 213, 225))); // Visible slate-300 divider
 
-		JPanel titleBox = new JPanel(new GridLayout(2, 1));
+		JPanel titleBox = new JPanel(new BorderLayout());
 		titleBox.setOpaque(false);
 		titleBox.setBorder(BorderFactory.createEmptyBorder(14, 12, 14, 12));
 		JLabel logo = new JLabel();
@@ -62,7 +64,6 @@ public class SidebarPanel extends JPanel {
 		brandRow.setOpaque(false);
 		brandRow.add(logo);
 		brandRow.add(nameBox);
-		titleBox.setLayout(new BorderLayout());
 		titleBox.add(brandRow, BorderLayout.CENTER);
 
 		// menu
@@ -73,7 +74,7 @@ public class SidebarPanel extends JPanel {
 		List<SidebarMenuButton> menuButtons = new ArrayList<>();
 
 		String[] items = {"Tổng quan","Người dùng","Thí sinh","Ngành học","Tổ hợp","Ngành-Tổ hợp","Điểm thi","Điểm cộng","Nguyện vọng","Bảng quy đổi"};
-		String[] icons = {"📊", "👥", "👨‍🎓", "📚", "📋", "🧮", "📝", "➕", "📋", "🔄"};
+		String[] icons = {"📊", "👥", "👨‍🎓", "📚", "📋", "📋", "📝", "➕", "📋", "🔄"};
 		boolean isAdmin = "admin".equalsIgnoreCase(this.role);
 		for (int i = 0; i < items.length; i++) {
 			// Ẩn menu "Người dùng" nếu không phải admin
@@ -111,13 +112,8 @@ public class SidebarPanel extends JPanel {
 		}
 
 		// bottom profile
-		JPanel profile = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 12));
+		JPanel profile = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 8));
 		profile.setOpaque(false);
-		JLabel avatar = new JLabel("LA");
-		avatar.setOpaque(true);
-		avatar.setBackground(new Color(240, 240, 250));
-		avatar.setPreferredSize(new Dimension(44, 44));
-		avatar.setHorizontalAlignment(SwingConstants.CENTER);
 
 		JPanel userBox = new JPanel(new GridLayout(2, 1));
 		userBox.setOpaque(false);
@@ -128,11 +124,55 @@ public class SidebarPanel extends JPanel {
 		roleLabel.setForeground(new Color(120, 130, 150));
 		userBox.add(userName);
 		userBox.add(roleLabel);
-		profile.add(avatar);
 		profile.add(userBox);
+
+		// Bottom container for profile + logout
+		JPanel bottomContainer = new JPanel();
+		bottomContainer.setLayout(new BoxLayout(bottomContainer, BoxLayout.Y_AXIS));
+		bottomContainer.setOpaque(false);
+		// Add top border as a horizontal separator
+		bottomContainer.setBorder(BorderFactory.createCompoundBorder(
+			BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(226, 232, 240)),
+			BorderFactory.createEmptyBorder(15, 0, 15, 0)
+		));
+
+		// Logout button
+		SidebarMenuButton btnLogout = new SidebarMenuButton("Đăng xuất");
+		btnLogout.setForeground(new Color(220, 38, 38)); 
+		btnLogout.setAlignmentX(Component.LEFT_ALIGNMENT);
+		btnLogout.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+		
+		btnLogout.addActionListener(e -> {
+			if (this.logoutAction != null) {
+				this.logoutAction.run();
+			}
+		});
+
+		btnLogout.addMouseListener(new java.awt.event.MouseAdapter() {
+			@Override
+			public void mouseEntered(java.awt.event.MouseEvent e) {
+				btnLogout.setMenuState(org.AdmissionsSystem.gui.components.SidebarMenuButton.MenuState.HOVER);
+				btnLogout.setForeground(new Color(220, 38, 38)); // Keep it red
+			}
+
+			@Override
+			public void mouseExited(java.awt.event.MouseEvent e) {
+				btnLogout.setMenuState(org.AdmissionsSystem.gui.components.SidebarMenuButton.MenuState.INACTIVE);
+				btnLogout.setForeground(new Color(220, 38, 38)); // Keep it red
+			}
+		});
+
+		bottomContainer.add(profile);
+		bottomContainer.add(Box.createRigidArea(new Dimension(0, 4)));
+		JPanel logoutWrapper = new JPanel(new BorderLayout());
+		logoutWrapper.setOpaque(false);
+		logoutWrapper.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+		logoutWrapper.add(btnLogout, BorderLayout.CENTER);
+		bottomContainer.add(logoutWrapper);
+
 		wrapper.add(titleBox, BorderLayout.NORTH);
 		wrapper.add(menu, BorderLayout.CENTER);
-		wrapper.add(profile, BorderLayout.SOUTH);
+		wrapper.add(bottomContainer, BorderLayout.SOUTH);
 		add(wrapper, BorderLayout.CENTER);
 	}
 

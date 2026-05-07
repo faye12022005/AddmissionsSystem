@@ -86,7 +86,16 @@ public class NganhToHopPanel extends JPanel {
         // Form panel
         JPanel form = new JPanel();
         form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
-        form.setOpaque(false);
+        form.setOpaque(true);
+        form.setBackground(Color.WHITE);
+        form.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200)),
+                "Thông tin chi tiết",
+                javax.swing.border.TitledBorder.LEFT,
+                javax.swing.border.TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 12),
+                new Color(36, 56, 102)
+        ));
         
         JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
         row1.setOpaque(false);
