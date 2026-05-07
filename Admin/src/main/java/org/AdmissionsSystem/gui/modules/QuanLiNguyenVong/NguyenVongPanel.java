@@ -278,9 +278,11 @@ public class NguyenVongPanel extends JPanel {
         table.getColumnModel().getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(
                     JTable t, Object val, boolean sel, boolean foc, int row, int col) {
-                JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+                JPanel p = new JPanel(new GridBagLayout());
                 p.setBackground(sel ? t.getSelectionBackground() : WHITE);
+
                 boolean first = row == 0;
+
                 JLabel badge = new JLabel(val.toString(), SwingConstants.CENTER);
                 badge.setFont(FONT_BOLD_11);
                 badge.setPreferredSize(new Dimension(30, 30));
@@ -288,6 +290,7 @@ public class NguyenVongPanel extends JPanel {
                 badge.setBackground(first ? PRIMARY : SURFACE);
                 badge.setForeground(first ? WHITE : TEXT_SLATE);
                 badge.setBorder(new RoundedBorder(15, first ? PRIMARY : SURFACE));
+
                 p.add(badge);
                 return p;
             }
@@ -296,9 +299,13 @@ public class NguyenVongPanel extends JPanel {
         // Thí sinh (tên + SBD)
         table.getColumnModel().getColumn(1).setCellRenderer(new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(
-                    JTable t, Object val, boolean sel, boolean foc, int row, int col) {
-                JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+                JTable t, Object val, boolean sel, boolean foc, int row, int col) {
+                JPanel p = new JPanel(new GridBagLayout());
                 p.setBackground(sel ? t.getSelectionBackground() : WHITE);
+                GridBagConstraints gbc = new GridBagConstraints();
+                gbc.gridx = 0;
+                gbc.gridy = 0;
+                gbc.insets = new Insets(0, 0, 0, 10);
                 // Avatar tròn
                 JPanel avatar = new JPanel() {
                     @Override protected void paintComponent(Graphics g) {
@@ -325,8 +332,9 @@ public class NguyenVongPanel extends JPanel {
                 info.add(name);
                 info.add(sbd);
 
-                p.add(avatar);
-                p.add(info);
+                p.add(avatar, gbc);
+                gbc.gridx = 1;
+                p.add(info, gbc);
                 return p;
             }
         });
@@ -351,7 +359,7 @@ public class NguyenVongPanel extends JPanel {
                     JTable t, Object val, boolean sel, boolean foc, int row, int col) {
                 String status = val.toString();
                 boolean trung = status.equals("Trúng tuyển");
-                JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+                JPanel p = new JPanel(new GridBagLayout());
                 p.setBackground(sel ? t.getSelectionBackground() : WHITE);
                 JLabel badge = new JLabel("● " + status);
                 badge.setFont(FONT_BOLD_10);
@@ -368,7 +376,7 @@ public class NguyenVongPanel extends JPanel {
         table.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(
                     JTable t, Object val, boolean sel, boolean foc, int row, int col) {
-                JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
+                JPanel p = new JPanel(new GridBagLayout());
                 p.setBackground(sel ? t.getSelectionBackground() : WHITE);
                 JLabel edit = new JLabel("✏");
                 JLabel del  = new JLabel("🗑");
@@ -378,7 +386,13 @@ public class NguyenVongPanel extends JPanel {
                 del.setForeground(TEXT_MUTED);
                 edit.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                 del.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                p.add(edit); p.add(del);
+                JPanel actions = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
+                actions.setOpaque(false);
+
+                actions.add(edit);
+                actions.add(del);
+                                        
+                p.add(actions);
                 return p;
             }
         });
