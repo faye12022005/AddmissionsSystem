@@ -74,7 +74,12 @@ public class SidebarPanel extends JPanel {
 
 		String[] items = {"Tổng quan","Người dùng","Thí sinh","Ngành học","Tổ hợp","Ngành-Tổ hợp","Điểm thi","Điểm cộng","Nguyện vọng","Bảng quy đổi"};
 		String[] icons = {"📊", "👥", "👨‍🎓", "📚", "📋", "🧮", "📝", "➕", "📋", "🔄"};
+		boolean isAdmin = "admin".equalsIgnoreCase(this.role);
 		for (int i = 0; i < items.length; i++) {
+			// Ẩn menu "Người dùng" nếu không phải admin
+			if (i == 1 && !isAdmin) {
+				continue;
+			}
 			SidebarMenuButton b = new SidebarMenuButton(icons[i] + "  " + items[i]);
 			b.setAlignmentX(Component.LEFT_ALIGNMENT);
 			b.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));

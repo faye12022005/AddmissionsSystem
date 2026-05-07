@@ -13,6 +13,9 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.*;
 import javafx.stage.Stage;
 
+import org.AdmissionsSystem.bus.service.BangQuyDoiService;
+import org.AdmissionsSystem.models.XtBangquydoi;
+
 public class BangQuyDoiPanel extends Application {
 
     // ── Màu sắc ──────────────────────────────────────────────
@@ -80,6 +83,8 @@ public class BangQuyDoiPanel extends Application {
     public static javafx.scene.layout.Region createContent() {
         return new BangQuyDoiPanel().buildMainPanel();
     }
+
+    private final BangQuyDoiService bqdService = new BangQuyDoiService();
 
     // ══════════════════════════════════════════════════════════
     //  1. PAGE HEADER
@@ -286,13 +291,28 @@ public class BangQuyDoiPanel extends Application {
 
         table.getColumns().addAll(colId, colLoai, colPT, colTH, colMon, colKD, colQD, colAction);
 
-        // ── Data ──
-        ObservableList<QuyTac> data = FXCollections.observableArrayList(
-            new QuyTac("QD-001", "Chứng chỉ",    "IELTS",      "-", "Tiếng Anh", "8.0 - 9.0",  "10.0"),
-            new QuyTac("QD-002", "Chứng chỉ",    "TOEFL iBT",  "-", "Tiếng Anh", "95 - 120",   "10.0"),
-            new QuyTac("QD-003", "Điểm ưu tiên", "Đối tượng",  "-", "-",         "Nhóm 1",     "+2.0"),
-            new QuyTac("QD-004", "Chứng chỉ",    "VSTEP",      "-", "Tiếng Anh", "8.5 - 10.0", "9.0")
-        );
+        // ── Data from DB ──
+        ObservableList<QuyTac> data = FXCollections.observableArrayList();
+        try {
+            java.util.List<XtBangquydoi> entities = bqdService.getAll();
+            for (XtBangquydoi e : entities) {
+                String id = e.getDMaquydoi() == null ? String.valueOf(e.getIdqd()) : e.getDMaquydoi();
+                String loai = (e.getDPhuongthuc() != null && e.getDPhuongthuc().contains("Đối tượng")) ? "Điểm ưu tiên" : "Chứng chỉ";
+                String pt = e.getDPhuongthuc() == null ? "" : e.getDPhuongthuc();
+                String tohop = e.getDTohop() == null ? "-" : e.getDTohop();
+                String mon = e.getDMon() == null ? "-" : e.getDMon();
+                String khoangDiem = "";
+                if (e.getDDiema() != null && e.getDDiemb() != null) {
+                    khoangDiem = e.getDDiema().toPlainString() + " - " + e.getDDiemb().toPlainString();
+                } else if (e.getDPhanvi() != null) {
+                    khoangDiem = e.getDPhanvi();
+                }
+                String quyDoi = e.getDDiemc() == null ? "" : e.getDDiemc().toPlainString();
+                data.add(new QuyTac(id, loai, pt, tohop, mon, khoangDiem, quyDoi));
+            }
+        } catch (Exception ex) {
+            // DB unavailable
+        }
         table.setItems(data);
 
         // Pagination

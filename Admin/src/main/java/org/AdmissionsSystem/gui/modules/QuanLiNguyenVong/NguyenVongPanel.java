@@ -16,6 +16,9 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import javafx.stage.FileChooser;
 
+import org.AdmissionsSystem.bus.service.NguyenVongService;
+import org.AdmissionsSystem.models.XtNguyenvongxettuyen;
+
 public class NguyenVongPanel extends Application {
 
     // ==================== DATA MODEL ====================
@@ -101,8 +104,11 @@ public class NguyenVongPanel extends Application {
 
     // Public factory to allow embedding this panel inside a JFXPanel
     public static javafx.scene.layout.Region createContent() {
-        return new NguyenVongPanel().buildMainContent();
+        NguyenVongPanel panel = new NguyenVongPanel();
+        return panel.buildMainContent();
     }
+
+    private final NguyenVongService nvService = new NguyenVongService();
 
     // ==================== PAGE TITLE ====================
     private HBox buildPageTitle() {
@@ -426,16 +432,27 @@ public class NguyenVongPanel extends Application {
 
         table.getColumns().addAll(colThuTu, colThiSinh, colMa, colTen, colDiem, colTT);
 
-        // Sample data
-        ObservableList<NguyenVong> data = FXCollections.observableArrayList(
-            new NguyenVong("01", "Nguyễn Văn A", "2400015", "7480101", "Khoa học máy tính", "28.50", "Trúng tuyển"),
-            new NguyenVong("02", "Lê Thị B",     "2400288", "7480103", "Kỹ thuật phần mềm", "26.25", "Đang chờ"),
-            new NguyenVong("03", "Trần Văn C",   "2400312", "7480201", "Hệ thống thông tin", "25.75", "Đang chờ"),
-            new NguyenVong("04", "Phạm Thị D",   "2400456", "7480104", "Mạng máy tính",     "24.00", "Đang chờ"),
-            new NguyenVong("05", "Hoàng Văn E",  "2400589", "7480101", "Khoa học máy tính", "22.50", "Đang chờ"),
-            new NguyenVong("06", "Vũ Thị F",     "2400671", "7480103", "Kỹ thuật phần mềm", "20.75", "Đã trượt"),
-            new NguyenVong("07", "Đặng Văn G",   "2400710", "7480105", "An toàn thông tin", "19.50", "Đã trượt")
-        );
+        // Load data from DB
+        ObservableList<NguyenVong> data = FXCollections.observableArrayList();
+        try {
+            java.util.List<XtNguyenvongxettuyen> entities = nvService.getAll();
+            for (XtNguyenvongxettuyen e : entities) {
+                String tt = e.getNvTt() == null ? "" : String.format("%02d", e.getNvTt());
+                String diem = e.getDiemXettuyen() == null ? "0" : e.getDiemXettuyen().toPlainString();
+                String ketQua = e.getNvKetqua() == null ? "Đang chờ" : e.getNvKetqua();
+                data.add(new NguyenVong(
+                    tt,
+                    e.getNnCccd(),
+                    e.getNnCccd(),
+                    e.getNvManganh() == null ? "" : e.getNvManganh(),
+                    e.getNvManganh() == null ? "" : e.getNvManganh(),
+                    diem,
+                    ketQua
+                ));
+            }
+        } catch (Exception ex) {
+            // DB unavailable
+        }
         table.setItems(data);
         table.setPrefHeight(300);
 

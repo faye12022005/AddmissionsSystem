@@ -73,22 +73,22 @@ public class NganhHocFormPanel extends JPanel {
         String ten = txtTen.getText().trim();
         String toHop = txtToHopGoc.getText().trim();
 
-        if (ma.isEmpty() || ten.isEmpty() || toHop.isEmpty()) {
-            throw new IllegalArgumentException("Mã ngành, Tên ngành, Tổ hợp gốc là bắt buộc.");
+        if (ma.isEmpty() || ten.isEmpty()) {
+            throw new IllegalArgumentException("Mã ngành và Tên ngành là bắt buộc.");
         }
 
-        int chiTieu = parseInt(txtChiTieu, "Chỉ tiêu");
-        BigDecimal diemSan = parseBigDecimal(txtDiemSan, "Điểm sàn");
-        BigDecimal diemTrungTuyen = parseBigDecimal(txtDiemTrungTuyen, "Điểm trúng tuyển");
-        int slXetTuyen = parseInt(txtSlXetTuyen, "SL xét tuyển");
-        int slDGNL = parseInt(txtSlDGNL, "SL DGNL");
-        int slVSAT = parseInt(txtSlVSAT, "SL VSAT");
-        int slTHPT = parseInt(txtSlTHPT, "SL THPT");
+        Integer chiTieu = parseInt(txtChiTieu, "Chỉ tiêu", true);
+        BigDecimal diemSan = parseBigDecimal(txtDiemSan, "Điểm sàn", false);
+        BigDecimal diemTrungTuyen = parseBigDecimal(txtDiemTrungTuyen, "Điểm trúng tuyển", false);
+        Integer slXetTuyen = parseInt(txtSlXetTuyen, "SL xét tuyển", false);
+        Integer slDGNL = parseInt(txtSlDGNL, "SL DGNL", false);
+        Integer slVSAT = parseInt(txtSlVSAT, "SL VSAT", false);
+        Integer slTHPT = parseInt(txtSlTHPT, "SL THPT", false);
 
         XtNganh model = new XtNganh();
         model.setManganh(ma);
         model.setTennganh(ten);
-        model.setNTohopgoc(toHop);
+        model.setNTohopgoc(toHop.isEmpty() ? null : toHop);
         model.setNChitieu(chiTieu);
         model.setNDiemsan(diemSan);
         model.setNDiemtrungtuyen(diemTrungTuyen);
@@ -99,7 +99,7 @@ public class NganhHocFormPanel extends JPanel {
         model.setSlXtt(slXetTuyen);
         model.setSlDgnl(slDGNL);
         model.setSlVsat(slVSAT);
-        model.setSlThpt(String.valueOf(slTHPT));
+        model.setSlThpt(slTHPT == null ? null : String.valueOf(slTHPT));
         return model;
     }
 
@@ -157,10 +157,13 @@ public class NganhHocFormPanel extends JPanel {
         gbc.weightx = 0;
     }
 
-    private int parseInt(JTextField field, String fieldName) {
+    private Integer parseInt(JTextField field, String fieldName, boolean required) {
         String text = field.getText().trim();
         if (text.isEmpty()) {
-            throw new IllegalArgumentException(fieldName + " không được để trống.");
+            if (required) {
+                throw new IllegalArgumentException(fieldName + " không được để trống.");
+            }
+            return null;
         }
         try {
             return Integer.parseInt(text);
@@ -169,10 +172,13 @@ public class NganhHocFormPanel extends JPanel {
         }
     }
 
-    private BigDecimal parseBigDecimal(JTextField field, String fieldName) {
+    private BigDecimal parseBigDecimal(JTextField field, String fieldName, boolean required) {
         String text = field.getText().trim();
         if (text.isEmpty()) {
-            throw new IllegalArgumentException(fieldName + " không được để trống.");
+            if (required) {
+                throw new IllegalArgumentException(fieldName + " không được để trống.");
+            }
+            return null;
         }
         try {
             return new BigDecimal(text);

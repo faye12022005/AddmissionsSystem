@@ -31,7 +31,7 @@ public class MainFrame extends JFrame {
     public MainFrame(LoginFrame loginFrame, String displayName, String role) {
         this.loginFrame = loginFrame;
         setTitle("Hệ thống quản lý tuyển sinh");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 800);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
@@ -81,16 +81,30 @@ public class MainFrame extends JFrame {
         add(sidebar, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);
 
-        // wire sidebar buttons to cards - find all JButtons under the sidebar in order
+        // Wire sidebar buttons to card panels using client property
+        // SidebarPanel stores the original menu index on each button
+        String[] allKeys = {"dashboard","users","thisinh","nganh","tohop","nganh_tohop","diem_thisinh","diem_cong","nguyenvong","bang_quydoi"};
         java.util.List<JButton> buttons = new java.util.ArrayList<>();
         collectButtons(sidebar, buttons);
-        String[] keys = {"dashboard","users","thisinh","nganh","tohop","nganh_tohop","diem_thisinh","diem_cong","nguyenvong","bang_quydoi"};        for (int i = 0; i < buttons.size() && i < keys.length; i++) {
-            String card = keys[i];
-            JButton btn = buttons.get(i);
+
+        // Assign card keys: sidebar may skip some items (e.g. "users" for non-admin)
+        // We use the button text to determine which card to show
+        String[] menuLabels = {"Tổng quan","Người dùng","Thí sinh","Ngành học","Tổ hợp","Ngành-Tổ hợp","Điểm thi","Điểm cộng","Nguyện vọng","Bảng quy đổi"};
+        for (JButton btn : buttons) {
+            String text = btn.getText();
+            String card = null;
+            // Duyệt ngược từ cuối danh sách để ưu tiên các nhãn dài/chi tiết hơn (vd: Ngành-Tổ hợp trước Tổ hợp)
+            for (int j = menuLabels.length - 1; j >= 0; j--) {
+                if (text.contains(menuLabels[j])) {
+                    card = allKeys[j];
+                    break;
+                }
+            }
+            if (card == null) continue;
+            final String finalCard = card;
             btn.addActionListener(e -> {
-                cardLayout.show(centerPanel, card);
-                // set per-page placeholder
-                switch (card) {
+                cardLayout.show(centerPanel, finalCard);
+                switch (finalCard) {
                     case "thisinh":
                         header.setPageSearchPlaceholder("Tìm kiếm thí sinh (mã, tên)");
                         break;

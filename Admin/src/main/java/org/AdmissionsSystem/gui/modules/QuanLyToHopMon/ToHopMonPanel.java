@@ -19,6 +19,9 @@ import javax.swing.SwingUtilities;
 import java.awt.Frame;
 import java.lang.reflect.InvocationTargetException;
 
+import org.AdmissionsSystem.bus.service.ToHopMonService;
+import org.AdmissionsSystem.models.XtTohopMonthi;
+
 public class ToHopMonPanel extends Application {
 
     // ── Màu sắc ──────────────────────────────────────────────
@@ -34,12 +37,8 @@ public class ToHopMonPanel extends Application {
     private static final String AMBER      = "#f59e0b";
     private static final String ERROR      = "#ef4444";
 
-    private final ObservableList<ToHop> data = FXCollections.observableArrayList(
-        new ToHop("A00", "Khối A00", "Toán",    "Vật lý",   "Hóa học", "Đang hoạt động"),
-        new ToHop("A01", "Khối A01", "Toán",    "Vật lý",   "Tiếng Anh", "Đang hoạt động"),
-        new ToHop("B00", "Khối B00", "Toán",    "Hóa học",  "Sinh học", "Đang hoạt động"),
-        new ToHop("D01", "Khối D01", "Ngữ văn", "Toán",     "Tiếng Anh", "Tạm ngưng")
-    );
+    private final ToHopMonService toHopService = new ToHopMonService();
+    private final ObservableList<ToHop> data = FXCollections.observableArrayList();
     private final FilteredList<ToHop> filteredData = new FilteredList<>(data, item -> true);
     private TableView<ToHop> table;
     private ComboBox<String> statusCb;
@@ -82,7 +81,28 @@ public class ToHopMonPanel extends Application {
     public static void main(String[] args) { launch(args); }
 
     public static Parent createContent() {
-        return new ToHopMonPanel().buildMainPanel();
+        ToHopMonPanel panel = new ToHopMonPanel();
+        Parent p = panel.buildMainPanel();
+        panel.loadFromDb();
+        return p;
+    }
+
+    private void loadFromDb() {
+        data.clear();
+        try {
+            for (XtTohopMonthi e : toHopService.getAll()) {
+                data.add(new ToHop(
+                    e.getMatohop() == null ? "" : e.getMatohop(),
+                    e.getTentohop() == null ? "" : e.getTentohop(),
+                    e.getMon1() == null ? "" : e.getMon1(),
+                    e.getMon2() == null ? "" : e.getMon2(),
+                    e.getMon3() == null ? "" : e.getMon3(),
+                    "Đang hoạt động"
+                ));
+            }
+        } catch (Exception ex) {
+            // DB unavailable
+        }
     }
 
     @Override
@@ -517,8 +537,19 @@ public class ToHopMonPanel extends Application {
             return;
         }
 
-        data.add(new ToHop(form.code, form.name, form.subj1, form.subj2, form.subj3, form.status));
-        applyStatusFilter();
+        try {
+            XtTohopMonthi entity = new XtTohopMonthi();
+            entity.setMatohop(form.code);
+            entity.setTentohop(form.name);
+            entity.setMon1(form.subj1);
+            entity.setMon2(form.subj2);
+            entity.setMon3(form.subj3);
+            toHopService.add(entity);
+            data.add(new ToHop(form.code, form.name, form.subj1, form.subj2, form.subj3, form.status));
+            applyStatusFilter();
+        } catch (Exception ex) {
+            showWarning("Lỗi thêm tổ hợp: " + ex.getMessage());
+        }
     }
 
     private void handleEditToHop(ToHop existing) {
@@ -533,10 +564,23 @@ public class ToHopMonPanel extends Application {
             return;
         }
 
-        int index = data.indexOf(existing);
-        if (index >= 0) {
-            data.set(index, new ToHop(form.code, form.name, form.subj1, form.subj2, form.subj3, form.status));
-            applyStatusFilter();
+        try {
+            XtTohopMonthi dbEntity = toHopService.findByMaToHop(existing.getMa());
+            if (dbEntity != null) {
+                dbEntity.setMatohop(form.code);
+                dbEntity.setTentohop(form.name);
+                dbEntity.setMon1(form.subj1);
+                dbEntity.setMon2(form.subj2);
+                dbEntity.setMon3(form.subj3);
+                toHopService.update(dbEntity);
+            }
+            int index = data.indexOf(existing);
+            if (index >= 0) {
+                data.set(index, new ToHop(form.code, form.name, form.subj1, form.subj2, form.subj3, form.status));
+                applyStatusFilter();
+            }
+        } catch (Exception ex) {
+            showWarning("Lỗi cập nhật: " + ex.getMessage());
         }
     }
 
@@ -547,8 +591,16 @@ public class ToHopMonPanel extends Application {
         confirm.setContentText("Thao tác này không thể hoàn tác.");
         confirm.showAndWait().ifPresent(btn -> {
             if (btn == ButtonType.OK) {
-                data.remove(selected);
-                applyStatusFilter();
+                try {
+                    XtTohopMonthi dbEntity = toHopService.findByMaToHop(selected.getMa());
+                    if (dbEntity != null) {
+                        toHopService.delete(dbEntity.getIdtohop());
+                    }
+                    data.remove(selected);
+                    applyStatusFilter();
+                } catch (Exception ex) {
+                    showWarning("Lỗi xóa: " + ex.getMessage());
+                }
             }
         });
     }

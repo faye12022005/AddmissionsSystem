@@ -1,10 +1,11 @@
 package org.AdmissionsSystem.gui.modules.QuanlyNganh;
-import org.AdmissionsSystem.controller.NganhHocController;
+import org.AdmissionsSystem.bus.controller.NganhHocController;
 import org.AdmissionsSystem.gui.common.Style;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocFormPanel;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocPaginationPanel;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocSearchPanel;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocTable;
+import org.AdmissionsSystem.gui.modules.QuanlyNganh.mapper.NganhHocRowMapper;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.service.NganhHocCsvService;
 import org.AdmissionsSystem.models.XtNganh;
 import javax.swing.BorderFactory;
@@ -42,6 +43,7 @@ public class NganhHocPanel extends JPanel {
     private final NganhHocFormPanel formPanel;
     private final NganhHocPaginationPanel paginationPanel;
     private final NganhHocCsvService csvService = new NganhHocCsvService();
+    private final NganhHocRowMapper rowMapper = new NganhHocRowMapper();
 
     private int currentPage = 1;
     private int pageSize = 20;
@@ -244,7 +246,7 @@ public class NganhHocPanel extends JPanel {
         for (int i = from; i < to; i++) {
             XtNganh model = filteredRows.get(i);
             currentPageRows.add(model);
-            tableModel.addRow(nganhHocController.toRow(model));
+            tableModel.addRow(rowMapper.toRow(model));
         }
 
         paginationPanel.setPageInfo(currentPage, totalPages, filteredRows.size());
@@ -291,7 +293,7 @@ public class NganhHocPanel extends JPanel {
         }
 
         for (Object[] imported : importedRows) {
-            nganhHocController.upsert(nganhHocController.fromRow(imported));
+            nganhHocController.upsert(rowMapper.fromRow(imported));
         }
 
         applyFilter(searchPanel.getSearchText());
@@ -301,7 +303,7 @@ public class NganhHocPanel extends JPanel {
     private void onExportCsv() {
         List<Object[]> source = new ArrayList<>();
         for (XtNganh model : filteredRows) {
-            source.add(nganhHocController.toRow(model));
+            source.add(rowMapper.toRow(model));
         }
         if (source.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Không có dữ liệu để export.");
