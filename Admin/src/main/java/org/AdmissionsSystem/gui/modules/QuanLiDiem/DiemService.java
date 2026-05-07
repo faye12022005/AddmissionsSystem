@@ -12,6 +12,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.AdmissionsSystem.bus.service.DiemThiService;
+import org.AdmissionsSystem.models.XtDiemthixettuyen;
+
 public class DiemService {
 	public static final String ALL_OPTION = "Tất cả";
 	public static final List<String> LOAI_DIEM = List.of("THPT", "VSAT", "ĐGNL");
@@ -30,10 +33,39 @@ public class DiemService {
 
 	private final List<DiemRecord> records = new ArrayList<>();
 	private int nextId = 1;
+	private final DiemThiService dbService = new DiemThiService();
 
 	public DiemService() {
-		importRows(MockDiemData.createSeedData());
+		loadFromDb();
 	}
+
+	private void loadFromDb() {
+		records.clear();
+		try {
+			List<XtDiemthixettuyen> entities = dbService.getAll();
+			for (XtDiemthixettuyen e : entities) {
+				String phuongThuc = e.getDPhuongthuc() == null ? "THPT" : e.getDPhuongthuc().toUpperCase();
+				// Flatten each entity into per-subject DiemRecords
+				addMonRecord(e.getCccd(), e.getSobaodanh(), phuongThuc, "Toán", bd(e.getTo()));
+				addMonRecord(e.getCccd(), e.getSobaodanh(), phuongThuc, "Vật lý", bd(e.getLi()));
+				addMonRecord(e.getCccd(), e.getSobaodanh(), phuongThuc, "Hóa học", bd(e.getHo()));
+				addMonRecord(e.getCccd(), e.getSobaodanh(), phuongThuc, "Sinh học", bd(e.getSi()));
+				addMonRecord(e.getCccd(), e.getSobaodanh(), phuongThuc, "Lịch sử", bd(e.getSu()));
+				addMonRecord(e.getCccd(), e.getSobaodanh(), phuongThuc, "Địa lý", bd(e.getDi()));
+				addMonRecord(e.getCccd(), e.getSobaodanh(), phuongThuc, "Ngữ văn", bd(e.getVa()));
+				addMonRecord(e.getCccd(), e.getSobaodanh(), phuongThuc, "Tiếng Anh", bd(e.getTi()));
+			}
+		} catch (Exception ex) {
+			// DB unavailable — start empty
+		}
+	}
+
+	private void addMonRecord(String cccd, String sbd, String loai, String mon, double diem) {
+		if (diem <= 0) return;
+		records.add(new DiemRecord(nextId++, cccd, sbd, cccd, loai, mon, diem));
+	}
+
+	private double bd(java.math.BigDecimal v) { return v == null ? 0 : v.doubleValue(); }
 
 	public List<DiemRecord> getAll() {
 		return sortByNewestFirst(records);
@@ -58,34 +90,44 @@ public class DiemService {
 
 	public DiemRecord add(DiemRecordInput input) {
 		DiemRecordInput sanitized = sanitizeAndValidate(input);
-		DiemRecord created = new DiemRecord(
-				nextId++,
-				sanitized.cccd(),
-				sanitized.soBaoDanh(),
-				sanitized.hoTen(),
-				sanitized.loaiDiem(),
-				sanitized.mon(),
-				sanitized.diem());
-		records.add(created);
-		return created;
+		
+		XtDiemthixettuyen entity = dbService.findByCccd(sanitized.cccd());
+		if (entity == null) {
+			entity = new XtDiemthixettuyen();
+			entity.setCccd(sanitized.cccd());
+			entity.setSobaodanh(sanitized.soBaoDanh());
+			entity.setDPhuongthuc(sanitized.loaiDiem());
+		}
+		
+		updateEntitySubject(entity, sanitized.mon(), sanitized.diem());
+		dbService.upsertByCccd(entity);
+		
+		loadFromDb(); // Sync internal list
+		return records.stream()
+				.filter(r -> r.cccd().equals(sanitized.cccd()) && r.mon().equals(sanitized.mon()))
+				.findFirst()
+				.orElse(null);
 	}
 
 	public Optional<DiemRecord> update(int id, DiemRecordInput input) {
 		DiemRecordInput sanitized = sanitizeAndValidate(input);
-
-		for (int i = 0; i < records.size(); i++) {
-			DiemRecord current = records.get(i);
-			if (current.id() == id) {
-				DiemRecord updated = new DiemRecord(
-						id,
-						sanitized.cccd(),
-						sanitized.soBaoDanh(),
-						sanitized.hoTen(),
-						sanitized.loaiDiem(),
-						sanitized.mon(),
-						sanitized.diem());
-				records.set(i, updated);
-				return Optional.of(updated);
+		Optional<DiemRecord> currentOpt = findById(id);
+		
+		if (currentOpt.isPresent()) {
+			DiemRecord current = currentOpt.get();
+			XtDiemthixettuyen entity = dbService.findByCccd(current.cccd());
+			if (entity != null) {
+				// If subject changed, clear old subject
+				if (!current.mon().equals(sanitized.mon())) {
+					updateEntitySubject(entity, current.mon(), 0);
+				}
+				
+				entity.setSobaodanh(sanitized.soBaoDanh());
+				updateEntitySubject(entity, sanitized.mon(), sanitized.diem());
+				dbService.update(entity);
+				
+				loadFromDb();
+				return findById(id);
 			}
 		}
 
@@ -93,7 +135,32 @@ public class DiemService {
 	}
 
 	public boolean delete(int id) {
-		return records.removeIf(r -> r.id() == id);
+		Optional<DiemRecord> currentOpt = findById(id);
+		if (currentOpt.isPresent()) {
+			DiemRecord current = currentOpt.get();
+			XtDiemthixettuyen entity = dbService.findByCccd(current.cccd());
+			if (entity != null) {
+				updateEntitySubject(entity, current.mon(), 0);
+				dbService.update(entity);
+				loadFromDb();
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private void updateEntitySubject(XtDiemthixettuyen entity, String mon, double diem) {
+		java.math.BigDecimal val = java.math.BigDecimal.valueOf(diem);
+		switch (mon) {
+			case "Toán" -> entity.setTo(val);
+			case "Ngữ văn" -> entity.setVa(val);
+			case "Vật lý" -> entity.setLi(val);
+			case "Hóa học" -> entity.setHo(val);
+			case "Sinh học" -> entity.setSi(val);
+			case "Lịch sử" -> entity.setSu(val);
+			case "Địa lý" -> entity.setDi(val);
+			case "Tiếng Anh" -> entity.setTi(val);
+		}
 	}
 
 	public int importRows(Collection<DiemRecordInput> inputs) {
@@ -103,8 +170,12 @@ public class DiemService {
 
 		int imported = 0;
 		for (DiemRecordInput input : inputs) {
-			add(input);
-			imported++;
+			try {
+				add(input);
+				imported++;
+			} catch (Exception e) {
+				// Skip invalid rows
+			}
 		}
 		return imported;
 	}

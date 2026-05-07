@@ -5,10 +5,14 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.DynamicUpdate;
 import lombok.Data;
 
 @Data
 @Entity
+@DynamicInsert
+@DynamicUpdate
 @Table(name = "xt_thisinhxettuyen25")
 public class XtThisinhxettuyen25 implements Serializable {
 

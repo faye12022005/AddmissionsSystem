@@ -41,8 +41,8 @@ public class XtNguyenvongxettuyenDao extends AbstractCrudDao<XtNguyenvongxettuye
      * @return Danh sách nguyện vọng của thí sinh
      */
     public List<XtNguyenvongxettuyen> timTheoCccd(String nnCccd) {
-        try (var session = sessionFactory.openSession()) {
-            return session.createQuery("FROM XtNguyenvongxettuyen WHERE lower(nn_cccd) = :cccd", XtNguyenvongxettuyen.class)
+        try (var session = getSessionFactory().openSession()) {
+            return session.createQuery("FROM XtNguyenvongxettuyen WHERE lower(nnCccd) = :cccd", XtNguyenvongxettuyen.class)
                     .setParameter("cccd", nnCccd != null ? nnCccd.toLowerCase() : "")
                     .list();
         }
@@ -54,8 +54,8 @@ public class XtNguyenvongxettuyenDao extends AbstractCrudDao<XtNguyenvongxettuye
      * @return Danh sách nguyện vọng theo ngành
      */
     public List<XtNguyenvongxettuyen> timTheoMaNganh(String nvManganh) {
-        try (var session = sessionFactory.openSession()) {
-            return session.createQuery("FROM XtNguyenvongxettuyen WHERE lower(nv_manganh) = :manganh", XtNguyenvongxettuyen.class)
+        try (var session = getSessionFactory().openSession()) {
+            return session.createQuery("FROM XtNguyenvongxettuyen WHERE lower(nvManganh) = :manganh", XtNguyenvongxettuyen.class)
                     .setParameter("manganh", nvManganh != null ? nvManganh.toLowerCase() : "")
                     .list();
         }
@@ -67,8 +67,8 @@ public class XtNguyenvongxettuyenDao extends AbstractCrudDao<XtNguyenvongxettuye
      * @return Danh sách nguyện vọng theo kết quả
      */
     public List<XtNguyenvongxettuyen> timTheoKetQua(String nvKetqua) {
-        try (var session = sessionFactory.openSession()) {
-            return session.createQuery("FROM XtNguyenvongxettuyen WHERE lower(nv_ketqua) = :ketqua", XtNguyenvongxettuyen.class)
+        try (var session = getSessionFactory().openSession()) {
+            return session.createQuery("FROM XtNguyenvongxettuyen WHERE lower(nvKetqua) = :ketqua", XtNguyenvongxettuyen.class)
                     .setParameter("ketqua", nvKetqua != null ? nvKetqua.toLowerCase() : "")
                     .list();
         }
@@ -120,7 +120,7 @@ public class XtNguyenvongxettuyenDao extends AbstractCrudDao<XtNguyenvongxettuye
      * @return ID tiếp theo
      */
     public Integer layIdTiepTheo() {
-        try (var session = sessionFactory.openSession()) {
+        try (var session = getSessionFactory().openSession()) {
             Integer maxId = session.createQuery("SELECT max(idnv) FROM XtNguyenvongxettuyen", Integer.class)
                     .uniqueResult();
             return (maxId != null) ? maxId + 1 : 1;

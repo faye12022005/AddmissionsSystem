@@ -1,9 +1,9 @@
-package org.AdmissionsSystem.controller;
+package org.AdmissionsSystem.bus.controller;
 
 import java.util.List;
 
 import org.AdmissionsSystem.models.XtNguyenvongxettuyen;
-import org.AdmissionsSystem.service.XtNguyenvongxettuyenService;
+import org.AdmissionsSystem.bus.service.XtNguyenvongxettuyenService;
 
 public class XtNguyenvongxettuyenController {
     private final XtNguyenvongxettuyenService service = new XtNguyenvongxettuyenService();

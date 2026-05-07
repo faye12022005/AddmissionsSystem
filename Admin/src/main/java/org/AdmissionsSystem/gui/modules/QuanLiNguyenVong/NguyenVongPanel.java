@@ -5,7 +5,6 @@ import javax.swing.border.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.geom.*;
 
 public class NguyenVongPanel extends JPanel {
 
@@ -22,7 +21,6 @@ public class NguyenVongPanel extends JPanel {
     private static final Color SUCCESS_FG   = new Color(0x16, 0xa3, 0x4a);
     private static final Color WARN_BG      = new Color(0xff, 0xfb, 0xeb);
     private static final Color WARN_FG      = new Color(0xd9, 0x77, 0x06);
-    private static final Color DANGER_FG    = new Color(0xdc, 0x26, 0x26);
 
     // ── Font ─────────────────────────────────────────────────
     private static final Font FONT_BOLD_26  = new Font("SansSerif", Font.BOLD,  26);
@@ -612,7 +610,6 @@ public class NguyenVongPanel extends JPanel {
     }
     
     private String getPaginationText() {
-        int totalPages = (TABLE_DATA.length + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
         int startRecord = (currentPage - 1) * RECORDS_PER_PAGE + 1;
         int endRecord = Math.min(currentPage * RECORDS_PER_PAGE, TABLE_DATA.length);
         return "Hiển thị " + startRecord + "-" + endRecord + " trong số " + TABLE_DATA.length + " bản ghi";

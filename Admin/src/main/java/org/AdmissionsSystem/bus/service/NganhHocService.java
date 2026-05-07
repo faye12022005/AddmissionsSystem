@@ -1,4 +1,4 @@
-package org.AdmissionsSystem.service;
+package org.AdmissionsSystem.bus.service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -81,44 +81,6 @@ public class NganhHocService {
         dao.update(existing);
     }
 
-    public XtNganh fromRow(Object[] row) {
-        XtNganh model = new XtNganh();
-        model.setManganh(asText(rowValue(row, 0)));
-        model.setTennganh(asText(rowValue(row, 1)));
-        model.setNTohopgoc(asText(rowValue(row, 2)));
-        model.setNChitieu(parseInt(rowValue(row, 3)));
-        model.setNDiemsan(parseBigDecimal(rowValue(row, 4)));
-        model.setNDiemtrungtuyen(parseBigDecimal(rowValue(row, 5)));
-        model.setNTuyenthang(normalizeYn(asText(rowValue(row, 6))));
-        model.setNDgnl(normalizeYn(asText(rowValue(row, 7))));
-        model.setNThpt(normalizeYn(asText(rowValue(row, 8))));
-        model.setNVsat(normalizeYn(asText(rowValue(row, 9))));
-        model.setSlXtt(parseInt(rowValue(row, 10)));
-        model.setSlDgnl(parseInt(rowValue(row, 11)));
-        model.setSlVsat(parseInt(rowValue(row, 12)));
-        model.setSlThpt(String.valueOf(parseInt(rowValue(row, 13))));
-        return model;
-    }
-
-    public Object[] toRow(XtNganh model) {
-        return new Object[] {
-                asText(model.getManganh()),
-                asText(model.getTennganh()),
-                asText(model.getNTohopgoc()),
-                nvlInt(model.getNChitieu()),
-                nvlBigDecimal(model.getNDiemsan()),
-                nvlBigDecimal(model.getNDiemtrungtuyen()),
-                normalizeYn(model.getNTuyenthang()),
-                normalizeYn(model.getNDgnl()),
-                normalizeYn(model.getNThpt()),
-                normalizeYn(model.getNVsat()),
-                nvlInt(model.getSlXtt()),
-                nvlInt(model.getSlDgnl()),
-                nvlInt(model.getSlVsat()),
-                parseIntSafe(model.getSlThpt())
-        };
-    }
-
     private boolean matchesKeyword(XtNganh model, String keyword) {
         return asText(model.getManganh()).toLowerCase(Locale.ROOT).contains(keyword)
                 || asText(model.getTennganh()).toLowerCase(Locale.ROOT).contains(keyword)
@@ -129,42 +91,32 @@ public class NganhHocService {
         if (model == null) {
             throw new IllegalArgumentException("Dữ liệu ngành học không hợp lệ.");
         }
-        if (asText(model.getManganh()).isEmpty() || asText(model.getTennganh()).isEmpty() || asText(model.getNTohopgoc()).isEmpty()) {
-            throw new IllegalArgumentException("Mã ngành, Tên ngành, Tổ hợp gốc là bắt buộc.");
+        if (asText(model.getManganh()).isEmpty() || asText(model.getTennganh()).isEmpty()) {
+            throw new IllegalArgumentException("Mã ngành và Tên ngành là bắt buộc.");
+        }
+        if (model.getNChitieu() == null) {
+            throw new IllegalArgumentException("Chỉ tiêu là bắt buộc.");
         }
     }
 
     private XtNganh copyModel(XtNganh source, XtNganh target) {
         target.setManganh(asText(source.getManganh()));
         target.setTennganh(asText(source.getTennganh()));
-        target.setNTohopgoc(asText(source.getNTohopgoc()));
-        target.setNChitieu(nvlInt(source.getNChitieu()));
-        target.setNDiemsan(nvlBigDecimal(source.getNDiemsan()));
-        target.setNDiemtrungtuyen(nvlBigDecimal(source.getNDiemtrungtuyen()));
+        String toHop = asText(source.getNTohopgoc());
+        target.setNTohopgoc(toHop.isEmpty() ? null : toHop);
+        
+        target.setNChitieu(nvlInt(source.getNChitieu())); // Required, default to 0 if null but should be validated
+        target.setNDiemsan(source.getNDiemsan());
+        target.setNDiemtrungtuyen(source.getNDiemtrungtuyen());
         target.setNTuyenthang(normalizeYn(source.getNTuyenthang()));
         target.setNDgnl(normalizeYn(source.getNDgnl()));
         target.setNThpt(normalizeYn(source.getNThpt()));
         target.setNVsat(normalizeYn(source.getNVsat()));
-        target.setSlXtt(nvlInt(source.getSlXtt()));
-        target.setSlDgnl(nvlInt(source.getSlDgnl()));
-        target.setSlVsat(nvlInt(source.getSlVsat()));
-        target.setSlThpt(String.valueOf(parseIntSafe(source.getSlThpt())));
+        target.setSlXtt(source.getSlXtt());
+        target.setSlDgnl(source.getSlDgnl());
+        target.setSlVsat(source.getSlVsat());
+        target.setSlThpt(source.getSlThpt());
         return target;
-    }
-
-    private Object rowValue(Object[] row, int index) {
-        if (row == null || index < 0 || index >= row.length) {
-            return null;
-        }
-        return row[index];
-    }
-
-    private Integer parseInt(Object value) {
-        String text = asText(value);
-        if (text.isEmpty()) {
-            return 0;
-        }
-        return Integer.parseInt(text);
     }
 
     private Integer parseIntSafe(String value) {
@@ -176,14 +128,6 @@ public class NganhHocService {
         } catch (NumberFormatException ex) {
             return 0;
         }
-    }
-
-    private BigDecimal parseBigDecimal(Object value) {
-        String text = asText(value);
-        if (text.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-        return new BigDecimal(text);
     }
 
     private BigDecimal nvlBigDecimal(BigDecimal value) {

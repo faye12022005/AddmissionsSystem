@@ -1,17 +1,10 @@
 package org.AdmissionsSystem.gui.modules.QuanLyToHopMon;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-import javax.swing.table.TableCellRenderer;
 import java.awt.*;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.util.Vector;
-import org.AdmissionsSystem.gui.modules.QuanLyToHopMon.EditToHopDialog;
-import org.AdmissionsSystem.gui.modules.QuanLyToHopMon.AddToHopDialog;
-import org.AdmissionsSystem.controller.ToHopMonController;
+import org.AdmissionsSystem.bus.controller.ToHopMonController;
 import org.AdmissionsSystem.models.XtTohopMonthi;
 
 public class ToHopMonPanelSwing extends JPanel {
@@ -27,7 +20,6 @@ public class ToHopMonPanelSwing extends JPanel {
     private static final Color SURFACE      = new Color(241, 245, 249);
     private static final Color SUCCESS      = new Color(16, 185, 129);
     private static final Color AMBER        = new Color(245, 158, 11);
-    private static final Color ERROR        = new Color(239, 68, 68);
 
     private DefaultTableModel tableModel;
     private JTable table;
@@ -44,12 +36,15 @@ public class ToHopMonPanelSwing extends JPanel {
 
     // ── Data Model ───────────────────────────────────────────
     public static class ToHop {
+        private final Integer id;
         private final String ma, ten, mon1, mon2, mon3, status;
-        public ToHop(String ma, String ten, String mon1, String mon2, String mon3, String status) {
+        public ToHop(Integer id, String ma, String ten, String mon1, String mon2, String mon3, String status) {
+            this.id = id;
             this.ma = ma; this.ten = ten;
             this.mon1 = mon1; this.mon2 = mon2; this.mon3 = mon3;
             this.status = status;
         }
+        public Integer getId()  { return id; }
         public String getMa()   { return ma; }
         public String getTen()  { return ten; }
         public String getMon1() { return mon1; }
@@ -92,6 +87,7 @@ public class ToHopMonPanelSwing extends JPanel {
             java.util.List<XtTohopMonthi> dbData = controller.taiDuLieu();
             for (XtTohopMonthi tohopMonthi : dbData) {
                 data.add(new ToHop(
+                    tohopMonthi.getIdtohop(),
                     tohopMonthi.getMatohop(),
                     tohopMonthi.getTentohop() != null ? tohopMonthi.getTentohop() : "",
                     tohopMonthi.getMon1(),
@@ -107,14 +103,7 @@ public class ToHopMonPanelSwing extends JPanel {
         }
     }
 
-    @Deprecated
-    private void loadInitialData() {
-        data.clear();
-        data.add(new ToHop("A00", "Khối A00", "Toán", "Vật lý", "Hóa học", "Đang hoạt động"));
-        data.add(new ToHop("A01", "Khối A01", "Toán", "Vật lý", "Tiếng Anh", "Đang hoạt động"));
-        data.add(new ToHop("B00", "Khối B00", "Toán", "Hóa học", "Sinh học", "Đang hoạt động"));
-        data.add(new ToHop("D01", "Khối D01", "Ngữ văn", "Toán", "Tiếng Anh", "Tạm ngưng"));
-    }
+
 
     // ══════════════════════════════════════════════════════════
     //  MAIN PANEL
@@ -699,6 +688,7 @@ public class ToHopMonPanelSwing extends JPanel {
                 
                 // Tạo object cập nhật
                 XtTohopMonthi updatedTohop = new XtTohopMonthi();
+                updatedTohop.setIdtohop(selected.getId());
                 updatedTohop.setMatohop(dialog.getCode());
                 updatedTohop.setTentohop(name);
                 updatedTohop.setMon1(subj1);
@@ -706,7 +696,7 @@ public class ToHopMonPanelSwing extends JPanel {
                 updatedTohop.setMon3(subj3);
                 
                 // Gọi controller để cập nhật
-                controller.xuLySuKienCapNhat(selected.getMa(), updatedTohop);
+                controller.xuLySuKienCapNhat(updatedTohop);
                 
                 // Reload dữ liệu
                 loadDataFromDatabase();
@@ -743,7 +733,7 @@ public class ToHopMonPanelSwing extends JPanel {
         if (option == JOptionPane.YES_OPTION) {
             try {
                 // Gọi controller để xóa
-                controller.xuLySuKienXoa(selected.getMa());
+                controller.xuLySuKienXoaTheoId(selected.getId());
                 
                 // Reload dữ liệu
                 loadDataFromDatabase();
@@ -790,7 +780,6 @@ public class ToHopMonPanelSwing extends JPanel {
         if (paginationInfo == null) return;
         
         int visible = filteredData.size();
-        int total = data.size();
         
         if (visible == 0) {
             paginationInfo.setText("Không có dữ liệu phù hợp");

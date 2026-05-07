@@ -1,4 +1,4 @@
-package org.AdmissionsSystem.service;
+package org.AdmissionsSystem.bus.service;
 
 import java.util.ArrayList;
 import java.util.List;

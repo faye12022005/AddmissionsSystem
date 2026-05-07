@@ -41,8 +41,8 @@ public class XtBangquydoiDao extends AbstractCrudDao<XtBangquydoi, Integer> {
      * @return Danh sách bảng quy đổi theo phương thức
      */
     public List<XtBangquydoi> timTheoPhương(String dPhuongthuc) {
-        try (var session = sessionFactory.openSession()) {
-            return session.createQuery("FROM XtBangquydoi WHERE lower(d_phuongthuc) = :phuongthuc", XtBangquydoi.class)
+        try (var session = getSessionFactory().openSession()) {
+            return session.createQuery("FROM XtBangquydoi WHERE lower(dPhuongthuc) = :phuongthuc", XtBangquydoi.class)
                     .setParameter("phuongthuc", dPhuongthuc != null ? dPhuongthuc.toLowerCase() : "")
                     .list();
         }
@@ -54,8 +54,8 @@ public class XtBangquydoiDao extends AbstractCrudDao<XtBangquydoi, Integer> {
      * @return Danh sách bảng quy đổi theo tổ hợp
      */
     public List<XtBangquydoi> timTheoTohop(String dTohop) {
-        try (var session = sessionFactory.openSession()) {
-            return session.createQuery("FROM XtBangquydoi WHERE lower(d_tohop) = :tohop", XtBangquydoi.class)
+        try (var session = getSessionFactory().openSession()) {
+            return session.createQuery("FROM XtBangquydoi WHERE lower(dTohop) = :tohop", XtBangquydoi.class)
                     .setParameter("tohop", dTohop != null ? dTohop.toLowerCase() : "")
                     .list();
         }
@@ -67,8 +67,8 @@ public class XtBangquydoiDao extends AbstractCrudDao<XtBangquydoi, Integer> {
      * @return Bảng quy đổi nếu tìm thấy, null nếu không
      */
     public XtBangquydoi timTheoMaQuydoi(String dMaquydoi) {
-        try (var session = sessionFactory.openSession()) {
-            return session.createQuery("FROM XtBangquydoi WHERE lower(d_maquydoi) = :maquydoi", XtBangquydoi.class)
+        try (var session = getSessionFactory().openSession()) {
+            return session.createQuery("FROM XtBangquydoi WHERE lower(dMaquydoi) = :maquydoi", XtBangquydoi.class)
                     .setParameter("maquydoi", dMaquydoi != null ? dMaquydoi.toLowerCase() : "")
                     .uniqueResult();
         }
@@ -80,8 +80,8 @@ public class XtBangquydoiDao extends AbstractCrudDao<XtBangquydoi, Integer> {
      * @return Danh sách bảng quy đổi theo môn
      */
     public List<XtBangquydoi> timTheoMon(String dMon) {
-        try (var session = sessionFactory.openSession()) {
-            return session.createQuery("FROM XtBangquydoi WHERE lower(d_mon) LIKE :mon", XtBangquydoi.class)
+        try (var session = getSessionFactory().openSession()) {
+            return session.createQuery("FROM XtBangquydoi WHERE lower(dMon) LIKE :mon", XtBangquydoi.class)
                     .setParameter("mon", "%" + (dMon != null ? dMon.toLowerCase() : "") + "%")
                     .list();
         }
@@ -142,7 +142,7 @@ public class XtBangquydoiDao extends AbstractCrudDao<XtBangquydoi, Integer> {
      * @return ID tiếp theo
      */
     public Integer layIdTiepTheo() {
-        try (var session = sessionFactory.openSession()) {
+        try (var session = getSessionFactory().openSession()) {
             Integer maxId = session.createQuery("SELECT max(idqd) FROM XtBangquydoi", Integer.class)
                     .uniqueResult();
             return (maxId != null) ? maxId + 1 : 1;

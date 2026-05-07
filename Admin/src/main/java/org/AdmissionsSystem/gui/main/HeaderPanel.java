@@ -3,11 +3,9 @@ import javax.swing.*;
 import org.AdmissionsSystem.gui.components.SearchPanel;
 import java.awt.*;
 import java.awt.event.ActionListener;
-import java.util.Objects;
 
 public class HeaderPanel extends JPanel {
 	private final SearchPanel pageSearch;
-	private final SearchPanel globalSearch;
 	private final JButton gearButton;
 
 	public HeaderPanel() {
@@ -30,9 +28,7 @@ public class HeaderPanel extends JPanel {
 		// Center: global search + per-page search
 		JPanel center = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 12));
 		center.setOpaque(false);
-		globalSearch = new SearchPanel(560, "Tìm kiếm thí sinh, hồ sơ hoặc mã ngành...", null);
 		pageSearch = new SearchPanel(520, "", "Tìm");
-		// center.add(globalSearch);
 		center.add(pageSearch);
 
 		// Right: small icon buttons

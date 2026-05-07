@@ -11,12 +11,6 @@ public class ToHopMonDao extends AbstractCrudDao<XtTohopMonthi, Integer> {
 
     /**
      * CREATE: Thêm mới tổ hợp môn
-     * @param tohopMonthi tổ hợp môn cần thêm
-     * @return ID của tổ hợp môn vừa thêm
-     */
-    public Integer themToHopMon(XtTohopMonthi tohopMonthi) {
-        return (Integer) save(tohopMonthi);
-    }
 
     /**
      * READ: Lấy tất cả tổ hợp môn
@@ -41,7 +35,7 @@ public class ToHopMonDao extends AbstractCrudDao<XtTohopMonthi, Integer> {
      * @return Tổ hợp môn nếu tìm thấy, null nếu không tìm thấy
      */
     public XtTohopMonthi timTheoMaToHop(String maTohop){
-        try (var session = sessionFactory.openSession()){
+        try (var session = getSessionFactory().openSession()){
             return session.createQuery("FROM XtTohopMonthi WHERE lower(matohop) = :ma", XtTohopMonthi.class)
                     .setParameter("ma", maTohop != null ? maTohop.toLowerCase() : "")
                     .uniqueResult();
@@ -54,7 +48,7 @@ public class ToHopMonDao extends AbstractCrudDao<XtTohopMonthi, Integer> {
      * @return Tổ hợp môn nếu tìm thấy, null nếu không tìm thấy
      */
     public List<XtTohopMonthi> timTheoTenToHop(String tenTohop){
-        try (var session = sessionFactory.openSession()){
+        try (var session = getSessionFactory().openSession()){
             return session.createQuery("FROM XtTohopMonthi WHERE lower(tentohop) LIKE :ten", XtTohopMonthi.class)
                     .setParameter("ten", "%" + (tenTohop != null ? tenTohop.toLowerCase() : "") + "%")
                     .list();
@@ -67,10 +61,21 @@ public class ToHopMonDao extends AbstractCrudDao<XtTohopMonthi, Integer> {
      * @return Dan sách tổ hợp môn chứa môn học đó
      */
     public List<XtTohopMonthi> timTheoMon(String monHoc){
-        try (var session = sessionFactory.openSession()){
+        try (var session = getSessionFactory().openSession()){
             return session.createQuery(
                     "FROM XtTohopMonthi WHERE mon1 = :mon OR mon2 = :mon OR mon3 = :mon", XtTohopMonthi.class)
                     .setParameter("mon", monHoc)
+                    .list();
+        }
+    }
+    
+    public List<XtTohopMonthi> search(String keyword) {
+        try (var session = getSessionFactory().openSession()) {
+            String q = "%" + (keyword == null ? "" : keyword.trim().toLowerCase()) + "%";
+            return session.createQuery(
+                    "FROM XtTohopMonthi WHERE lower(matohop) LIKE :q OR lower(tentohop) LIKE :q OR lower(mon1) LIKE :q OR lower(mon2) LIKE :q OR lower(mon3) LIKE :q",
+                    XtTohopMonthi.class)
+                    .setParameter("q", q)
                     .list();
         }
     }
@@ -130,8 +135,8 @@ public class ToHopMonDao extends AbstractCrudDao<XtTohopMonthi, Integer> {
      * @return ID tiếp theo
      */
     public Integer layIdTiepTheo() {
-        try (var session = sessionFactory.openSession()){
-            Integer maxID = session.createQuery("SELECT max(idtohop) FROM xt_tohop_monthi", Integer.class)
+        try (var session = getSessionFactory().openSession()){
+            Integer maxID = session.createQuery("SELECT max(idtohop) FROM XtTohopMonthi", Integer.class)
                     .uniqueResult();
             return (maxID != null) ? maxID + 1 : 1;
         }

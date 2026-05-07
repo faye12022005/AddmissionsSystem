@@ -1,9 +1,9 @@
-package org.AdmissionsSystem.controller;
+package org.AdmissionsSystem.bus.controller;
 
 import java.util.List;
 
 import org.AdmissionsSystem.models.XtBangquydoi;
-import org.AdmissionsSystem.service.XtBangquydoiService;
+import org.AdmissionsSystem.bus.service.XtBangquydoiService;
 
 public class XtBangquydoiController {
     private final XtBangquydoiService service = new XtBangquydoiService();
