@@ -1,4 +1,5 @@
 package org.AdmissionsSystem.gui.main;
+
 import javax.swing.*;
 import javafx.embed.swing.JFXPanel;
 import javafx.application.Platform;
@@ -20,9 +21,10 @@ import java.awt.*;
 
 public class MainFrame extends JFrame {
 
-    private CardLayout cardLayout = new CardLayout();
-    private JPanel centerPanel = new JPanel(cardLayout);
+    private final CardLayout cardLayout = new CardLayout();
+    private final JPanel centerPanel = new JPanel(cardLayout);
     private final LoginFrame loginFrame;
+    private final HeaderPanel header;
 
     public MainFrame() {
         this(null, "Lê Minh Anh", "Admin");
@@ -37,7 +39,7 @@ public class MainFrame extends JFrame {
         setLayout(new BorderLayout());
 
         SidebarPanel sidebar = new SidebarPanel(displayName, role);
-        final HeaderPanel header = new HeaderPanel(this::logoutToLogin);
+        header = new HeaderPanel(this::logoutToLogin);
 
         // create screens
         centerPanel.add(new DashboardPanel(), "dashboard");
@@ -84,33 +86,12 @@ public class MainFrame extends JFrame {
         // wire sidebar buttons to cards - find all JButtons under the sidebar in order
         java.util.List<JButton> buttons = new java.util.ArrayList<>();
         collectButtons(sidebar, buttons);
-        String[] keys = {"dashboard","users","thisinh","nganh","tohop","nganh_tohop","diem_thisinh","diem_cong","nguyenvong","bang_quydoi"};        for (int i = 0; i < buttons.size() && i < keys.length; i++) {
+        String[] keys = { "dashboard", "users", "thisinh", "nganh", "tohop", "nganh_tohop", "diem_thisinh", "diem_cong",
+                "nguyenvong", "bang_quydoi" };
+        for (int i = 0; i < buttons.size() && i < keys.length; i++) {
             String card = keys[i];
             JButton btn = buttons.get(i);
-            btn.addActionListener(e -> {
-                cardLayout.show(centerPanel, card);
-                // set per-page placeholder
-                switch (card) {
-                    case "thisinh":
-                        header.setPageSearchPlaceholder("Tìm kiếm thí sinh (mã, tên)");
-                        break;
-                    case "users":
-                        header.setPageSearchPlaceholder("Tìm kiếm người dùng (tên, email)");
-                        break;
-                    case "nganh":
-                        header.setPageSearchPlaceholder("Tìm kiếm ngành / tổ hợp");
-                        break;
-                    case "tohop":
-                        header.setPageSearchPlaceholder("Tìm kiếm môn học / tổ hợp môn");
-                        break;
-                    case "diem_thisinh":
-                        header.setPageSearchPlaceholder("Tìm kiếm bằng mã thí sinh hoặc tên");
-                        break;
-                    default:
-                        header.setPageSearchPlaceholder("");
-                        break;
-                }
-            });
+            btn.addActionListener(e -> showCard(card));
         }
 
         // forward per-page search actions to the currently visible page if it
@@ -123,8 +104,32 @@ public class MainFrame extends JFrame {
         });
 
         // // show diem_cong panel by default
-        // cardLayout.show(centerPanel, "diem_cong");
-        // header.setPageSearchPlaceholder("tìm kiếm điểm cộng");
+        // showCard("diem_cong");
+    }
+
+    public void showCard(String card) {
+        cardLayout.show(centerPanel, card);
+        updateSearchPlaceholder(card);
+    }
+
+    private void updateSearchPlaceholder(String card) {
+        switch (card) {
+            case "thisinh":
+                header.setPageSearchPlaceholder("Tìm kiếm thí sinh (mã, tên)");
+                break;
+            case "users":
+                header.setPageSearchPlaceholder("Tìm kiếm người dùng (tên, email)");
+                break;
+            case "nganh":
+                header.setPageSearchPlaceholder("Tìm kiếm ngành / tổ hợp");
+                break;
+            case "tohop":
+                header.setPageSearchPlaceholder("Tìm kiếm môn học / tổ hợp môn");
+                break;
+            default:
+                header.setPageSearchPlaceholder("");
+                break;
+        }
     }
 
     private Component getCurrentCardComponent() {

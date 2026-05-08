@@ -7,6 +7,7 @@ import org.AdmissionsSystem.models.Users;
 import org.AdmissionsSystem.models.XtBangquydoi;
 import org.AdmissionsSystem.models.XtDiemcongxetuyen;
 import org.AdmissionsSystem.models.XtDiemthixettuyen;
+import org.AdmissionsSystem.models.XtDiemVsat;
 import org.AdmissionsSystem.models.XtNganh;
 import org.AdmissionsSystem.models.XtNganhTohop;
 import org.AdmissionsSystem.models.XtNguyenvongxettuyen;
@@ -68,6 +69,10 @@ public class HibernateUtil {
         properties.put("hibernate.jdbc.batch_size", String.valueOf(AppConfig.getJdbcBatchSize()));
         properties.put("hibernate.jdbc.fetch_size", String.valueOf(AppConfig.getJdbcFetchSize()));
 
+        // Enable backtick quoting for all identifiers to handle reserved keywords as
+        // column names
+        properties.put("hibernate.globally_quoted_identifiers",
+                String.valueOf(AppConfig.getGloballyQuotedIdentifiers()));
         return properties;
     }
 
@@ -77,6 +82,7 @@ public class HibernateUtil {
         configuration.addAnnotatedClass(XtBangquydoi.class);
         configuration.addAnnotatedClass(XtDiemcongxetuyen.class);
         configuration.addAnnotatedClass(XtDiemthixettuyen.class);
+        configuration.addAnnotatedClass(XtDiemVsat.class);
         configuration.addAnnotatedClass(XtNganh.class);
         configuration.addAnnotatedClass(XtNganhTohop.class);
         configuration.addAnnotatedClass(XtNguyenvongxettuyen.class);

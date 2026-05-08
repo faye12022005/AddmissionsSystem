@@ -24,14 +24,15 @@ import java.util.Map;
 
 public class ImportExcel {
 
-	public List<Object[]> chooseAndRead(Component parent, String dialogTitle, String[] targetColumns) throws IOException {
+	public List<Object[]> chooseAndRead(Component parent, String dialogTitle, String[] targetColumns)
+			throws IOException {
 		return chooseAndRead(parent, dialogTitle, targetColumns, Map.of());
 	}
 
 	public List<Object[]> chooseAndRead(Component parent,
-										String dialogTitle,
-										String[] targetColumns,
-										Map<String, String> headerAliases) throws IOException {
+			String dialogTitle,
+			String[] targetColumns,
+			Map<String, String> headerAliases) throws IOException {
 		if (targetColumns == null || targetColumns.length == 0) {
 			throw new IllegalArgumentException("Danh sách cột import không được để trống.");
 		}
@@ -51,11 +52,13 @@ public class ImportExcel {
 		return switch (extension) {
 			case "xlsx", "xls" -> readExcel(selectedFile, targetColumns, headerAliases);
 			case "csv" -> readCsv(selectedFile, targetColumns, headerAliases);
-			default -> throw new IllegalArgumentException("Định dạng file không hỗ trợ. Vui lòng chọn .xlsx, .xls hoặc .csv.");
+			default ->
+				throw new IllegalArgumentException("Định dạng file không hỗ trợ. Vui lòng chọn .xlsx, .xls hoặc .csv.");
 		};
 	}
 
-	private List<Object[]> readExcel(File file, String[] targetColumns, Map<String, String> headerAliases) throws IOException {
+	private List<Object[]> readExcel(File file, String[] targetColumns, Map<String, String> headerAliases)
+			throws IOException {
 		try (Workbook workbook = WorkbookFactory.create(file)) {
 			if (workbook.getNumberOfSheets() == 0) {
 				return List.of();
@@ -107,7 +110,8 @@ public class ImportExcel {
 		}
 	}
 
-	private List<Object[]> readCsv(File file, String[] targetColumns, Map<String, String> headerAliases) throws IOException {
+	private List<Object[]> readCsv(File file, String[] targetColumns, Map<String, String> headerAliases)
+			throws IOException {
 		try (BufferedReader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
 			List<String> lines = reader.lines().toList();
 			if (lines.isEmpty()) {
@@ -132,7 +136,8 @@ public class ImportExcel {
 
 				for (int i = 0; i < targetColumns.length; i++) {
 					int sourceIndex = targetIndexByColumn[i];
-					String value = sourceIndex >= 0 && sourceIndex < values.size() ? values.get(sourceIndex).trim() : "";
+					String value = sourceIndex >= 0 && sourceIndex < values.size() ? values.get(sourceIndex).trim()
+							: "";
 					mapped[i] = value;
 					if (!value.isBlank()) {
 						hasAnyValue = true;
@@ -149,8 +154,8 @@ public class ImportExcel {
 	}
 
 	private int[] resolveColumnIndexes(List<String> sourceHeaders,
-									   String[] targetColumns,
-									   Map<String, String> headerAliases) {
+			String[] targetColumns,
+			Map<String, String> headerAliases) {
 		Map<String, Integer> sourceByCanonical = new HashMap<>();
 		for (int i = 0; i < sourceHeaders.size(); i++) {
 			String canonical = normalize(sourceHeaders.get(i));
@@ -252,6 +257,7 @@ public class ImportExcel {
 		return text;
 	}
 
+	// Tìm đến hàm normalize ở cuối file và sửa lại như sau:
 	private String normalize(String text) {
 		if (text == null) {
 			return "";
@@ -261,8 +267,8 @@ public class ImportExcel {
 				.replace('đ', 'd')
 				.replace('Đ', 'D')
 				.toLowerCase(Locale.ROOT)
-				.replace("_", "")
-				.replace("-", "")
+				// .replace("_", "") <-- XÓA HOẶC COMMENT DÒNG NÀY
+				// .replace("-", "") <-- XÓA HOẶC COMMENT DÒNG NÀY
 				.replace(" ", "")
 				.trim();
 	}

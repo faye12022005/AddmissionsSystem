@@ -3,6 +3,8 @@
 import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import lombok.Data;
@@ -15,6 +17,7 @@ public class XtDiemthixettuyen implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "iddiemthi", nullable = false)
     private Integer iddiemthi;
 
@@ -48,6 +51,9 @@ public class XtDiemthixettuyen implements Serializable {
     @Column(name = "VA")
     private java.math.BigDecimal va;
 
+    @Column(name = "GDCD")
+    private java.math.BigDecimal gdcd;
+
     @Column(name = "N1_THI")
     private java.math.BigDecimal n1Thi;
 
@@ -74,5 +80,17 @@ public class XtDiemthixettuyen implements Serializable {
 
     @Column(name = "NK2")
     private java.math.BigDecimal nk2;
+
+    @Column(name = "NK3")
+    private java.math.BigDecimal nk3;
+
+    @Column(name = "NK4")
+    private java.math.BigDecimal nk4;
+
+    @Column(name = "NK5")
+    private java.math.BigDecimal nk5;
+
+    @Column(name = "NK6")
+    private java.math.BigDecimal nk6;
 
 }
