@@ -90,45 +90,81 @@ public class DiemModal extends JDialog {
 		idBinding = createBinding("ID", txtId);
 		bindings.add(idBinding);
 
-		GridBagConstraints gbcId = new GridBagConstraints();
-		gbcId.gridx = 0;
-		gbcId.gridy = 0;
-		gbcId.weightx = 1;
-		gbcId.fill = GridBagConstraints.HORIZONTAL;
-		gbcId.insets = new Insets(6, 0, 6, 12);
-		formPanel.add(idBinding.container, gbcId);
+		// --- Section: Thông tin cá nhân ---
+		JPanel personalInfoPanel = createSectionPanel("Thông tin cá nhân");
+		GridBagConstraints gbcSection = new GridBagConstraints();
+		gbcSection.gridx = 0;
+		gbcSection.gridy = 0;
+		gbcSection.gridwidth = 2;
+		gbcSection.weightx = 1;
+		gbcSection.fill = GridBagConstraints.HORIZONTAL;
+		gbcSection.insets = new Insets(6, 0, 6, 0);
+		formPanel.add(personalInfoPanel, gbcSection);
 
-		// Hide ID field for CREATE and UPDATE modes (not VIEW mode)
-		if (!isViewMode) {
-			idBinding.container.setVisible(false);
+		// Add ID field to personal info section if in view mode
+		if (isViewMode) {
+			addFieldToPanel(personalInfoPanel, "ID", txtId);
 		}
+		addFieldToPanel(personalInfoPanel, "CCCD", txtCccd);
+		addFieldToPanel(personalInfoPanel, "Số báo danh", txtSoBaoDanh);
+		addFieldToPanel(personalInfoPanel, "Phương thức", cboLoaiDiem);
 
-		int startIndex = isViewMode ? 1 : 1; // Both cases start at index 1, but with different grid positions
-		addField(formPanel, startIndex, "CCCD", txtCccd);
-		addField(formPanel, startIndex + 1, "Số báo danh", txtSoBaoDanh);
-		addField(formPanel, startIndex + 2, "Phương thức", cboLoaiDiem);
+		// --- Section: Điểm thi các môn học ---
+		JPanel subjectScoresPanel = createSectionPanel("Điểm thi các môn học");
+		gbcSection = new GridBagConstraints();
+		gbcSection.gridx = 0;
+		gbcSection.gridy = 1;
+		gbcSection.gridwidth = 2;
+		gbcSection.weightx = 1;
+		gbcSection.fill = GridBagConstraints.HORIZONTAL;
+		gbcSection.insets = new Insets(12, 0, 6, 0);
+		formPanel.add(subjectScoresPanel, gbcSection);
 
-		addField(formPanel, startIndex + 3, "Toán", txtToan);
-		addField(formPanel, startIndex + 4, "Lý", txtLy);
-		addField(formPanel, startIndex + 5, "Hóa", txtHoa);
-		addField(formPanel, startIndex + 6, "Sinh", txtSinh);
-		addField(formPanel, startIndex + 7, "Sử", txtSu);
-		addField(formPanel, startIndex + 8, "Địa", txtDia);
-		addField(formPanel, startIndex + 9, "Văn", txtVan);
-		addField(formPanel, startIndex + 10, "GDCD", txtGdcd);
-		addField(formPanel, startIndex + 11, "N1_THI", txtN1Thi);
-		addField(formPanel, startIndex + 12, "N1_CC", txtN1Cc);
-		addField(formPanel, startIndex + 13, "CNCN", txtCncn);
-		addField(formPanel, startIndex + 14, "CNNN", txtCnnn);
-		addField(formPanel, startIndex + 15, "Tin học", txtTin);
-		addField(formPanel, startIndex + 16, "KTPL", txtKtpl);
-		addField(formPanel, startIndex + 17, "NL1", txtNl1);
-		addField(formPanel, startIndex + 18, "NK1", txtNk1);
-		addField(formPanel, startIndex + 19, "NK2", txtNk2);
-		addField(formPanel, startIndex + 20, "NK3", txtNk3);
-		addField(formPanel, startIndex + 21, "NK4", txtNk4);
-		addField(formPanel, startIndex + 22, "NK5", txtNk5);
-		addField(formPanel, startIndex + 23, "NK6", txtNk6);
+		addFieldToPanel(subjectScoresPanel, "Toán", txtToan);
+		addFieldToPanel(subjectScoresPanel, "Lý", txtLy);
+		addFieldToPanel(subjectScoresPanel, "Hóa", txtHoa);
+		addFieldToPanel(subjectScoresPanel, "Sinh", txtSinh);
+		addFieldToPanel(subjectScoresPanel, "Sử", txtSu);
+		addFieldToPanel(subjectScoresPanel, "Địa", txtDia);
+		addFieldToPanel(subjectScoresPanel, "Văn", txtVan);
+		addFieldToPanel(subjectScoresPanel, "GDCD", txtGdcd);
+		addFieldToPanel(subjectScoresPanel, "Tin học", txtTin);
+		addFieldToPanel(subjectScoresPanel, "CNCN", txtCncn);
+		addFieldToPanel(subjectScoresPanel, "CNNN", txtCnnn);
+		addFieldToPanel(subjectScoresPanel, "KTPL", txtKtpl);
+		addFieldToPanel(subjectScoresPanel, "N1_THI", txtN1Thi);
+		addFieldToPanel(subjectScoresPanel, "N1_CC", txtN1Cc);
+
+		// --- Section: Điểm thi Đánh giá năng lực ---
+		JPanel dgnlPanel = createSectionPanel("Điểm thi Đánh giá năng lực");
+		gbcSection = new GridBagConstraints();
+		gbcSection.gridx = 0;
+		gbcSection.gridy = 2;
+		gbcSection.gridwidth = 2;
+		gbcSection.weightx = 1;
+		gbcSection.fill = GridBagConstraints.HORIZONTAL;
+		gbcSection.insets = new Insets(12, 0, 6, 0);
+		formPanel.add(dgnlPanel, gbcSection);
+
+		addFieldToPanel(dgnlPanel, "NL1", txtNl1);
+
+		// --- Section: Điểm thi các môn năng khiếu ---
+		JPanel nkPanel = createSectionPanel("Điểm thi các môn năng khiếu");
+		gbcSection = new GridBagConstraints();
+		gbcSection.gridx = 0;
+		gbcSection.gridy = 3;
+		gbcSection.gridwidth = 2;
+		gbcSection.weightx = 1;
+		gbcSection.fill = GridBagConstraints.HORIZONTAL;
+		gbcSection.insets = new Insets(12, 0, 6, 0);
+		formPanel.add(nkPanel, gbcSection);
+
+		addFieldToPanel(nkPanel, "NK1", txtNk1);
+		addFieldToPanel(nkPanel, "NK2", txtNk2);
+		addFieldToPanel(nkPanel, "NK3", txtNk3);
+		addFieldToPanel(nkPanel, "NK4", txtNk4);
+		addFieldToPanel(nkPanel, "NK5", txtNk5);
+		addFieldToPanel(nkPanel, "NK6", txtNk6);
 
 		JScrollPane scrollPane = new JScrollPane(formPanel);
 		scrollPane.setBorder(BorderFactory.createEmptyBorder());
@@ -172,17 +208,29 @@ public class DiemModal extends JDialog {
 		return modal.result;
 	}
 
-	private void addField(JPanel panel, int index, String label, JComponent input) {
+	private JPanel createSectionPanel(String title) {
+		JPanel panel = new JPanel(new GridBagLayout());
+		panel.setBorder(BorderFactory.createTitledBorder(
+				BorderFactory.createLineBorder(new Color(200, 200, 200), 1, true),
+				title,
+				javax.swing.border.TitledBorder.LEFT,
+				javax.swing.border.TitledBorder.TOP,
+				Style.TABLE_FONT.deriveFont(Font.BOLD, 13f)));
+		panel.setOpaque(false);
+		return panel;
+	}
+
+	private void addFieldToPanel(JPanel panel, String label, JComponent input) {
 		FieldBinding binding = createBinding(label, input);
 		bindings.add(binding);
 
-		int adjustedIndex = index - 1; // Adjust index since ID field is handled separately
+		int componentCount = panel.getComponentCount();
 		GridBagConstraints gbc = new GridBagConstraints();
-		gbc.gridx = adjustedIndex % 2;
-		gbc.gridy = adjustedIndex / 2 + (isViewMode ? 1 : 1); // +1 to account for ID field row
+		gbc.gridx = componentCount % 2;
+		gbc.gridy = componentCount / 2;
 		gbc.weightx = 1;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
-		gbc.insets = new Insets(6, gbc.gridx == 0 ? 0 : 12, 6, gbc.gridx == 0 ? 12 : 0);
+		gbc.insets = new Insets(4, gbc.gridx == 0 ? 0 : 8, 4, gbc.gridx == 0 ? 8 : 0);
 		panel.add(binding.container, gbc);
 	}
 

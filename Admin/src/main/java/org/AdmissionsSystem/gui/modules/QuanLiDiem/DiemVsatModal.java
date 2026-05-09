@@ -74,29 +74,43 @@ public class DiemVsatModal extends JDialog {
 		idBinding = createBinding("ID", txtId);
 		bindings.add(idBinding);
 
-		GridBagConstraints gbcId = new GridBagConstraints();
-		gbcId.gridx = 0;
-		gbcId.gridy = 0;
-		gbcId.weightx = 1;
-		gbcId.fill = GridBagConstraints.HORIZONTAL;
-		gbcId.insets = new Insets(6, 0, 6, 12);
-		formPanel.add(idBinding.container, gbcId);
+		// --- Section: Thông tin cá nhân ---
+		JPanel personalInfoPanel = createSectionPanel("Thông tin cá nhân");
+		GridBagConstraints gbcSection = new GridBagConstraints();
+		gbcSection.gridx = 0;
+		gbcSection.gridy = 0;
+		gbcSection.gridwidth = 2;
+		gbcSection.weightx = 1;
+		gbcSection.fill = GridBagConstraints.HORIZONTAL;
+		gbcSection.insets = new Insets(6, 0, 6, 0);
+		formPanel.add(personalInfoPanel, gbcSection);
 
-		// Hide ID field for CREATE and UPDATE modes (not VIEW mode)
-		if (!isViewMode) {
-			idBinding.container.setVisible(false);
+		// Add ID field to personal info section if in view mode
+		if (isViewMode) {
+			addFieldToPanel(personalInfoPanel, "ID", txtId);
 		}
+		addFieldToPanel(personalInfoPanel, "CCCD", txtCccd);
+		addFieldToPanel(personalInfoPanel, "Đợt thi", txtDotThi);
 
-		addField(formPanel, 1, "CCCD", txtCccd);
-		addField(formPanel, 2, "Đợt thi", txtDotThi);
-		addField(formPanel, 3, "Toán", txtToan);
-		addField(formPanel, 4, "Văn", txtVan);
-		addField(formPanel, 5, "Anh", txtAnh);
-		addField(formPanel, 6, "Lý", txtLy);
-		addField(formPanel, 7, "Hóa", txtHoa);
-		addField(formPanel, 8, "Sinh", txtSinh);
-		addField(formPanel, 9, "Sử", txtSu);
-		addField(formPanel, 10, "Địa", txtDia);
+		// --- Section: Điểm VSAT ---
+		JPanel vsatScoresPanel = createSectionPanel("Điểm VSAT");
+		gbcSection = new GridBagConstraints();
+		gbcSection.gridx = 0;
+		gbcSection.gridy = 1;
+		gbcSection.gridwidth = 2;
+		gbcSection.weightx = 1;
+		gbcSection.fill = GridBagConstraints.HORIZONTAL;
+		gbcSection.insets = new Insets(12, 0, 6, 0);
+		formPanel.add(vsatScoresPanel, gbcSection);
+
+		addFieldToPanel(vsatScoresPanel, "Toán", txtToan);
+		addFieldToPanel(vsatScoresPanel, "Văn", txtVan);
+		addFieldToPanel(vsatScoresPanel, "Anh", txtAnh);
+		addFieldToPanel(vsatScoresPanel, "Lý", txtLy);
+		addFieldToPanel(vsatScoresPanel, "Hóa", txtHoa);
+		addFieldToPanel(vsatScoresPanel, "Sinh", txtSinh);
+		addFieldToPanel(vsatScoresPanel, "Sử", txtSu);
+		addFieldToPanel(vsatScoresPanel, "Địa", txtDia);
 
 		JScrollPane scrollPane = new JScrollPane(formPanel);
 		scrollPane.setBorder(BorderFactory.createEmptyBorder());
@@ -140,17 +154,29 @@ public class DiemVsatModal extends JDialog {
 		return modal.result;
 	}
 
-	private void addField(JPanel panel, int index, String label, JComponent input) {
+	private JPanel createSectionPanel(String title) {
+		JPanel panel = new JPanel(new GridBagLayout());
+		panel.setBorder(BorderFactory.createTitledBorder(
+				BorderFactory.createLineBorder(new Color(200, 200, 200), 1, true),
+				title,
+				javax.swing.border.TitledBorder.LEFT,
+				javax.swing.border.TitledBorder.TOP,
+				Style.TABLE_FONT.deriveFont(Font.BOLD, 13f)));
+		panel.setOpaque(false);
+		return panel;
+	}
+
+	private void addFieldToPanel(JPanel panel, String label, JComponent input) {
 		FieldBinding binding = createBinding(label, input);
 		bindings.add(binding);
 
-		int adjustedIndex = index - 1; // Adjust index since ID field is handled separately
+		int componentCount = panel.getComponentCount();
 		GridBagConstraints gbc = new GridBagConstraints();
-		gbc.gridx = adjustedIndex % 2;
-		gbc.gridy = adjustedIndex / 2 + 1; // +1 to account for ID field row
+		gbc.gridx = componentCount % 2;
+		gbc.gridy = componentCount / 2;
 		gbc.weightx = 1;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
-		gbc.insets = new Insets(6, gbc.gridx == 0 ? 0 : 12, 6, gbc.gridx == 0 ? 12 : 0);
+		gbc.insets = new Insets(4, gbc.gridx == 0 ? 0 : 8, 4, gbc.gridx == 0 ? 8 : 0);
 		panel.add(binding.container, gbc);
 	}
 
