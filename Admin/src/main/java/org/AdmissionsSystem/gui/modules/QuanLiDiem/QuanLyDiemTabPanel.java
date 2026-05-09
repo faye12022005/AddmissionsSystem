@@ -1,6 +1,6 @@
 package org.AdmissionsSystem.gui.modules.QuanLiDiem;
 
-import org.AdmissionsSystem.controller.QuanLiDiemController;
+import org.AdmissionsSystem.bus.controller.QuanLiDiemController;
 import org.AdmissionsSystem.gui.common.Style;
 import org.AdmissionsSystem.gui.components.SearchPanel;
 

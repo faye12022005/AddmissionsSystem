@@ -8,7 +8,7 @@ public class NganhHocDao extends AbstractCrudDao<XtNganh, Integer> {
     }
 
     public XtNganh findByMaNganh(String maNganh) {
-        try (var session = sessionFactory.openSession()) {
+        try (org.hibernate.Session session = getSessionFactory().openSession()) {
             return session.createQuery("FROM XtNganh WHERE lower(manganh) = :ma", XtNganh.class)
                     .setParameter("ma", maNganh == null ? "" : maNganh.toLowerCase())
                     .uniqueResult();
@@ -16,7 +16,7 @@ public class NganhHocDao extends AbstractCrudDao<XtNganh, Integer> {
     }
 
     public int getNextId() {
-        try (var session = sessionFactory.openSession()) {
+        try (org.hibernate.Session session = getSessionFactory().openSession()) {
             Integer maxId = session.createQuery("SELECT max(idnganh) FROM XtNganh", Integer.class).uniqueResult();
             return maxId == null ? 1 : maxId + 1;
         }

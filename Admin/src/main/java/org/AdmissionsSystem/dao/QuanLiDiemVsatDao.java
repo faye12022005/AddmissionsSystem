@@ -1,6 +1,7 @@
 package org.AdmissionsSystem.dao;
 
 import org.AdmissionsSystem.models.XtDiemVsat;
+import org.hibernate.Session;
 
 public class QuanLiDiemVsatDao extends AbstractCrudDao<XtDiemVsat, Integer> {
 
@@ -12,7 +13,7 @@ public class QuanLiDiemVsatDao extends AbstractCrudDao<XtDiemVsat, Integer> {
 		if (isBlank(cccd) || isBlank(dotThi)) {
 			return null;
 		}
-		try (var session = sessionFactory.openSession()) {
+		try (Session session = getSessionFactory().openSession()) {
 			return session.createQuery(
 					"FROM XtDiemVsat WHERE lower(cccd) = :cccd AND lower(dotThi) = :dotThi",
 					XtDiemVsat.class)

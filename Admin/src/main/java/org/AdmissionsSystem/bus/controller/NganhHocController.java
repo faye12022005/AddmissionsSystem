@@ -1,8 +1,9 @@
-package org.AdmissionsSystem.controller;
+package org.AdmissionsSystem.bus.controller;
 
 import java.util.List;
+
+import org.AdmissionsSystem.bus.service.NganhHocService;
 import org.AdmissionsSystem.models.XtNganh;
-import org.AdmissionsSystem.service.NganhHocService;
 
 public class NganhHocController {
 
@@ -30,13 +31,5 @@ public class NganhHocController {
 
     public void upsert(XtNganh model) {
         service.upsert(model);
-    }
-
-    public XtNganh fromRow(Object[] row) {
-        return service.fromRow(row);
-    }
-
-    public Object[] toRow(XtNganh model) {
-        return service.toRow(model);
     }
 }

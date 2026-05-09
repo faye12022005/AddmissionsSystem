@@ -1,9 +1,9 @@
 package org.AdmissionsSystem.gui.modules.QuanLiDiem;
 
-import org.AdmissionsSystem.controller.QuanLiDiemController;
+import org.AdmissionsSystem.bus.controller.QuanLiDiemController;
 import org.AdmissionsSystem.gui.components.CustomTable;
-import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.Toast;
-import org.AdmissionsSystem.service.QuanLiDiem.QuanLiDiemVSATService;
+import org.AdmissionsSystem.gui.components.Toast;
+import org.AdmissionsSystem.bus.service.QuanLiDiem.QuanLiDiemVSATService;
 
 import javax.swing.BorderFactory;
 import javax.swing.JOptionPane;

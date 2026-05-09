@@ -1,6 +1,7 @@
 package org.AdmissionsSystem.dao;
 
 import org.AdmissionsSystem.models.XtDiemthixettuyen;
+import org.hibernate.Session;
 
 public class QuanLiDiemDao extends AbstractCrudDao<XtDiemthixettuyen, Integer> {
 
@@ -12,7 +13,7 @@ public class QuanLiDiemDao extends AbstractCrudDao<XtDiemthixettuyen, Integer> {
 		if (isBlank(cccd) || isBlank(phuongThuc)) {
 			return null;
 		}
-		try (var session = sessionFactory.openSession()) {
+		try (Session session = getSessionFactory().openSession()) {
 			return session.createQuery(
 					"FROM XtDiemthixettuyen WHERE lower(cccd) = :cccd AND lower(dPhuongthuc) = :pt",
 					XtDiemthixettuyen.class)
@@ -26,7 +27,7 @@ public class QuanLiDiemDao extends AbstractCrudDao<XtDiemthixettuyen, Integer> {
 		if (isBlank(cccd)) {
 			return null;
 		}
-		try (var session = sessionFactory.openSession()) {
+		try (Session session = getSessionFactory().openSession()) {
 			return session.createQuery("FROM XtDiemthixettuyen WHERE lower(cccd) = :cccd", XtDiemthixettuyen.class)
 					.setParameter("cccd", cccd.toLowerCase())
 					.uniqueResult();
@@ -37,7 +38,7 @@ public class QuanLiDiemDao extends AbstractCrudDao<XtDiemthixettuyen, Integer> {
 		if (isBlank(soBaoDanh)) {
 			return null;
 		}
-		try (var session = sessionFactory.openSession()) {
+		try (Session session = getSessionFactory().openSession()) {
 			return session.createQuery("FROM XtDiemthixettuyen WHERE lower(sobaodanh) = :sbd",
 					XtDiemthixettuyen.class)
 					.setParameter("sbd", soBaoDanh.toLowerCase())
@@ -49,7 +50,7 @@ public class QuanLiDiemDao extends AbstractCrudDao<XtDiemthixettuyen, Integer> {
 		if (isBlank(soBaoDanh) || isBlank(phuongThuc)) {
 			return null;
 		}
-		try (var session = sessionFactory.openSession()) {
+		try (Session session = getSessionFactory().openSession()) {
 			return session.createQuery(
 					"FROM XtDiemthixettuyen WHERE lower(sobaodanh) = :sbd AND lower(dPhuongthuc) = :pt",
 					XtDiemthixettuyen.class)

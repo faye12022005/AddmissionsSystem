@@ -14,6 +14,7 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -23,10 +24,12 @@ import java.awt.GridBagLayout;
 import java.awt.Image;
 import java.awt.Insets;
 import java.net.URL;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.Cursor;
+import javax.swing.SwingWorker;
+import java.util.logging.Logger;
 
 public class LoginFrame extends JFrame {
+    private static final Logger LOGGER = Logger.getLogger(LoginFrame.class.getName());
     private final LoginService loginService = new LoginService();
 
     private final JTextField txtUsername = new JTextField(18);
@@ -35,7 +38,7 @@ public class LoginFrame extends JFrame {
 
     public LoginFrame() {
         setTitle("Đăng nhập hệ thống");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(920, 560);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -65,12 +68,11 @@ public class LoginFrame extends JFrame {
         root.add(shell, BorderLayout.CENTER);
         setContentPane(root);
 
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosed(WindowEvent e) {
-                if (java.awt.Window.getWindows().length <= 1) {
-                    System.exit(0);
-                }
+        // Ensure Enter key works globally and focus is on username
+        SwingUtilities.invokeLater(() -> {
+            if (getRootPane() != null) {
+                // Find the login button in the panel
+                txtUsername.requestFocusInWindow();
             }
         });
     }
@@ -231,30 +233,46 @@ public class LoginFrame extends JFrame {
         return new javax.swing.ImageIcon(scaled);
     }
 
-    private JLabel createBrandingInfoLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setOpaque(true);
-        label.setBackground(new Color(255, 255, 255, 180));
-        label.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(203, 213, 225)),
-                BorderFactory.createEmptyBorder(10, 12, 10, 12)));
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        label.setForeground(new Color(51, 65, 85));
-        return label;
-    }
 
     private void onLogin() {
-        LoginService.AuthResult result = loginService.authenticate(txtUsername.getText(), txtPassword.getPassword());
-        if (!result.success()) {
-            JOptionPane.showMessageDialog(this, result.message(), "Đăng nhập thất bại", JOptionPane.WARNING_MESSAGE);
+        LoginService.AuthResult authResult = loginService.authenticate(txtUsername.getText(), txtPassword.getPassword());
+        if (!authResult.success()) {
+            JOptionPane.showMessageDialog(this, authResult.message(), "Đăng nhập thất bại", JOptionPane.WARNING_MESSAGE);
             txtPassword.selectAll();
             txtPassword.requestFocusInWindow();
             return;
         }
 
-        MainFrame mainFrame = new MainFrame(this, result.displayName(), result.role());
-        mainFrame.setVisible(true);
-        setVisible(false);
+        // Show a loading cursor or disable button
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                // Initialize database session factory in background thread
+                // If DB is down, this will block and eventually throw an exception here
+                org.AdmissionsSystem.util.HibernateUtil.getSessionFactory();
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                setCursor(Cursor.getDefaultCursor());
+                try {
+                    get(); // Check for exceptions during initialization
+                    
+                    // Now that DB is ready, create MainFrame on the EDT
+                    MainFrame mainFrame = new MainFrame(LoginFrame.this, authResult.displayName(), authResult.role());
+                    mainFrame.setVisible(true);
+                    setVisible(false);
+                } catch (Exception e) {
+                    LOGGER.log(java.util.logging.Level.SEVERE, "Lỗi khi khởi tạo hệ thống: " + e.getMessage(), e);
+                    String msg = "Không thể kết nối đến cơ sở dữ liệu.\n" +
+                                 "Vui lòng đảm bảo server MySQL đã được mở và thông tin cấu hình chính xác.";
+                    JOptionPane.showMessageDialog(LoginFrame.this, msg, "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
     }
 
     public void showLoginScreen() {

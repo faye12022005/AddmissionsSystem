@@ -1,4 +1,4 @@
-package org.AdmissionsSystem.service.QuanLiDiem;
+package org.AdmissionsSystem.bus.service.QuanLiDiem;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

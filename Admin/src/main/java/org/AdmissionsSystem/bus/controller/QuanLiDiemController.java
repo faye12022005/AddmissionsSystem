@@ -1,12 +1,12 @@
-package org.AdmissionsSystem.controller;
+package org.AdmissionsSystem.bus.controller;
 
 import java.awt.Component;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import org.AdmissionsSystem.gui.components.ImportExcel;
-import org.AdmissionsSystem.service.QuanLiDiem.QuanLiDiemService;
-import org.AdmissionsSystem.service.QuanLiDiem.QuanLiDiemVSATService;
+import org.AdmissionsSystem.bus.service.QuanLiDiem.QuanLiDiemService;
+import org.AdmissionsSystem.bus.service.QuanLiDiem.QuanLiDiemVSATService;
 
 public class QuanLiDiemController {
 	private final QuanLiDiemService thptDgnlService = new QuanLiDiemService();

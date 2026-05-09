@@ -1,51 +1,36 @@
 package org.AdmissionsSystem.gui.modules.Login;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.AdmissionsSystem.bus.service.UsersService;
+import org.AdmissionsSystem.models.Users;
 
 public class LoginService {
-    private final Map<String, Account> accounts = new HashMap<>();
 
-    public LoginService() {
-        seedAccounts();
-    }
+    private final UsersService usersService = new UsersService();
 
     public AuthResult authenticate(String username, char[] rawPassword) {
         String normalizedUsername = safeTrim(username);
-        String displayName = normalizedUsername.isEmpty() ? "Người dùng" : normalizedUsername;
-        Account account = accounts.get(normalizedUsername.toLowerCase());
-
-        if (account != null) {
-            displayName = account.displayName();
+        if (normalizedUsername.isEmpty()) {
+            return AuthResult.fail("Vui lòng nhập tên đăng nhập.");
         }
 
-        return AuthResult.success(displayName, "Admin");
-    }
+        String password = new String(rawPassword).trim();
+        if (password.isEmpty()) {
+            return AuthResult.fail("Vui lòng nhập mật khẩu.");
+        }
 
-    private void seedAccounts() {
-        add("admin", "admin123", "Nguyen Van Quan", "admin", true);
-        add("ngoclan", "lan123", "Tran Ngoc Lan", "user", true);
-        add("manhdat", "dat123", "Le Manh Dat", "user", false);
-        add("thuyduong", "duong123", "Pham Thuy Duong", "admin", true);
-    }
-
-    private void add(String username, String password, String displayName, String role, boolean enabled) {
-        accounts.put(username.toLowerCase(), new Account(username, password, displayName, role, enabled));
+        try {
+            Users user = usersService.authenticate(normalizedUsername, password);
+            if (user == null) {
+                return AuthResult.fail("Sai tên đăng nhập, mật khẩu hoặc tài khoản bị khóa.");
+            }
+            return AuthResult.success(user.getFullName(), user.getRole());
+        } catch (Exception e) {
+            return AuthResult.fail("Lỗi kết nối cơ sở dữ liệu: " + e.getMessage());
+        }
     }
 
     private String safeTrim(String value) {
         return value == null ? "" : value.trim();
-    }
-
-    private String normalizeRole(String role) {
-        if (role == null || role.isBlank()) {
-            return "User";
-        }
-        String lower = role.trim().toLowerCase();
-        return "admin".equals(lower) ? "Admin" : "User";
-    }
-
-    private record Account(String username, String password, String displayName, String role, boolean enabled) {
     }
 
     public record AuthResult(boolean success, String message, String displayName, String role) {

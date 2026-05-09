@@ -1,7 +1,7 @@
 package org.AdmissionsSystem.gui.modules.QuanLiDiem;
 
 import org.AdmissionsSystem.gui.common.Style;
-import org.AdmissionsSystem.service.QuanLiDiem.QuanLiDiemVSATService;
+import org.AdmissionsSystem.bus.service.QuanLiDiem.QuanLiDiemVSATService;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;

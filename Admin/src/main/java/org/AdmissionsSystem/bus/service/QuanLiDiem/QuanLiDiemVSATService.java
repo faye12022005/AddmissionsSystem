@@ -1,4 +1,4 @@
-package org.AdmissionsSystem.service.QuanLiDiem;
+package org.AdmissionsSystem.bus.service.QuanLiDiem;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
@@ -13,7 +13,7 @@ import java.util.Objects;
 import java.util.Optional;
 import org.AdmissionsSystem.dao.QuanLiDiemVsatDao;
 import org.AdmissionsSystem.models.XtDiemVsat;
-import org.AdmissionsSystem.service.ThiSinhService;
+import org.AdmissionsSystem.bus.service.ThiSinhService;
 
 public class QuanLiDiemVSATService {
 	private static final String[] IMPORT_COLUMNS = {

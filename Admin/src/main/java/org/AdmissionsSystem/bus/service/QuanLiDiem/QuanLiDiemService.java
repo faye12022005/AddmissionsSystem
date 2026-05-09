@@ -1,4 +1,4 @@
-package org.AdmissionsSystem.service.QuanLiDiem;
+package org.AdmissionsSystem.bus.service.QuanLiDiem;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
@@ -13,7 +13,7 @@ import java.util.Objects;
 import java.util.Optional;
 import org.AdmissionsSystem.dao.QuanLiDiemDao;
 import org.AdmissionsSystem.models.XtDiemthixettuyen;
-import org.AdmissionsSystem.service.ThiSinhService;
+import org.AdmissionsSystem.bus.service.ThiSinhService;
 
 public class QuanLiDiemService {
 	public static final String ALL_OPTION = "Tất cả";

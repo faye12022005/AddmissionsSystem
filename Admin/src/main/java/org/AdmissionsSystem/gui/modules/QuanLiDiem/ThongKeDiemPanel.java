@@ -1,10 +1,10 @@
 package org.AdmissionsSystem.gui.modules.QuanLiDiem;
 
 import org.AdmissionsSystem.gui.common.Style;
-import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.Toast;
-import org.AdmissionsSystem.service.QuanLiDiem.QuanLiDiemService;
-import org.AdmissionsSystem.service.QuanLiDiem.QuanLiDiemVSATService;
-import org.AdmissionsSystem.service.QuanLiDiem.ThongKeDiemService;
+import org.AdmissionsSystem.gui.components.Toast;
+import org.AdmissionsSystem.bus.service.QuanLiDiem.QuanLiDiemService;
+import org.AdmissionsSystem.bus.service.QuanLiDiem.QuanLiDiemVSATService;
+import org.AdmissionsSystem.bus.service.QuanLiDiem.ThongKeDiemService;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;

@@ -1,4 +1,4 @@
-package org.AdmissionsSystem.gui.modules.QuanLiDiemCong;
+package org.AdmissionsSystem.gui.components;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;

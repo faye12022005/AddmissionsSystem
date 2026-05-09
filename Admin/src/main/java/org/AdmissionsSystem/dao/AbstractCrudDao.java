@@ -11,21 +11,23 @@ import org.hibernate.Transaction;
 public abstract class AbstractCrudDao<T, ID extends Serializable> {
 
     private final Class<T> entityClass;
-    protected final SessionFactory sessionFactory;
 
     protected AbstractCrudDao(Class<T> entityClass) {
         this.entityClass = entityClass;
-        this.sessionFactory = HibernateUtil.getSessionFactory();
+    }
+
+    protected SessionFactory getSessionFactory() {
+        return HibernateUtil.getSessionFactory();
     }
 
     public List<T> findAll() {
-        try (Session session = sessionFactory.openSession()) {
+        try (Session session = getSessionFactory().openSession()) {
             return session.createQuery("FROM " + entityClass.getSimpleName(), entityClass).list();
         }
     }
 
     public T findById(ID id) {
-        try (Session session = sessionFactory.openSession()) {
+        try (Session session = getSessionFactory().openSession()) {
             return session.get(entityClass, id);
         }
     }
@@ -36,23 +38,37 @@ public abstract class AbstractCrudDao<T, ID extends Serializable> {
 
     public void update(T entity) {
         executeInTransaction(session -> {
-            session.update(entity);
+            // merge is safer than update for detached entities in Swing apps
+            session.merge(entity);
             return null;
         });
     }
 
     public void delete(T entity) {
         executeInTransaction(session -> {
-            session.delete(entity);
+            // Re-attach or fetch before delete to avoid "closed session" issues
+            Object persistentInstance = session.get(entityClass, getEntityId(entity));
+            if (persistentInstance != null) {
+                session.delete(persistentInstance);
+            }
             return null;
         });
     }
+    
+    // Abstract method to get ID from entity, or use reflection if possible. 
+    // For simplicity, we can just try to delete the entity directly if it's attached.
+    private Serializable getEntityId(T entity) {
+        return (Serializable) getSessionFactory().getClassMetadata(entityClass).getIdentifier(entity, null);
+    }
 
     public void deleteById(ID id) {
-        T entity = findById(id);
-        if (entity != null) {
-            delete(entity);
-        }
+        executeInTransaction(session -> {
+            T entity = session.get(entityClass, id);
+            if (entity != null) {
+                session.delete(entity);
+            }
+            return null;
+        });
     }
 
     public boolean exists(ID id) {
@@ -60,7 +76,7 @@ public abstract class AbstractCrudDao<T, ID extends Serializable> {
     }
 
     public long count() {
-        try (Session session = sessionFactory.openSession()) {
+        try (Session session = getSessionFactory().openSession()) {
             Long total = session.createQuery("SELECT COUNT(*) FROM " + entityClass.getSimpleName(), Long.class).uniqueResult();
             return total == null ? 0L : total;
         }
@@ -68,16 +84,22 @@ public abstract class AbstractCrudDao<T, ID extends Serializable> {
 
     protected <R> R executeInTransaction(Function<Session, R> work) {
         Transaction tx = null;
-        try (Session session = sessionFactory.openSession()) {
+        Session session = null;
+        try {
+            session = getSessionFactory().openSession();
             tx = session.beginTransaction();
             R result = work.apply(session);
             tx.commit();
             return result;
         } catch (Exception ex) {
-            if (tx != null) {
+            if (tx != null && tx.getStatus().canRollback()) {
                 tx.rollback();
             }
-            throw new RuntimeException(ex);
+            throw new RuntimeException("Lỗi thao tác Database: " + ex.getMessage(), ex);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 package org.AdmissionsSystem.models;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -28,26 +29,27 @@ public class XtDiemVsat implements Serializable {
 	private String dotThi;
 
 	@Column(name = "toan_vsat")
-	private java.math.BigDecimal toanVsat;
+	private BigDecimal toanVsat;
 
 	@Column(name = "van_vsat")
-	private java.math.BigDecimal vanVsat;
+	private BigDecimal vanVsat;
 
 	@Column(name = "anh_vsat")
-	private java.math.BigDecimal anhVsat;
+	private BigDecimal anhVsat;
 
 	@Column(name = "ly_vsat")
-	private java.math.BigDecimal lyVsat;
+	private BigDecimal lyVsat;
 
 	@Column(name = "hoa_vsat")
-	private java.math.BigDecimal hoaVsat;
+	private BigDecimal hoaVsat;
 
 	@Column(name = "sinh_vsat")
-	private java.math.BigDecimal sinhVsat;
+	private BigDecimal sinhVsat;
 
 	@Column(name = "su_vsat")
-	private java.math.BigDecimal suVsat;
+	private BigDecimal suVsat;
 
 	@Column(name = "dia_vsat")
-	private java.math.BigDecimal diaVsat;
+	private BigDecimal diaVsat;
+
 }
