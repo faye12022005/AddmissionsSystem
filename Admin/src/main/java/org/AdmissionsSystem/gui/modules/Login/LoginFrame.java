@@ -234,7 +234,51 @@ public class LoginFrame extends JFrame {
     }
 
 
-    private void onLogin() {
+    // private void onLogin() {
+    //     LoginService.AuthResult authResult = loginService.authenticate(txtUsername.getText(), txtPassword.getPassword());
+    //     if (!authResult.success()) {
+    //         JOptionPane.showMessageDialog(this, authResult.message(), "Đăng nhập thất bại", JOptionPane.WARNING_MESSAGE);
+    //         txtPassword.selectAll();
+    //         txtPassword.requestFocusInWindow();
+    //         return;
+    //     }
+
+    //     // Show a loading cursor or disable button
+    //     setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+    //     new SwingWorker<Void, Void>() {
+    //         @Override
+    //         protected Void doInBackground() throws Exception {
+    //             // Initialize database session factory in background thread
+    //             // If DB is down, this will block and eventually throw an exception here
+    //             org.AdmissionsSystem.util.HibernateUtil.getSessionFactory();
+    //             return null;
+    //         }
+
+    //         @Override
+    //         protected void done() {
+    //             setCursor(Cursor.getDefaultCursor());
+    //             try {
+    //                 get(); // Check for exceptions during initialization
+                    
+    //                 // Now that DB is ready, create MainFrame on the EDT
+    //                 MainFrame mainFrame = new MainFrame(LoginFrame.this, authResult.displayName(), authResult.role());
+    //                 mainFrame.setVisible(true);
+    //                 setVisible(false);
+    //             } catch (Exception e) {
+    //                 LOGGER.log(java.util.logging.Level.SEVERE, "Lỗi khi khởi tạo hệ thống: " + e.getMessage(), e);
+    //                 String msg = "Không thể kết nối đến cơ sở dữ liệu.\n" +
+    //                              "Vui lòng đảm bảo server MySQL đã được mở và thông tin cấu hình chính xác.";
+    //                 JOptionPane.showMessageDialog(LoginFrame.this, msg, "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+    //             }
+    //         }
+    //     }.execute();
+    // }
+private void onLogin() {
+        // Bỏ qua kiểm tra đăng nhập để test nhanh
+        LoginService.AuthResult authResult = LoginService.AuthResult.success("Admin Test", "ADMIN");
+        
+        /* 
         LoginService.AuthResult authResult = loginService.authenticate(txtUsername.getText(), txtPassword.getPassword());
         if (!authResult.success()) {
             JOptionPane.showMessageDialog(this, authResult.message(), "Đăng nhập thất bại", JOptionPane.WARNING_MESSAGE);
@@ -242,6 +286,7 @@ public class LoginFrame extends JFrame {
             txtPassword.requestFocusInWindow();
             return;
         }
+        */
 
         // Show a loading cursor or disable button
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -274,7 +319,6 @@ public class LoginFrame extends JFrame {
             }
         }.execute();
     }
-
     public void showLoginScreen() {
         txtUsername.setText("");
         txtPassword.setText("");

@@ -15,41 +15,41 @@ import lombok.Data;
 @Table(name = "xt_diemvsat")
 public class XtDiemVsat implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_vsat", nullable = false)
-    private Integer idVsat;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id_vsat", nullable = false)
+	private Integer idVsat;
 
-    @Column(name = "cccd", nullable = false)
-    private String cccd;
+	@Column(name = "cccd", nullable = false)
+	private String cccd;
 
-    @Column(name = "dot_thi", nullable = false)
-    private String dotThi;
+	@Column(name = "dot_thi", nullable = false)
+	private String dotThi;
 
-    @Column(name = "toan_vsat")
-    private BigDecimal toanVsat;
+	@Column(name = "toan_vsat")
+	private BigDecimal toanVsat;
 
-    @Column(name = "van_vsat")
-    private BigDecimal vanVsat;
+	@Column(name = "van_vsat")
+	private BigDecimal vanVsat;
 
-    @Column(name = "anh_vsat")
-    private BigDecimal anhVsat;
+	@Column(name = "anh_vsat")
+	private BigDecimal anhVsat;
 
-    @Column(name = "ly_vsat")
-    private BigDecimal lyVsat;
+	@Column(name = "ly_vsat")
+	private BigDecimal lyVsat;
 
-    @Column(name = "hoa_vsat")
-    private BigDecimal hoaVsat;
+	@Column(name = "hoa_vsat")
+	private BigDecimal hoaVsat;
 
-    @Column(name = "sinh_vsat")
-    private BigDecimal sinhVsat;
+	@Column(name = "sinh_vsat")
+	private BigDecimal sinhVsat;
 
-    @Column(name = "su_vsat")
-    private BigDecimal suVsat;
+	@Column(name = "su_vsat")
+	private BigDecimal suVsat;
 
-    @Column(name = "dia_vsat")
-    private BigDecimal diaVsat;
+	@Column(name = "dia_vsat")
+	private BigDecimal diaVsat;
 
 }

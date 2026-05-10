@@ -8,11 +8,11 @@ import org.AdmissionsSystem.models.Users;
 import org.AdmissionsSystem.models.XtBangquydoi;
 import org.AdmissionsSystem.models.XtDiemcongxetuyen;
 import org.AdmissionsSystem.models.XtDiemthixettuyen;
+import org.AdmissionsSystem.models.XtDiemVsat;
 import org.AdmissionsSystem.models.XtNganh;
 import org.AdmissionsSystem.models.XtNganhTohop;
 import org.AdmissionsSystem.models.XtNguyenvongxettuyen;
 import org.AdmissionsSystem.models.XtThisinhxettuyen25;
-import org.AdmissionsSystem.models.XtDiemVsat;
 import org.AdmissionsSystem.models.XtTohopMonthi;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -37,7 +37,7 @@ public class HibernateUtil {
                     try {
                         LOGGER.log(Level.INFO, "Initializing Hibernate SessionFactory...");
                         LOGGER.log(Level.INFO, "Database URL: " + AppConfig.getJdbcUrl());
-                        
+
                         Configuration configuration = new Configuration();
                         configuration.setProperties(buildProperties());
                         registerAnnotatedClasses(configuration);
@@ -81,10 +81,14 @@ public class HibernateUtil {
         properties.put("hibernate.c3p0.idle_test_period", String.valueOf(AppConfig.getC3p0IdleTestPeriod()));
         // Use a simple query to validate connections
         properties.put("hibernate.c3p0.preferredTestQuery", "SELECT 1");
-        
+
         properties.put("hibernate.jdbc.batch_size", String.valueOf(AppConfig.getJdbcBatchSize()));
         properties.put("hibernate.jdbc.fetch_size", String.valueOf(AppConfig.getJdbcFetchSize()));
 
+        // Enable backtick quoting for all identifiers to handle reserved keywords as
+        // column names
+        properties.put("hibernate.globally_quoted_identifiers",
+                String.valueOf(AppConfig.getGloballyQuotedIdentifiers()));
         return properties;
     }
 
@@ -93,6 +97,7 @@ public class HibernateUtil {
         configuration.addAnnotatedClass(XtBangquydoi.class);
         configuration.addAnnotatedClass(XtDiemcongxetuyen.class);
         configuration.addAnnotatedClass(XtDiemthixettuyen.class);
+        configuration.addAnnotatedClass(XtDiemVsat.class);
         configuration.addAnnotatedClass(XtNganh.class);
         configuration.addAnnotatedClass(XtNganhTohop.class);
         configuration.addAnnotatedClass(XtNguyenvongxettuyen.class);

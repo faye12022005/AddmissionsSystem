@@ -1,13 +1,12 @@
 package org.AdmissionsSystem.gui.modules.QuanLiDiem;
 
 import org.AdmissionsSystem.gui.common.Style;
-import org.AdmissionsSystem.bus.service.QuanLiDiem.QuanLiDiemService;
+import org.AdmissionsSystem.bus.service.QuanLiDiem.QuanLiDiemVSATService;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -29,48 +28,33 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DiemModal extends JDialog {
-	private static final BigDecimal THPT_MAX = BigDecimal.TEN;
-	private static final BigDecimal DGNL_MAX = BigDecimal.valueOf(1200);
+public class DiemVsatModal extends JDialog {
+	private static final BigDecimal VSAT_MAX = BigDecimal.valueOf(150);
 
 	private final JTextField txtId = new JTextField();
 	private final JTextField txtCccd = new JTextField();
-	private final JTextField txtSoBaoDanh = new JTextField();
-	private final JComboBox<String> cboLoaiDiem = new JComboBox<>(QuanLiDiemService.LOAI_DIEM.toArray(new String[0]));
+	private final JTextField txtDotThi = new JTextField();
 
 	private final JTextField txtToan = new JTextField();
+	private final JTextField txtVan = new JTextField();
+	private final JTextField txtAnh = new JTextField();
 	private final JTextField txtLy = new JTextField();
 	private final JTextField txtHoa = new JTextField();
 	private final JTextField txtSinh = new JTextField();
 	private final JTextField txtSu = new JTextField();
 	private final JTextField txtDia = new JTextField();
-	private final JTextField txtVan = new JTextField();
-	private final JTextField txtGdcd = new JTextField();
-	private final JTextField txtN1Thi = new JTextField();
-	private final JTextField txtN1Cc = new JTextField();
-	private final JTextField txtCncn = new JTextField();
-	private final JTextField txtCnnn = new JTextField();
-	private final JTextField txtTin = new JTextField();
-	private final JTextField txtKtpl = new JTextField();
-	private final JTextField txtNl1 = new JTextField();
-	private final JTextField txtNk1 = new JTextField();
-	private final JTextField txtNk2 = new JTextField();
-	private final JTextField txtNk3 = new JTextField();
-	private final JTextField txtNk4 = new JTextField();
-	private final JTextField txtNk5 = new JTextField();
-	private final JTextField txtNk6 = new JTextField();
 
 	private final List<FieldBinding> bindings = new ArrayList<>();
 	private final DecimalFormat scoreFormat = new DecimalFormat("0.##");
 	private final FieldBinding idBinding;
 	private final boolean isViewMode;
 
-	private QuanLiDiemService.DiemInput result;
+	private QuanLiDiemVSATService.VsatInput result;
 
-	private DiemModal(Window owner, String title, QuanLiDiemService.DiemRecord existing) {
+	private DiemVsatModal(Window owner, String title, QuanLiDiemVSATService.VsatRecord existing) {
 		super(owner, title, ModalityType.APPLICATION_MODAL);
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-		setSize(860, 620);
+		setSize(760, 520);
 		setLocationRelativeTo(owner);
 		setLayout(new BorderLayout(8, 8));
 
@@ -106,11 +90,10 @@ public class DiemModal extends JDialog {
 			addFieldToPanel(personalInfoPanel, "ID", txtId);
 		}
 		addFieldToPanel(personalInfoPanel, "CCCD", txtCccd);
-		addFieldToPanel(personalInfoPanel, "Số báo danh", txtSoBaoDanh);
-		addFieldToPanel(personalInfoPanel, "Phương thức", cboLoaiDiem);
+		addFieldToPanel(personalInfoPanel, "Đợt thi", txtDotThi);
 
-		// --- Section: Điểm thi các môn học ---
-		JPanel subjectScoresPanel = createSectionPanel("Điểm thi các môn học");
+		// --- Section: Điểm VSAT ---
+		JPanel vsatScoresPanel = createSectionPanel("Điểm VSAT");
 		gbcSection = new GridBagConstraints();
 		gbcSection.gridx = 0;
 		gbcSection.gridy = 1;
@@ -118,53 +101,16 @@ public class DiemModal extends JDialog {
 		gbcSection.weightx = 1;
 		gbcSection.fill = GridBagConstraints.HORIZONTAL;
 		gbcSection.insets = new Insets(12, 0, 6, 0);
-		formPanel.add(subjectScoresPanel, gbcSection);
+		formPanel.add(vsatScoresPanel, gbcSection);
 
-		addFieldToPanel(subjectScoresPanel, "Toán", txtToan);
-		addFieldToPanel(subjectScoresPanel, "Lý", txtLy);
-		addFieldToPanel(subjectScoresPanel, "Hóa", txtHoa);
-		addFieldToPanel(subjectScoresPanel, "Sinh", txtSinh);
-		addFieldToPanel(subjectScoresPanel, "Sử", txtSu);
-		addFieldToPanel(subjectScoresPanel, "Địa", txtDia);
-		addFieldToPanel(subjectScoresPanel, "Văn", txtVan);
-		addFieldToPanel(subjectScoresPanel, "GDCD", txtGdcd);
-		addFieldToPanel(subjectScoresPanel, "Tin học", txtTin);
-		addFieldToPanel(subjectScoresPanel, "CNCN", txtCncn);
-		addFieldToPanel(subjectScoresPanel, "CNNN", txtCnnn);
-		addFieldToPanel(subjectScoresPanel, "KTPL", txtKtpl);
-		addFieldToPanel(subjectScoresPanel, "N1_THI", txtN1Thi);
-		addFieldToPanel(subjectScoresPanel, "N1_CC", txtN1Cc);
-
-		// --- Section: Điểm thi Đánh giá năng lực ---
-		JPanel dgnlPanel = createSectionPanel("Điểm thi Đánh giá năng lực");
-		gbcSection = new GridBagConstraints();
-		gbcSection.gridx = 0;
-		gbcSection.gridy = 2;
-		gbcSection.gridwidth = 2;
-		gbcSection.weightx = 1;
-		gbcSection.fill = GridBagConstraints.HORIZONTAL;
-		gbcSection.insets = new Insets(12, 0, 6, 0);
-		formPanel.add(dgnlPanel, gbcSection);
-
-		addFieldToPanel(dgnlPanel, "NL1", txtNl1);
-
-		// --- Section: Điểm thi các môn năng khiếu ---
-		JPanel nkPanel = createSectionPanel("Điểm thi các môn năng khiếu");
-		gbcSection = new GridBagConstraints();
-		gbcSection.gridx = 0;
-		gbcSection.gridy = 3;
-		gbcSection.gridwidth = 2;
-		gbcSection.weightx = 1;
-		gbcSection.fill = GridBagConstraints.HORIZONTAL;
-		gbcSection.insets = new Insets(12, 0, 6, 0);
-		formPanel.add(nkPanel, gbcSection);
-
-		addFieldToPanel(nkPanel, "NK1", txtNk1);
-		addFieldToPanel(nkPanel, "NK2", txtNk2);
-		addFieldToPanel(nkPanel, "NK3", txtNk3);
-		addFieldToPanel(nkPanel, "NK4", txtNk4);
-		addFieldToPanel(nkPanel, "NK5", txtNk5);
-		addFieldToPanel(nkPanel, "NK6", txtNk6);
+		addFieldToPanel(vsatScoresPanel, "Toán", txtToan);
+		addFieldToPanel(vsatScoresPanel, "Văn", txtVan);
+		addFieldToPanel(vsatScoresPanel, "Anh", txtAnh);
+		addFieldToPanel(vsatScoresPanel, "Lý", txtLy);
+		addFieldToPanel(vsatScoresPanel, "Hóa", txtHoa);
+		addFieldToPanel(vsatScoresPanel, "Sinh", txtSinh);
+		addFieldToPanel(vsatScoresPanel, "Sử", txtSu);
+		addFieldToPanel(vsatScoresPanel, "Địa", txtDia);
 
 		JScrollPane scrollPane = new JScrollPane(formPanel);
 		scrollPane.setBorder(BorderFactory.createEmptyBorder());
@@ -200,10 +146,10 @@ public class DiemModal extends JDialog {
 		}
 	}
 
-	public static QuanLiDiemService.DiemInput showDialog(Component parent, String title,
-			QuanLiDiemService.DiemRecord existing) {
+	public static QuanLiDiemVSATService.VsatInput showDialog(Component parent, String title,
+			QuanLiDiemVSATService.VsatRecord existing) {
 		Window owner = parent == null ? null : SwingUtilities.getWindowAncestor(parent);
-		DiemModal modal = new DiemModal(owner, title, existing);
+		DiemVsatModal modal = new DiemVsatModal(owner, title, existing);
 		modal.setVisible(true);
 		return modal.result;
 	}
@@ -236,29 +182,15 @@ public class DiemModal extends JDialog {
 
 	private void setFieldsEditable(boolean editable) {
 		txtCccd.setEditable(editable);
-		txtSoBaoDanh.setEditable(editable);
-		cboLoaiDiem.setEnabled(editable);
+		txtDotThi.setEditable(editable);
 		txtToan.setEditable(editable);
+		txtVan.setEditable(editable);
+		txtAnh.setEditable(editable);
 		txtLy.setEditable(editable);
 		txtHoa.setEditable(editable);
 		txtSinh.setEditable(editable);
 		txtSu.setEditable(editable);
 		txtDia.setEditable(editable);
-		txtVan.setEditable(editable);
-		txtGdcd.setEditable(editable);
-		txtN1Thi.setEditable(editable);
-		txtN1Cc.setEditable(editable);
-		txtCncn.setEditable(editable);
-		txtCnnn.setEditable(editable);
-		txtTin.setEditable(editable);
-		txtKtpl.setEditable(editable);
-		txtNl1.setEditable(editable);
-		txtNk1.setEditable(editable);
-		txtNk2.setEditable(editable);
-		txtNk3.setEditable(editable);
-		txtNk4.setEditable(editable);
-		txtNk5.setEditable(editable);
-		txtNk6.setEditable(editable);
 	}
 
 	private FieldBinding createBinding(String label, JComponent input) {
@@ -284,33 +216,19 @@ public class DiemModal extends JDialog {
 		return new FieldBinding(label, input, errorLabel, wrapper);
 	}
 
-	private void fillFromExisting(QuanLiDiemService.DiemRecord existing) {
+	private void fillFromExisting(QuanLiDiemVSATService.VsatRecord existing) {
 		txtId.setText(String.valueOf(existing.id()));
 		txtCccd.setText(existing.cccd());
-		txtSoBaoDanh.setText(existing.soBaoDanh());
-		cboLoaiDiem.setSelectedItem(existing.loaiDiem());
+		txtDotThi.setText(existing.dotThi());
 
-		txtToan.setText(formatScore(existing.to()));
-		txtLy.setText(formatScore(existing.li()));
-		txtHoa.setText(formatScore(existing.ho()));
-		txtSinh.setText(formatScore(existing.si()));
+		txtToan.setText(formatScore(existing.toan()));
+		txtVan.setText(formatScore(existing.van()));
+		txtAnh.setText(formatScore(existing.anh()));
+		txtLy.setText(formatScore(existing.ly()));
+		txtHoa.setText(formatScore(existing.hoa()));
+		txtSinh.setText(formatScore(existing.sinh()));
 		txtSu.setText(formatScore(existing.su()));
-		txtDia.setText(formatScore(existing.di()));
-		txtVan.setText(formatScore(existing.va()));
-		txtGdcd.setText(formatScore(existing.gdcd()));
-		txtN1Thi.setText(formatScore(existing.n1Thi()));
-		txtN1Cc.setText(formatScore(existing.n1Cc()));
-		txtCncn.setText(formatScore(existing.cncn()));
-		txtCnnn.setText(formatScore(existing.cnnn()));
-		txtTin.setText(formatScore(existing.ti()));
-		txtKtpl.setText(formatScore(existing.ktpl()));
-		txtNl1.setText(formatScore(existing.nl1()));
-		txtNk1.setText(formatScore(existing.nk1()));
-		txtNk2.setText(formatScore(existing.nk2()));
-		txtNk3.setText(formatScore(existing.nk3()));
-		txtNk4.setText(formatScore(existing.nk4()));
-		txtNk5.setText(formatScore(existing.nk5()));
-		txtNk6.setText(formatScore(existing.nk6()));
+		txtDia.setText(formatScore(existing.dia()));
 	}
 
 	private String formatScore(BigDecimal value) {
@@ -333,42 +251,22 @@ public class DiemModal extends JDialog {
 			hasError = true;
 		}
 
-		String soBaoDanh = txtSoBaoDanh.getText() == null ? "" : txtSoBaoDanh.getText().trim();
-		if (soBaoDanh.isBlank()) {
-			setError("Số báo danh", "Số báo danh không được để trống");
+		String dotThi = txtDotThi.getText() == null ? "" : txtDotThi.getText().trim();
+		if (dotThi.isBlank()) {
+			setError("Đợt thi", "Đợt thi không được để trống");
 			hasError = true;
 		}
 
-		String loaiDiem = cboLoaiDiem.getSelectedItem() == null ? "" : cboLoaiDiem.getSelectedItem().toString();
-		if (loaiDiem.isBlank()) {
-			setError("Phương thức", "Vui lòng chọn phương thức");
-			hasError = true;
-		}
+		BigDecimal toan = parseScore("Toán", txtToan, VSAT_MAX);
+		BigDecimal van = parseScore("Văn", txtVan, VSAT_MAX);
+		BigDecimal anh = parseScore("Anh", txtAnh, VSAT_MAX);
+		BigDecimal ly = parseScore("Lý", txtLy, VSAT_MAX);
+		BigDecimal hoa = parseScore("Hóa", txtHoa, VSAT_MAX);
+		BigDecimal sinh = parseScore("Sinh", txtSinh, VSAT_MAX);
+		BigDecimal su = parseScore("Sử", txtSu, VSAT_MAX);
+		BigDecimal dia = parseScore("Địa", txtDia, VSAT_MAX);
 
-		BigDecimal toan = parseScore("Toán", txtToan, THPT_MAX);
-		BigDecimal ly = parseScore("Lý", txtLy, THPT_MAX);
-		BigDecimal hoa = parseScore("Hóa", txtHoa, THPT_MAX);
-		BigDecimal sinh = parseScore("Sinh", txtSinh, THPT_MAX);
-		BigDecimal su = parseScore("Sử", txtSu, THPT_MAX);
-		BigDecimal dia = parseScore("Địa", txtDia, THPT_MAX);
-		BigDecimal van = parseScore("Văn", txtVan, THPT_MAX);
-		BigDecimal gdcd = parseScore("GDCD", txtGdcd, THPT_MAX);
-		BigDecimal n1Thi = parseScore("N1_THI", txtN1Thi, THPT_MAX);
-		BigDecimal n1Cc = parseScore("N1_CC", txtN1Cc, THPT_MAX);
-		BigDecimal cncn = parseScore("CNCN", txtCncn, THPT_MAX);
-		BigDecimal cnnn = parseScore("CNNN", txtCnnn, THPT_MAX);
-		BigDecimal ti = parseScore("Tin học", txtTin, THPT_MAX);
-		BigDecimal ktpl = parseScore("KTPL", txtKtpl, THPT_MAX);
-		BigDecimal nl1 = parseScore("NL1", txtNl1, DGNL_MAX);
-		BigDecimal nk1 = parseScore("NK1", txtNk1, THPT_MAX);
-		BigDecimal nk2 = parseScore("NK2", txtNk2, THPT_MAX);
-		BigDecimal nk3 = parseScore("NK3", txtNk3, THPT_MAX);
-		BigDecimal nk4 = parseScore("NK4", txtNk4, THPT_MAX);
-		BigDecimal nk5 = parseScore("NK5", txtNk5, THPT_MAX);
-		BigDecimal nk6 = parseScore("NK6", txtNk6, THPT_MAX);
-
-		if (!hasError && !hasAnyScore(toan, ly, hoa, sinh, su, dia, van, gdcd, n1Thi, n1Cc, cncn, cnnn, ti, ktpl,
-				nl1, nk1, nk2, nk3, nk4, nk5, nk6)) {
+		if (!hasError && !hasAnyScore(toan, van, anh, ly, hoa, sinh, su, dia)) {
 			setError("Toán", "Cần nhập ít nhất một điểm môn");
 			hasError = true;
 		}
@@ -377,31 +275,17 @@ public class DiemModal extends JDialog {
 			return;
 		}
 
-		result = new QuanLiDiemService.DiemInput(
+		result = new QuanLiDiemVSATService.VsatInput(
 				cccd,
-				soBaoDanh,
-				loaiDiem,
+				dotThi,
 				toan,
+				van,
+				anh,
 				ly,
 				hoa,
 				sinh,
 				su,
-				dia,
-				van,
-				gdcd,
-				n1Thi,
-				n1Cc,
-				cncn,
-				cnnn,
-				ti,
-				ktpl,
-				nl1,
-				nk1,
-				nk2,
-				nk3,
-				nk4,
-				nk5,
-				nk6);
+				dia);
 		dispose();
 	}
 

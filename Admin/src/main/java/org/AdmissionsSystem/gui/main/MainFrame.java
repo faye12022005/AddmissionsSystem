@@ -1,4 +1,5 @@
 package org.AdmissionsSystem.gui.main;
+
 import javax.swing.*;
 import org.AdmissionsSystem.gui.common.Searchable;
 import org.AdmissionsSystem.gui.modules.Login.LoginFrame;
@@ -16,9 +17,10 @@ import java.awt.*;
 
 public class MainFrame extends JFrame {
 
-    private CardLayout cardLayout = new CardLayout();
-    private JPanel centerPanel = new JPanel(cardLayout);
+    private final CardLayout cardLayout = new CardLayout();
+    private final JPanel centerPanel = new JPanel(cardLayout);
     private final LoginFrame loginFrame;
+    private final HeaderPanel header;
 
     public MainFrame() {
         this(null, "Lê Minh Anh", "Admin");
@@ -26,6 +28,7 @@ public class MainFrame extends JFrame {
 
     public MainFrame(LoginFrame loginFrame, String displayName, String role) {
         this.loginFrame = loginFrame;
+        this.header = new HeaderPanel();
         setTitle("Hệ thống quản lý tuyển sinh");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 800);
@@ -48,31 +51,34 @@ public class MainFrame extends JFrame {
         centerPanel.add(new NguyenVongPanel(), "nguyenvong");
         centerPanel.add(new BangQuyDoiPanel(), "bang_quydoi");
 
-
         // right content area: just center content
         add(sidebar, BorderLayout.WEST);
         add(centerPanel, BorderLayout.CENTER);
 
         // Wire sidebar buttons to card panels using client property
         // SidebarPanel stores the original menu index on each button
-        String[] allKeys = {"dashboard","users","thisinh","nganh","tohop","nganh_tohop","diem_thisinh","diem_cong","nguyenvong","bang_quydoi"};
+        String[] allKeys = { "dashboard", "users", "thisinh", "nganh", "tohop", "nganh_tohop", "diem_thisinh",
+                "diem_cong", "nguyenvong", "bang_quydoi" };
         java.util.List<JButton> buttons = new java.util.ArrayList<>();
         collectButtons(sidebar, buttons);
 
         // Assign card keys: sidebar may skip some items (e.g. "users" for non-admin)
         // We use the button text to determine which card to show
-        String[] menuLabels = {"Tổng quan","Người dùng","Thí sinh","Ngành học","Tổ hợp","Ngành-Tổ hợp","Điểm thi","Điểm cộng","Nguyện vọng","Bảng quy đổi"};
+        String[] menuLabels = { "Tổng quan", "Người dùng", "Thí sinh", "Ngành học", "Tổ hợp", "Ngành-Tổ hợp",
+                "Điểm thi", "Điểm cộng", "Nguyện vọng", "Bảng quy đổi" };
         for (JButton btn : buttons) {
             String text = btn.getText();
             String card = null;
-            // Duyệt ngược từ cuối danh sách để ưu tiên các nhãn dài/chi tiết hơn (vd: Ngành-Tổ hợp trước Tổ hợp)
+            // Duyệt ngược từ cuối danh sách để ưu tiên các nhãn dài/chi tiết hơn (vd:
+            // Ngành-Tổ hợp trước Tổ hợp)
             for (int j = menuLabels.length - 1; j >= 0; j--) {
                 if (text.contains(menuLabels[j])) {
                     card = allKeys[j];
                     break;
                 }
             }
-            if (card == null) continue;
+            if (card == null)
+                continue;
             final String finalCard = card;
             btn.addActionListener(e -> {
                 cardLayout.show(centerPanel, finalCard);
@@ -80,8 +86,32 @@ public class MainFrame extends JFrame {
         }
 
         // // show diem_cong panel by default
-        // cardLayout.show(centerPanel, "diem_cong");
-        // header.setPageSearchPlaceholder("tìm kiếm điểm cộng");
+        // showCard("diem_cong");
+    }
+
+    public void showCard(String card) {
+        cardLayout.show(centerPanel, card);
+        updateSearchPlaceholder(card);
+    }
+
+    private void updateSearchPlaceholder(String card) {
+        switch (card) {
+            case "thisinh":
+                header.setPageSearchPlaceholder("Tìm kiếm thí sinh (mã, tên)");
+                break;
+            case "users":
+                header.setPageSearchPlaceholder("Tìm kiếm người dùng (tên, email)");
+                break;
+            case "nganh":
+                header.setPageSearchPlaceholder("Tìm kiếm ngành / tổ hợp");
+                break;
+            case "tohop":
+                header.setPageSearchPlaceholder("Tìm kiếm môn học / tổ hợp môn");
+                break;
+            default:
+                header.setPageSearchPlaceholder("");
+                break;
+        }
     }
 
     private Component getCurrentCardComponent() {
