@@ -15,7 +15,7 @@ public class DashboardPanel extends JPanel {
     private final NganhHocService nganhHocService = new NganhHocService();
     private final NguyenVongService nguyenVongService = new NguyenVongService();
     private final DiemThiService diemThiService = new DiemThiService();
-    private final UsersService usersService = new UsersService();
+    private final NguoiDungService usersService = new NguoiDungService();
 
     public DashboardPanel() {
         setLayout(new BorderLayout());

@@ -4,7 +4,7 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.AdmissionsSystem.config.AppConfig;
-import org.AdmissionsSystem.models.Users;
+import org.AdmissionsSystem.models.XtNguoidung;
 import org.AdmissionsSystem.models.XtBangquydoi;
 import org.AdmissionsSystem.models.XtDiemcongxetuyen;
 import org.AdmissionsSystem.models.XtDiemthixettuyen;
@@ -89,7 +89,7 @@ public class HibernateUtil {
     }
 
     private static void registerAnnotatedClasses(Configuration configuration) {
-        configuration.addAnnotatedClass(Users.class);
+        configuration.addAnnotatedClass(XtNguoidung.class);
         configuration.addAnnotatedClass(XtBangquydoi.class);
         configuration.addAnnotatedClass(XtDiemcongxetuyen.class);
         configuration.addAnnotatedClass(XtDiemthixettuyen.class);

@@ -235,6 +235,10 @@ public class LoginFrame extends JFrame {
 
 
     private void onLogin() {
+        // Bỏ qua kiểm tra đăng nhập để test nhanh
+        LoginService.AuthResult authResult = LoginService.AuthResult.success("Admin Test", "ADMIN");
+        
+        /* 
         LoginService.AuthResult authResult = loginService.authenticate(txtUsername.getText(), txtPassword.getPassword());
         if (!authResult.success()) {
             JOptionPane.showMessageDialog(this, authResult.message(), "Đăng nhập thất bại", JOptionPane.WARNING_MESSAGE);
@@ -242,6 +246,7 @@ public class LoginFrame extends JFrame {
             txtPassword.requestFocusInWindow();
             return;
         }
+        */
 
         // Show a loading cursor or disable button
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
