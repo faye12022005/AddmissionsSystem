@@ -6,6 +6,19 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.*;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import org.AdmissionsSystem.bus.controller.XtNguyenvongxettuyenController;
+import org.AdmissionsSystem.bus.service.NganhHocService;
+import org.AdmissionsSystem.bus.service.ThiSinhService;
+import org.AdmissionsSystem.models.XtNguyenvongxettuyen;
+import org.AdmissionsSystem.models.XtNganh;
+import org.AdmissionsSystem.models.XtThisinhxettuyen25;
 
 public class NguyenVongPanel extends JPanel {
 
@@ -39,17 +52,7 @@ public class NguyenVongPanel extends JPanel {
 
     // ── Data Model ───────────────────────────────────────────
     private static final String[] COL_NAMES = {
-        "THỨ TỰ", "THÍ SINH", "MÃ NGÀNH", "TÊN NGÀNH", "TỔNG ĐIỂM", "TRẠNG THÁI", "HÀNH ĐỘNG"
-    };
-
-    private static final Object[][] TABLE_DATA = {
-        {"01", "Nguyễn Văn A\nSBD: 2400015", "7480101", "Khoa học máy tính", "28.50", "Trúng tuyển", ""},
-        {"02", "Lê Thị B\nSBD: 2400288",     "7480103", "Kỹ thuật phần mềm", "26.25", "Đang chờ",    ""},
-        {"03", "Trần Văn C\nSBD: 2400312",   "7480201", "Hệ thống thông tin","25.75", "Đang chờ",    ""},
-        {"04", "Phạm Thị D\nSBD: 2400456",   "7480104", "Mạng máy tính",     "24.00", "Đang chờ",    ""},
-        {"05", "Hoàng Văn E\nSBD: 2400589",  "7480101", "Khoa học máy tính", "22.50", "Đang chờ",    ""},
-        {"06", "Vũ Thị F\nSBD: 2400671",     "7480103", "Kỹ thuật phần mềm", "20.75", "Đã trượt",    ""},
-        {"07", "Đặng Văn G\nSBD: 2400710",   "7480105", "An toàn thông tin", "19.50", "Đã trượt",    ""},
+        "THỨ TỰ", "THÍ SINH", "CCCD", "MÃ NGÀNH", "TỔ HỢP", "PHƯƠNG THỨC", "ĐIỂM XT", "TRẠNG THÁI", "HÀNH ĐỘNG"
     };
     
     private static final int RECORDS_PER_PAGE = 5;
@@ -57,6 +60,12 @@ public class NguyenVongPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JLabel paginationInfo;
     private JPanel paginationBtnGroup;
+    private final XtNguyenvongxettuyenController controller = new XtNguyenvongxettuyenController();
+    private final ThiSinhService thiSinhService = new ThiSinhService();
+    private final NganhHocService nganhHocService = new NganhHocService();
+    private final List<NguyenVong> allRows = new ArrayList<>();
+    private final List<NguyenVong> pageRows = new ArrayList<>();
+    private static final DecimalFormat SCORE_FMT = new DecimalFormat("0.00");
 
     // ════════════════════════════════════════════════════════
     //  CONSTRUCTOR
@@ -64,6 +73,8 @@ public class NguyenVongPanel extends JPanel {
     public NguyenVongPanel() {
         setLayout(new BorderLayout());
         setBackground(BG_LIGHT);
+
+        loadData();
 
         JScrollPane scroll = new JScrollPane(buildInnerPanel());
         scroll.setBorder(null);
@@ -147,11 +158,16 @@ public class NguyenVongPanel extends JPanel {
         grid.setOpaque(false);
         grid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
 
+        int total = allRows.size();
+        int waiting = demTheoTrangThai("Đang chờ");
+        int passed = demTheoTrangThai("Trúng tuyển");
+        int failed = demTheoTrangThai("Đã trượt");
+
         Object[][] stats = {
-            {"👥", new Color(0xbf,0xdb,0xfe), new Color(0x1e,0x40,0xaf), "Tổng nguyện vọng", "12,450"},
-            {"⏳", new Color(0xff,0xed,0xd5), new Color(0xb4,0x53,0x09), "Đang chờ xử lý",   "8,120"},
-            {"✅", new Color(0xbb,0xf7,0xd0), new Color(0x15,0x80,0x3d), "Đã trúng tuyển",    "3,240"},
-            {"❌", new Color(0xfe,0xca,0xca), new Color(0xdc,0x26,0x26), "Đã trượt",           "1,090"},
+            {"👥", new Color(0xbf,0xdb,0xfe), new Color(0x1e,0x40,0xaf), "Tổng nguyện vọng", formatCount(total)},
+            {"⏳", new Color(0xff,0xed,0xd5), new Color(0xb4,0x53,0x09), "Đang chờ xử lý",   formatCount(waiting)},
+            {"✅", new Color(0xbb,0xf7,0xd0), new Color(0x15,0x80,0x3d), "Đã trúng tuyển",    formatCount(passed)},
+            {"❌", new Color(0xfe,0xca,0xca), new Color(0xdc,0x26,0x26), "Đã trượt",           formatCount(failed)},
         };
 
         for (Object[] s : stats)
@@ -269,7 +285,7 @@ public class NguyenVongPanel extends JPanel {
         header.setPreferredSize(new Dimension(0, 42));
 
         // Column widths
-        int[] widths = {70, 180, 100, 190, 100, 120, 100};
+        int[] widths = {70, 190, 110, 90, 80, 110, 90, 120, 100};
         for (int i = 0; i < widths.length; i++)
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
 
@@ -340,7 +356,7 @@ public class NguyenVongPanel extends JPanel {
         });
 
         // Tổng điểm
-        table.getColumnModel().getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
+        table.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(
                     JTable t, Object val, boolean sel, boolean foc, int row, int col) {
                 super.getTableCellRendererComponent(t, val, sel, foc, row, col);
@@ -354,7 +370,7 @@ public class NguyenVongPanel extends JPanel {
         });
 
         // Trạng thái
-        table.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
+        table.getColumnModel().getColumn(7).setCellRenderer(new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(
                     JTable t, Object val, boolean sel, boolean foc, int row, int col) {
                 String status = val.toString();
@@ -373,7 +389,7 @@ public class NguyenVongPanel extends JPanel {
         });
 
         // Hành động
-        table.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
+        table.getColumnModel().getColumn(8).setCellRenderer(new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(
                     JTable t, Object val, boolean sel, boolean foc, int row, int col) {
                 JPanel p = new JPanel(new GridBagLayout());
@@ -404,8 +420,8 @@ public class NguyenVongPanel extends JPanel {
                 int col = table.columnAtPoint(e.getPoint());
                 
                 if (row >= 0) {
-                    // Single click: kiểm tra nếu nhấn vào cột HÀNH ĐỘNG (cột 6)
-                    if (e.getClickCount() == 1 && col == 6) {
+                    // Single click: kiểm tra nếu nhấn vào cột HÀNH ĐỘNG (cột 8)
+                    if (e.getClickCount() == 1 && col == 8) {
                         // Lấy vị trí x của click
                         Rectangle cellRect = table.getCellRect(row, col, false);
                         int clickX = e.getX() - cellRect.x;
@@ -477,7 +493,7 @@ public class NguyenVongPanel extends JPanel {
     
     private void updatePaginationButtons() {
         paginationBtnGroup.removeAll();
-        int totalPages = (TABLE_DATA.length + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
+        int totalPages = (allRows.size() + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
         
         // Previous button
         JButton prevBtn = new JButton("‹") {
@@ -490,6 +506,7 @@ public class NguyenVongPanel extends JPanel {
                 super.paintComponent(g);
             }
         };
+        prevBtn.setMargin(new Insets(0, 0, 0, 0));
         prevBtn.setPreferredSize(new Dimension(32, 32));
         prevBtn.setFont(FONT_PLAIN_12);
         prevBtn.setForeground(TEXT_SLATE);
@@ -540,6 +557,7 @@ public class NguyenVongPanel extends JPanel {
                 super.paintComponent(g);
             }
         };
+        nextBtn.setMargin(new Insets(0, 0, 0, 0));
         nextBtn.setPreferredSize(new Dimension(32, 32));
         nextBtn.setFont(FONT_PLAIN_12);
         nextBtn.setForeground(TEXT_SLATE);
@@ -567,6 +585,7 @@ public class NguyenVongPanel extends JPanel {
                 super.paintComponent(g);
             }
         };
+        btn.setMargin(new Insets(0, 0, 0, 0));
         btn.setPreferredSize(new Dimension(32, 32));
         btn.setFont(active ? FONT_BOLD_12 : FONT_PLAIN_12);
         btn.setForeground(active ? WHITE : TEXT_SLATE);
@@ -593,7 +612,7 @@ public class NguyenVongPanel extends JPanel {
     }
     
     private void goToPage(int pageNum) {
-        int totalPages = (TABLE_DATA.length + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
+        int totalPages = (allRows.size() + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
         if (pageNum < 1 || pageNum > totalPages) return;
         
         currentPage = pageNum;
@@ -604,18 +623,34 @@ public class NguyenVongPanel extends JPanel {
     
     private void refreshTableData(int pageNum) {
         tableModel.setRowCount(0);
+        pageRows.clear();
         int startIdx = (pageNum - 1) * RECORDS_PER_PAGE;
-        int endIdx = Math.min(startIdx + RECORDS_PER_PAGE, TABLE_DATA.length);
+        int endIdx = Math.min(startIdx + RECORDS_PER_PAGE, allRows.size());
         for (int i = startIdx; i < endIdx; i++) {
-            tableModel.addRow(TABLE_DATA[i]);
+            NguyenVong row = allRows.get(i);
+            pageRows.add(row);
+            tableModel.addRow(new Object[] {
+                row.getThuTu(),
+                row.getTenThiSinh() + "\nSBD: " + row.getSbd(),
+                row.getCccd(),
+                row.getMaNganh(),
+                row.getToHop(),
+                row.getPhuongThuc(),
+                row.getTongDiem(),
+                row.getTrangThai(),
+                ""
+            });
         }
     }
     
     private String getPaginationText() {
-        int totalPages = (TABLE_DATA.length + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
+        int total = allRows.size();
+        if (total == 0) {
+            return "Hiển thị 0-0 trong số 0 bản ghi";
+        }
         int startRecord = (currentPage - 1) * RECORDS_PER_PAGE + 1;
-        int endRecord = Math.min(currentPage * RECORDS_PER_PAGE, TABLE_DATA.length);
-        return "Hiển thị " + startRecord + "-" + endRecord + " trong số " + TABLE_DATA.length + " bản ghi";
+        int endRecord = Math.min(currentPage * RECORDS_PER_PAGE, total);
+        return "Hiển thị " + startRecord + "-" + endRecord + " trong số " + total + " bản ghi";
     }
 
     // ════════════════════════════════════════════════════════
@@ -702,27 +737,9 @@ public class NguyenVongPanel extends JPanel {
     //  HELPER: Mở ChiTietNguyenVong dialog
     // ════════════════════════════════════════════════════════
     private void openChiTietNguyenVong(int rowIndex) {
-        if (rowIndex < 0 || rowIndex >= TABLE_DATA.length) return;
-        
-        // Trích xuất dữ liệu từ TABLE_DATA
-        Object[] rowData = TABLE_DATA[rowIndex];
-        String thuTu = rowData[0].toString();
-        String fullName = rowData[1].toString();
-        String maNganh = rowData[2].toString();
-        String tenNganh = rowData[3].toString();
-        String tongDiem = rowData[4].toString();
-        String trangThai = rowData[5].toString();
-        
-        // Parse thí sinh và SBD từ format "Tên Thí Sinh\nSBD: XXXX"
-        String[] parts = fullName.split("\\n");
-        String tenThiSinh = parts.length > 0 ? parts[0] : "";
-        String sbd = "";
-        if (parts.length > 1) {
-            sbd = parts[1].replace("SBD: ", "");
-        }
-        
-        // Tạo NguyenVong object
-        NguyenVong data = new NguyenVong(thuTu, tenThiSinh, sbd, maNganh, tenNganh, tongDiem, trangThai);
+        if (rowIndex < 0 || rowIndex >= pageRows.size()) return;
+
+        NguyenVong data = pageRows.get(rowIndex);
         
         // Lấy Frame chứa panel này
         Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
@@ -784,32 +801,159 @@ public class NguyenVongPanel extends JPanel {
     //  INNER CLASS: NguyenVong (Data Model)
     // ════════════════════════════════════════════════════════
     public static class NguyenVong {
-        private String thuTu;
-        private String tenThiSinh;
-        private String sbd;
-        private String maNganh;
-        private String tenNganh;
-        private String tongDiem;
-        private String trangThai;
+        private final String thuTu;
+        private final String tenThiSinh;
+        private final String sbd;
+        private final String cccd;
+        private final String maNganh;
+        private final String tenNganh;
+        private final String toHop;
+        private final String phuongThuc;
+        private final String tongDiem;
+        private final String trangThai;
+        private final String ngaySinh;
+        private final BigDecimal diemThxt;
+        private final BigDecimal diemCong;
+        private final BigDecimal diemUtqd;
+        private final BigDecimal diemXettuyen;
 
-        public NguyenVong(String thuTu, String tenThiSinh, String sbd, String maNganh,
-                         String tenNganh, String tongDiem, String trangThai) {
+        public NguyenVong(String thuTu, String tenThiSinh, String sbd, String cccd,
+                          String maNganh, String tenNganh, String toHop, String phuongThuc,
+                          String tongDiem, String trangThai, String ngaySinh,
+                          BigDecimal diemThxt, BigDecimal diemCong, BigDecimal diemUtqd, BigDecimal diemXettuyen) {
             this.thuTu = thuTu;
             this.tenThiSinh = tenThiSinh;
             this.sbd = sbd;
+            this.cccd = cccd;
             this.maNganh = maNganh;
             this.tenNganh = tenNganh;
+            this.toHop = toHop;
+            this.phuongThuc = phuongThuc;
             this.tongDiem = tongDiem;
             this.trangThai = trangThai;
+            this.ngaySinh = ngaySinh;
+            this.diemThxt = diemThxt;
+            this.diemCong = diemCong;
+            this.diemUtqd = diemUtqd;
+            this.diemXettuyen = diemXettuyen;
         }
 
         public String getThuTu() { return thuTu; }
         public String getTenThiSinh() { return tenThiSinh; }
         public String getSbd() { return sbd; }
+        public String getCccd() { return cccd; }
         public String getMaNganh() { return maNganh; }
         public String getTenNganh() { return tenNganh; }
+        public String getToHop() { return toHop; }
+        public String getPhuongThuc() { return phuongThuc; }
         public String getTongDiem() { return tongDiem; }
         public String getTrangThai() { return trangThai; }
+        public String getNgaySinh() { return ngaySinh; }
+        public BigDecimal getDiemThxt() { return diemThxt; }
+        public BigDecimal getDiemCong() { return diemCong; }
+        public BigDecimal getDiemUtqd() { return diemUtqd; }
+        public BigDecimal getDiemXettuyen() { return diemXettuyen; }
+    }
+
+    private void loadData() {
+        allRows.clear();
+        try {
+            List<XtNguyenvongxettuyen> data = controller.taiDuLieu();
+            Map<String, XtNganh> nganhMap = new HashMap<>();
+            for (XtNganh nganh : nganhHocService.getAll()) {
+                if (nganh.getManganh() != null) {
+                    nganhMap.put(nganh.getManganh().trim().toLowerCase(Locale.ROOT), nganh);
+                }
+            }
+
+            for (XtNguyenvongxettuyen nv : data) {
+                String cccd = safeText(nv.getNnCccd());
+                XtThisinhxettuyen25 ts = thiSinhService.findByCccd(cccd);
+                String tenThiSinh = buildTenThiSinh(ts, cccd);
+                String sbd = ts != null ? safeText(ts.getSobaodanh()) : "";
+                String ngaySinh = ts != null ? safeText(ts.getNgaySinh()) : "";
+                XtNganh nganh = nganhMap.get(safeText(nv.getNvManganh()).toLowerCase(Locale.ROOT));
+                String tenNganh = nganh != null ? safeText(nganh.getTennganh()) : "";
+                String toHop = safeText(nv.getTtThm());
+                String phuongThuc = safeText(nv.getTtPhuongthuc());
+
+                BigDecimal diemThxt = nv.getDiemThxt();
+                BigDecimal diemCong = nv.getDiemCong();
+                BigDecimal diemUtqd = nv.getDiemUtqd();
+                BigDecimal diemXettuyen = nv.getDiemXettuyen();
+                String tongDiem = formatScore(diemXettuyen != null ? diemXettuyen : diemThxt);
+                String trangThai = mapTrangThai(nv.getNvKetqua());
+
+                allRows.add(new NguyenVong(
+                    formatThuTu(nv.getNvTt()),
+                    tenThiSinh,
+                    sbd,
+                    cccd,
+                    safeText(nv.getNvManganh()),
+                    tenNganh,
+                    toHop,
+                    phuongThuc,
+                    tongDiem,
+                    trangThai,
+                    ngaySinh,
+                    diemThxt,
+                    diemCong,
+                    diemUtqd,
+                    diemXettuyen
+                ));
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                "Không thể tải dữ liệu nguyện vọng.\n" + ex.getMessage(),
+                "Lỗi dữ liệu", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private String buildTenThiSinh(XtThisinhxettuyen25 ts, String cccd) {
+        if (ts == null) {
+            return cccd.isEmpty() ? "(Chưa có thông tin)" : "Thí sinh " + cccd;
+        }
+        String ho = safeText(ts.getHo());
+        String ten = safeText(ts.getTen());
+        String full = (ho + " " + ten).trim();
+        return full.isEmpty() ? ("Thí sinh " + cccd) : full;
+    }
+
+    private String formatThuTu(Integer thuTu) {
+        if (thuTu == null) return "--";
+        return String.format("%02d", thuTu);
+    }
+
+    private String safeText(Object value) {
+        return value == null ? "" : value.toString().trim();
+    }
+
+    private String formatScore(BigDecimal value) {
+        if (value == null) return "--";
+        return SCORE_FMT.format(value);
+    }
+
+    private String mapTrangThai(String raw) {
+        String v = safeText(raw).toLowerCase(Locale.ROOT);
+        if (v.isEmpty()) return "Đang chờ";
+        if (v.contains("trung")) return "Trúng tuyển";
+        if (v.contains("dat")) return "Trúng tuyển";
+        if (v.contains("khong") || v.contains("truot")) return "Đã trượt";
+        return raw.trim();
+    }
+
+    private int demTheoTrangThai(String trangThai) {
+        int count = 0;
+        for (NguyenVong row : allRows) {
+            if (trangThai.equals(row.getTrangThai())) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private String formatCount(int value) {
+        return String.format("%,d", value);
     }
 
     // ════════════════════════════════════════════════════════
