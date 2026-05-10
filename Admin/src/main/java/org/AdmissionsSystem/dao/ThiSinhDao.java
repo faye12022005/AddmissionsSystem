@@ -1,7 +1,7 @@
 package org.AdmissionsSystem.dao;
 
-import java.util.List;
 import org.AdmissionsSystem.models.XtThisinhxettuyen25;
+import java.util.List;
 import org.hibernate.Session;
 
 public class ThiSinhDao extends AbstractCrudDao<XtThisinhxettuyen25, Integer> {
@@ -11,11 +11,30 @@ public class ThiSinhDao extends AbstractCrudDao<XtThisinhxettuyen25, Integer> {
     }
 
     public XtThisinhxettuyen25 findByCccd(String cccd) {
+        if (isBlank(cccd)) {
+            return null;
+        }
         try (Session session = getSessionFactory().openSession()) {
-            return session.createQuery("FROM XtThisinhxettuyen25 WHERE cccd = :c", XtThisinhxettuyen25.class)
-                    .setParameter("c", cccd == null ? "" : cccd.trim())
+            return session.createQuery("FROM XtThisinhxettuyen25 WHERE lower(cccd) = :cccd", XtThisinhxettuyen25.class)
+                    .setParameter("cccd", cccd.toLowerCase())
                     .uniqueResult();
         }
+    }
+
+    public XtThisinhxettuyen25 findBySoBaoDanh(String soBaoDanh) {
+        if (isBlank(soBaoDanh)) {
+            return null;
+        }
+        try (Session session = getSessionFactory().openSession()) {
+            return session
+                    .createQuery("FROM XtThisinhxettuyen25 WHERE lower(sobaodanh) = :sbd", XtThisinhxettuyen25.class)
+                    .setParameter("sbd", soBaoDanh.toLowerCase())
+                    .uniqueResult();
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     public List<XtThisinhxettuyen25> search(String keyword) {

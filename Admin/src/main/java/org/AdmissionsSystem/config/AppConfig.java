@@ -14,7 +14,7 @@ public class AppConfig {
     }
 
     public static String getDbPort() {
-        return getEnv("DB_PORT","");
+        return getEnv("DB_PORT", "");
     }
 
     public static String getDbName() {
@@ -75,6 +75,10 @@ public class AppConfig {
 
     public static int getJdbcFetchSize() {
         return Integer.parseInt(getEnv("HIBERNATE_JDBC_FETCH_SIZE", "50"));
+    }
+
+    public static boolean getGloballyQuotedIdentifiers() {
+        return Boolean.parseBoolean(getEnv("HIBERNATE_GLOBALLY_QUOTED_IDENTIFIERS", "true"));
     }
 
     public static String getJdbcUrl() {

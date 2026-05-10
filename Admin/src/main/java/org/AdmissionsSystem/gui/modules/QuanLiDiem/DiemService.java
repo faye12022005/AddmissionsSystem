@@ -61,11 +61,14 @@ public class DiemService {
 	}
 
 	private void addMonRecord(String cccd, String sbd, String loai, String mon, double diem) {
-		if (diem <= 0) return;
+		if (diem <= 0)
+			return;
 		records.add(new DiemRecord(nextId++, cccd, sbd, cccd, loai, mon, diem));
 	}
 
-	private double bd(java.math.BigDecimal v) { return v == null ? 0 : v.doubleValue(); }
+	private double bd(java.math.BigDecimal v) {
+		return v == null ? 0 : v.doubleValue();
+	}
 
 	public List<DiemRecord> getAll() {
 		return sortByNewestFirst(records);
@@ -90,7 +93,7 @@ public class DiemService {
 
 	public DiemRecord add(DiemRecordInput input) {
 		DiemRecordInput sanitized = sanitizeAndValidate(input);
-		
+
 		XtDiemthixettuyen entity = dbService.findByCccd(sanitized.cccd());
 		if (entity == null) {
 			entity = new XtDiemthixettuyen();
@@ -98,10 +101,10 @@ public class DiemService {
 			entity.setSobaodanh(sanitized.soBaoDanh());
 			entity.setDPhuongthuc(sanitized.loaiDiem());
 		}
-		
+
 		updateEntitySubject(entity, sanitized.mon(), sanitized.diem());
 		dbService.upsertByCccd(entity);
-		
+
 		loadFromDb(); // Sync internal list
 		return records.stream()
 				.filter(r -> r.cccd().equals(sanitized.cccd()) && r.mon().equals(sanitized.mon()))
@@ -112,7 +115,7 @@ public class DiemService {
 	public Optional<DiemRecord> update(int id, DiemRecordInput input) {
 		DiemRecordInput sanitized = sanitizeAndValidate(input);
 		Optional<DiemRecord> currentOpt = findById(id);
-		
+
 		if (currentOpt.isPresent()) {
 			DiemRecord current = currentOpt.get();
 			XtDiemthixettuyen entity = dbService.findByCccd(current.cccd());
@@ -121,11 +124,11 @@ public class DiemService {
 				if (!current.mon().equals(sanitized.mon())) {
 					updateEntitySubject(entity, current.mon(), 0);
 				}
-				
+
 				entity.setSobaodanh(sanitized.soBaoDanh());
 				updateEntitySubject(entity, sanitized.mon(), sanitized.diem());
 				dbService.update(entity);
-				
+
 				loadFromDb();
 				return findById(id);
 			}
