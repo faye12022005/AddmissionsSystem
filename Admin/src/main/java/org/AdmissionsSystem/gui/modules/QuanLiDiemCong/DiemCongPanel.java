@@ -399,4 +399,3 @@ public class DiemCongPanel extends JPanel {
         return value == null ? "" : value.toString();
     }
 }
-
