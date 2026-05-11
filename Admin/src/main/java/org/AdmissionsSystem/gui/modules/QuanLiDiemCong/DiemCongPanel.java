@@ -56,8 +56,6 @@ public class DiemCongPanel extends JPanel {
         title.setBorder(BorderFactory.createEmptyBorder(12, 12, 8, 12));
         title.setFont(Style.TITLE_FONT);
 
-        // top panel already added above
-
         tableModel = new DefaultTableModel(COLS, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
@@ -68,23 +66,30 @@ public class DiemCongPanel extends JPanel {
         formPanel = new DiemCongFormPanel();
         paginationPanel = new DiemCongPaginationPanel(pageSize);
 
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setOpaque(false);
-        topPanel.add(title, BorderLayout.NORTH);
-        topPanel.add(createActionPanel(), BorderLayout.SOUTH);
-        add(topPanel, BorderLayout.NORTH);
+        // NORTH panel: title + action buttons + form
+        JPanel northPanel = new JPanel(new BorderLayout());
+        northPanel.setOpaque(false);
+        northPanel.add(title, BorderLayout.NORTH);
+        
+        JPanel actionAndFormPanel = new JPanel(new BorderLayout());
+        actionAndFormPanel.setOpaque(false);
+        actionAndFormPanel.add(createActionPanel(), BorderLayout.NORTH);
+        actionAndFormPanel.add(createFormPanel(), BorderLayout.CENTER);
+        
+        northPanel.add(actionAndFormPanel, BorderLayout.CENTER);
+        add(northPanel, BorderLayout.NORTH);
 
-        JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.setOpaque(false);
-
+        // CENTER panel: table only
         CustomTable ct = new CustomTable(tableModel);
         table = ct.getTable();
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) onRowSelected();
         });
-        contentPanel.add(ct, BorderLayout.CENTER);
-        add(contentPanel, BorderLayout.CENTER);
+        add(ct, BorderLayout.CENTER);
+
+        // SOUTH panel: pagination
+        add(paginationPanel, BorderLayout.SOUTH);
 
         loadData();
     }
@@ -150,8 +155,26 @@ public class DiemCongPanel extends JPanel {
 
     private void onAdd() {
         try {
+            // Validation
+            if (cccdField.getText().isBlank()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập TS CCCD.");
+                return;
+            }
+            if (nganhField.getText().isBlank()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập Mã ngành.");
+                return;
+            }
+            if (tohopField.getText().isBlank()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập Mã tổ hợp.");
+                return;
+            }
+            if (diemCCField.getText().isBlank()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập Điểm CC.");
+                return;
+            }
+            
             XtDiemcongxetuyen entity = collectForm();
-                controller.add(entity);
+            controller.add(entity);
             loadData();
             clearForm();
             Toast.showToast(this, "Đã thêm điểm cộng.", false);
@@ -163,6 +186,23 @@ public class DiemCongPanel extends JPanel {
     private void onUpdate() {
         if (idField.getText().isBlank()) {
             JOptionPane.showMessageDialog(this, "Chọn dòng cần sửa.");
+            return;
+        }
+        // Validation
+        if (cccdField.getText().isBlank()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập TS CCCD.");
+            return;
+        }
+        if (nganhField.getText().isBlank()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập Mã ngành.");
+            return;
+        }
+        if (tohopField.getText().isBlank()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập Mã tổ hợp.");
+            return;
+        }
+        if (diemCCField.getText().isBlank()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập Điểm CC.");
             return;
         }
         try {
