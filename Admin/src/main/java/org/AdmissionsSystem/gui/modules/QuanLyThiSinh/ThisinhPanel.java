@@ -1,5 +1,7 @@
 package org.AdmissionsSystem.gui.modules.QuanLyThiSinh;
 
+import org.AdmissionsSystem.bus.service.ThiSinhService;
+import org.AdmissionsSystem.models.XtThisinhxettuyen25;
 import org.AdmissionsSystem.gui.common.Style;
 import org.AdmissionsSystem.gui.components.CustomTable;
 import org.AdmissionsSystem.gui.components.ImportExcel;
@@ -26,8 +28,10 @@ public class ThisinhPanel extends JPanel {
             "Giới tính", "Email", "Nơi sinh", "Đối tượng", "Khu vực"
     };
 
+    private final ThiSinhService thiSinhService = new ThiSinhService();
     private final List<Object[]> allRows = new ArrayList<>();
     private List<Object[]> filteredRows = new ArrayList<>();
+    private String currentKeyword = "";
 
     private final DefaultTableModel tableModel;
     private final CustomTable customTable;
@@ -82,8 +86,7 @@ public class ThisinhPanel extends JPanel {
         add(body, BorderLayout.CENTER);
 
         bindEvents();
-        seedData();
-        applyFilter("");
+        loadFromDb("");
     }
 
     private void applyStyle(JButton btn) {
@@ -255,20 +258,15 @@ public class ThisinhPanel extends JPanel {
 
     private void onAdd() {
         try {
-            Object[] row = collectFormData();
-            String cccd = asText(row[0]);
-
-            if (findIndexByCccd(cccd) >= 0) {
-                ToastThiSinh.showError(this, "CCCD thí sinh đã tồn tại.");
-                return;
-            }
-
-            allRows.add(row);
-            applyFilter(searchPanel.getSearchText());
+            XtThisinhxettuyen25 entity = collectFormEntity();
+            thiSinhService.add(entity);
+            loadFromDb(currentKeyword);
             clearForm();
             ToastThiSinh.showSuccess(this, "Thêm thí sinh mới thành công!");
         } catch (IllegalArgumentException ex) {
             ToastThiSinh.showError(this, ex.getMessage());
+        } catch (Exception ex) {
+            ToastThiSinh.showError(this, "Lỗi thêm thí sinh: " + ex.getMessage());
         }
     }
 
@@ -278,162 +276,102 @@ public class ThisinhPanel extends JPanel {
             return;
         }
         try {
-            Object[] row = collectFormData();
-            String newCccd = asText(row[0]);
-
-            int selectedIndex = findIndexByCccd(selectedCccd);
-            if (selectedIndex < 0) {
+            XtThisinhxettuyen25 existing = thiSinhService.findByCccd(selectedCccd);
+            if (existing == null) {
                 ToastThiSinh.showError(this, "Không tìm thấy dữ liệu để cập nhật.");
                 return;
             }
-
-            int duplicateIndex = findIndexByCccd(newCccd);
-            if (duplicateIndex >= 0 && duplicateIndex != selectedIndex) {
-                ToastThiSinh.showError(this, "CCCD mới đã tồn tại ở thí sinh khác.");
-                return;
-            }
-
-            allRows.set(selectedIndex, row);
-            selectedCccd = newCccd;
-            applyFilter(searchPanel.getSearchText());
+            XtThisinhxettuyen25 entity = collectFormEntity();
+            entity.setIdthisinh(existing.getIdthisinh());
+            thiSinhService.update(entity);
+            selectedCccd = entity.getCccd();
+            loadFromDb(currentKeyword);
             ToastThiSinh.showSuccess(this, "Cập nhật thông tin thành công!");
         } catch (IllegalArgumentException ex) {
             ToastThiSinh.showError(this, ex.getMessage());
+        } catch (Exception ex) {
+            ToastThiSinh.showError(this, "Lỗi cập nhật: " + ex.getMessage());
         }
     }
 
     private void onDelete() {
-        // Kiểm tra xem đã chọn dòng nào chưa
         if (selectedCccd == null || selectedCccd.isBlank()) {
             ToastThiSinh.showError(this, "Vui lòng chọn dòng cần xóa trước.");
             return;
         }
-
-        int index = findIndexByCccd(selectedCccd);
-        if (index < 0) {
-            ToastThiSinh.showError(this, "Không tìm thấy bản ghi cần xóa.");
-            return;
-        }
-
-        // Lấy Họ + Tên thí sinh để hiện thông báo xác nhận cho rõ ràng
-        String ho = asText(allRows.get(index)[2]);
-        String ten = asText(allRows.get(index)[3]);
-        String hoTen = ho + " " + ten;
-
-        // Gọi hộp thoại xác nhận từ ToastThiSinh
-        if (ToastThiSinh.showConfirmDelete(this, hoTen)) {
-            allRows.remove(index);
-            applyFilter(searchPanel.getSearchText());
-            clearForm();
-            ToastThiSinh.showSuccess(this, "Đã xóa thí sinh thành công.");
+        try {
+            XtThisinhxettuyen25 existing = thiSinhService.findByCccd(selectedCccd);
+            if (existing == null) {
+                ToastThiSinh.showError(this, "Không tìm thấy bản ghi cần xóa.");
+                return;
+            }
+            String hoTen = asText(existing.getHo()) + " " + asText(existing.getTen());
+            if (ToastThiSinh.showConfirmDelete(this, hoTen)) {
+                thiSinhService.delete(existing.getIdthisinh());
+                loadFromDb(currentKeyword);
+                clearForm();
+                ToastThiSinh.showSuccess(this, "Đã xóa thí sinh thành công.");
+            }
+        } catch (Exception ex) {
+            ToastThiSinh.showError(this, "Lỗi xóa: " + ex.getMessage());
         }
     }
 
-    private Object[] collectFormData() {
-        String cccd = txtCccd.getText().trim();
-        String sbd = txtSbd.getText().trim();
-        String ho = txtHo.getText().trim();
-        String ten = txtTen.getText().trim();
-        String ngaySinh = txtNgaySinh.getText().trim();
-        String dienThoai = txtDienThoai.getText().trim();
-        String gioiTinh = cboGioiTinh.getSelectedItem() != null ? cboGioiTinh.getSelectedItem().toString() : "";
-        String email = txtEmail.getText().trim();
-        String noiSinh = txtNoiSinh.getText().trim();
-        String doiTuong = txtDoiTuong.getText().trim();
-        String khuVuc = txtKhuVuc.getText().trim();
-
-        if (cccd.isEmpty() || ho.isEmpty() || ten.isEmpty()) {
-            throw new IllegalArgumentException("CCCD, Họ và Tên là bắt buộc.");
+    private void loadFromDb(String keyword) {
+        currentKeyword = keyword == null ? "" : keyword.trim();
+        try {
+            List<XtThisinhxettuyen25> entities = thiSinhService.search(currentKeyword);
+            allRows.clear();
+            for (XtThisinhxettuyen25 ts : entities) {
+                allRows.add(entityToRow(ts));
+            }
+            filteredRows = new ArrayList<>(allRows);
+            currentPage = 1;
+            loadPage();
+        } catch (Exception e) {
+            ToastThiSinh.showError(this, "Lỗi tải dữ liệu: " + e.getMessage());
         }
+    }
 
-        return new Object[] {
-                cccd, sbd, ho, ten, ngaySinh, dienThoai, gioiTinh, email, noiSinh, doiTuong, khuVuc
+    private Object[] entityToRow(XtThisinhxettuyen25 ts) {
+        return new Object[]{
+            asText(ts.getCccd()), asText(ts.getSobaodanh()), asText(ts.getHo()), asText(ts.getTen()),
+            asText(ts.getNgaySinh()), asText(ts.getDienThoai()), asText(ts.getGioiTinh()),
+            asText(ts.getEmail()), asText(ts.getNoiSinh()), asText(ts.getDoiTuong()), asText(ts.getKhuVuc())
         };
     }
 
-    // Dữ liệu giả
-    private void seedData() {
-        allRows.clear();
-        allRows.add(new Object[] { "079203123456", "TS001", "Nguyễn Văn", "An", "15/05/2005", "0901234567", "Nam",
-                "an.nv@gmail.com", "TP.HCM", "01", "KV1" });
-        allRows.add(new Object[] { "079203654321", "TS002", "Trần Thị", "Bích", "20/10/2005", "0912345678", "Nữ",
-                "bich.tt@gmail.com", "Hà Nội", "02", "KV2" });
-        allRows.add(new Object[] { "012345678910", "TS003", "Lê Hoàng", "Cường", "01/01/2004", "0987654321", "Nam",
-                "cuong.lh@gmail.com", "Đà Nẵng", "01", "KV3" });
-        allRows.add(new Object[] { "079205111222", "TS004", "Phạm Thái", "Dương", "14/02/2005", "0933112233", "Nam",
-                "duong.pt@gmail.com", "Đồng Nai", "01", "KV2-NT" });
-        allRows.add(new Object[] { "079205333444", "TS005", "Vũ Mỹ", "Duyên", "08/03/2005", "0944112233", "Nữ",
-                "duyen.vm@gmail.com", "Hải Phòng", "01", "KV2" });
-        allRows.add(new Object[] { "079205555666", "TS006", "Đặng Hải", "Đăng", "19/04/2005", "0955112233", "Nam",
-                "dang.dh@gmail.com", "Cần Thơ", "03", "KV3" });
-        allRows.add(new Object[] { "079205777888", "TS007", "Bùi Tố", "Uyên", "22/07/2005", "0966112233", "Nữ",
-                "uyen.bt@gmail.com", "Bình Dương", "01", "KV2" });
-        allRows.add(new Object[] { "079205999000", "TS008", "Ngô Quốc", "Bảo", "11/08/2005", "0977112233", "Nam",
-                "bao.nq@gmail.com", "Vũng Tàu", "04", "KV1" });
-        allRows.add(new Object[] { "079206111333", "TS009", "Lý Thu", "Thảo", "30/09/2005", "0988112233", "Nữ",
-                "thao.lt@gmail.com", "Long An", "01", "KV2-NT" });
-        allRows.add(new Object[] { "079206222444", "TS010", "Hồ Trọng", "Nghĩa", "25/11/2005", "0999112233", "Nam",
-                "nghia.ht@gmail.com", "Tiền Giang", "01", "KV1" });
-        allRows.add(new Object[] { "079206333555", "TS011", "Đỗ Kim", "Ngân", "12/12/2005", "0900112233", "Nữ",
-                "ngan.dk@gmail.com", "Bến Tre", "02", "KV2" });
-        allRows.add(new Object[] { "079206444666", "TS012", "Châu Gia", "Huy", "05/01/2005", "0911223344", "Nam",
-                "huy.cg@gmail.com", "Đồng Tháp", "01", "KV3" });
-        allRows.add(new Object[] { "079206555777", "TS013", "Dương Yến", "Nhi", "18/06/2005", "0922334455", "Nữ",
-                "nhi.dy@gmail.com", "An Giang", "01", "KV2-NT" });
-        allRows.add(new Object[] { "079206666888", "TS014", "Lương Minh", "Triết", "29/02/2004", "0933445566", "Nam",
-                "triet.lm@gmail.com", "Kiên Giang", "05", "KV1" });
-        allRows.add(new Object[] { "079206777999", "TS015", "Tạ Thanh", "Trúc", "03/05/2005", "0944556677", "Nữ",
-                "truc.tt@gmail.com", "Cà Mau", "01", "KV2" });
-        allRows.add(new Object[] { "079206888000", "TS016", "Vương Tuấn", "Kiệt", "14/07/2005", "0955667788", "Nam",
-                "kiet.vt@gmail.com", "Tây Ninh", "01", "KV3" });
-        allRows.add(new Object[] { "079206999111", "TS017", "Mai Phương", "Linh", "27/08/2005", "0966778899", "Nữ",
-                "linh.mp@gmail.com", "Bình Phước", "06", "KV2-NT" });
-        allRows.add(new Object[] { "079207000222", "TS018", "Lâm Phúc", "Hậu", "09/09/2005", "0977889900", "Nam",
-                "hau.lp@gmail.com", "Bạc Liêu", "01", "KV1" });
-        allRows.add(new Object[] { "079207111333", "TS019", "Đoàn Thị", "Mỹ", "16/10/2005", "0988990011", "Nữ",
-                "my.dt@gmail.com", "Sóc Trăng", "01", "KV2" });
-        allRows.add(new Object[] { "079207222444", "TS020", "Trương Bá", "Toàn", "21/11/2005", "0999001122", "Nam",
-                "toan.tb@gmail.com", "Trà Vinh", "07", "KV3" });
+    private XtThisinhxettuyen25 collectFormEntity() {
+        String cccd = txtCccd.getText().trim();
+        String ho = txtHo.getText().trim();
+        String ten = txtTen.getText().trim();
+        if (cccd.isEmpty() || ho.isEmpty() || ten.isEmpty()) {
+            throw new IllegalArgumentException("CCCD, Họ và Tên là bắt buộc.");
+        }
+        XtThisinhxettuyen25 ts = new XtThisinhxettuyen25();
+        ts.setCccd(cccd);
+        // Sử dụng toNull để chuyển "" thành null trước khi lưu
+        ts.setSobaodanh(toNull(txtSbd.getText()));
+        ts.setHo(ho);
+        ts.setTen(ten);
+        ts.setNgaySinh(toNull(txtNgaySinh.getText()));
+        ts.setDienThoai(toNull(txtDienThoai.getText()));
+        ts.setGioiTinh(cboGioiTinh.getSelectedItem() != null ? cboGioiTinh.getSelectedItem().toString() : "Nam");
+        ts.setEmail(toNull(txtEmail.getText()));
+        ts.setNoiSinh(toNull(txtNoiSinh.getText()));
+        ts.setDoiTuong(toNull(txtDoiTuong.getText()));
+        ts.setKhuVuc(toNull(txtKhuVuc.getText()));
+        return ts;
+    }
 
-        allRows.add(new Object[] { "079207333555", "TS021", "Phan Hoài", "Thương", "02/12/2005", "0801122334", "Nữ",
-                "thuong.ph@gmail.com", "Hậu Giang", "01", "KV1" });
-        allRows.add(new Object[] { "079207444666", "TS022", "Đinh Tấn", "Tài", "07/04/2005", "0812233445", "Nam",
-                "tai.dt@gmail.com", "Ninh Thuận", "01", "KV2" });
-        allRows.add(new Object[] { "079207555777", "TS023", "Thiều Nhật", "Mai", "13/05/2005", "0823344556", "Nữ",
-                "mai.tn@gmail.com", "Bình Thuận", "01", "KV3" });
-        allRows.add(new Object[] { "079207666888", "TS024", "Thái Đình", "Phong", "24/06/2005", "0834455667", "Nam",
-                "phong.td@gmail.com", "Lâm Đồng", "02", "KV2-NT" });
-        allRows.add(new Object[] { "079207777999", "TS025", "Tống Nhã", "Kỳ", "17/02/2005", "0845566778", "Nữ",
-                "ky.tn@gmail.com", "Gia Lai", "01", "KV1" });
-        allRows.add(new Object[] { "079207888000", "TS026", "Hà Trung", "Hiếu", "28/03/2005", "0856677889", "Nam",
-                "hieu.ht@gmail.com", "Đắk Lắk", "01", "KV2" });
-        allRows.add(new Object[] { "079207999111", "TS027", "Chu Diễm", "Quỳnh", "04/09/2005", "0867788990", "Nữ",
-                "quynh.cd@gmail.com", "Đắk Nông", "01", "KV3" });
-        allRows.add(new Object[] { "079208000222", "TS028", "Trịnh Xuân", "Thanh", "15/10/2005", "0878899001", "Nam",
-                "thanh.tx@gmail.com", "Kon Tum", "03", "KV2-NT" });
-        allRows.add(new Object[] { "079208111333", "TS029", "Vi Bích", "Ngọc", "26/11/2005", "0889900112", "Nữ",
-                "ngoc.vb@gmail.com", "Thanh Hóa", "01", "KV1" });
-        allRows.add(new Object[] { "079208222444", "TS030", "Lại Phi", "Hùng", "08/12/2005", "0890011223", "Nam",
-                "hung.lp@gmail.com", "Nghệ An", "01", "KV2" });
+    private String toNull(String s) {
+        if (s == null) return null;
+        String trimmed = s.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private void applyFilter(String keyword) {
-        String q = keyword == null ? "" : keyword.trim().toLowerCase();
-        filteredRows = new ArrayList<>();
-
-        for (Object[] row : allRows) {
-            String cccd = asText(row[0]).toLowerCase();
-            String ho = asText(row[2]).toLowerCase();
-            String ten = asText(row[3]).toLowerCase();
-            String sbd = asText(row[1]).toLowerCase();
-
-            if (q.isEmpty() || cccd.contains(q) || sbd.contains(q) || ho.contains(q) || ten.contains(q)
-                    || (ho + " " + ten).contains(q)) {
-                filteredRows.add(cloneRow(row));
-            }
-        }
-        currentPage = 1;
-        loadPage();
+        loadFromDb(keyword);
     }
 
     private void loadPage() {
@@ -527,19 +465,30 @@ public class ThisinhPanel extends JPanel {
             return;
         }
 
-        // Cập nhật vào danh sách hiện tại
-        for (Object[] imported : importedRows) {
-            String cccd = asText(imported[0]);
-            int index = findIndexByCccd(cccd);
-            if (index >= 0) {
-                allRows.set(index, imported);
-            } else {
-                allRows.add(imported);
+        // Convert to entities and batch import via service
+        try {
+            List<XtThisinhxettuyen25> entities = new ArrayList<>();
+            for (Object[] imported : importedRows) {
+                XtThisinhxettuyen25 ts = new XtThisinhxettuyen25();
+                ts.setCccd(toNull(asText(imported[0])));
+                ts.setSobaodanh(toNull(asText(imported[1])));
+                ts.setHo(toNull(asText(imported[2])));
+                ts.setTen(toNull(asText(imported[3])));
+                ts.setNgaySinh(toNull(asText(imported[4])));
+                ts.setDienThoai(toNull(asText(imported[5])));
+                ts.setGioiTinh(toNull(asText(imported[6])));
+                ts.setEmail(toNull(asText(imported[7])));
+                ts.setNoiSinh(toNull(asText(imported[8])));
+                ts.setDoiTuong(toNull(asText(imported[9])));
+                ts.setKhuVuc(toNull(asText(imported[10])));
+                entities.add(ts);
             }
+            thiSinhService.importBatch(entities);
+            loadFromDb(currentKeyword);
+            ToastThiSinh.showSuccess(this, "Import thành công " + importedRows.size() + " dòng dữ liệu!");
+        } catch (Exception ex) {
+            ToastThiSinh.showError(this, "Lỗi import: " + ex.getMessage());
         }
-
-        applyFilter(searchPanel.getSearchText());
-        ToastThiSinh.showSuccess(this, "Import thành công " + importedRows.size() + " dòng dữ liệu!");
     }
 
     private void onExportExcel() {
@@ -588,21 +537,6 @@ public class ThisinhPanel extends JPanel {
         }
     }
 
-    private int findIndexByCccd(String cccd) {
-        for (int i = 0; i < allRows.size(); i++) {
-            if (asText(allRows.get(i)[0]).equalsIgnoreCase(cccd)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private Object[] cloneRow(Object[] row) {
-        Object[] copy = new Object[row.length];
-        System.arraycopy(row, 0, copy, 0, row.length);
-        return copy;
-    }
-
     private void addField(JPanel panel, GridBagConstraints gbc, int row, String label, JComponent field, int col) {
         gbc.gridx = col;
         gbc.gridy = row;
@@ -616,6 +550,6 @@ public class ThisinhPanel extends JPanel {
     }
 
     private String asText(Object value) {
-        return value == null ? "" : value.toString();
+        return value == null ? "-" : value.toString();
     }
 }

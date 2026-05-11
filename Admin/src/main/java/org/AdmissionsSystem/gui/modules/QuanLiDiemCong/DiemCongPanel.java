@@ -3,34 +3,50 @@ package org.AdmissionsSystem.gui.modules.QuanLiDiemCong;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
+
+import org.AdmissionsSystem.bus.controller.DiemCongController;
 import org.AdmissionsSystem.gui.common.Style;
-import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.*;
-import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.service.DiemCongCsvService;
+import org.AdmissionsSystem.gui.components.CustomTable;
+import org.AdmissionsSystem.gui.components.Toast;
+import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongFormPanel;
+import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongPaginationPanel;
+import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongSearchPanel;
+import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongTable;
+import org.AdmissionsSystem.models.XtDiemcongxetuyen;
+
 import java.awt.*;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.ArrayList;
+import java.math.BigDecimal;
 import java.util.List;
 
 public class DiemCongPanel extends JPanel {
+
     private static final String[] COLS = {
-            "ID Điểm Cộng", "TS CCCD", "Mã ngành", "Mã tổ hợp", "Phương thức", "Điểm CC", "Điểm UTXT", "Điểm tổng", "Ghi chú", "DC Keys"
+        "ID Điểm Cộng", "TS CCCD", "Mã ngành", "Mã tổ hợp",
+        "Phương thức", "Điểm CC", "Điểm UTXT", "Điểm tổng", "Ghi chú", "DC Keys"
     };
 
-    private final List<Object[]> allRows = new ArrayList<>();
-    private List<Object[]> filteredRows = new ArrayList<>();
-
+    private final DiemCongController controller = new DiemCongController();
     private final DefaultTableModel tableModel;
-    private final DiemCongTable tableView;
-    private final DiemCongSearchPanel searchPanel;
-    private final DiemCongFormPanel formPanel;
-    private final DiemCongPaginationPanel paginationPanel;
-    private final DiemCongCsvService csvService = new DiemCongCsvService();
-
-    private int currentPage = 1;
+    private JTable table;
+    private DiemCongTable tableView;
+    private DiemCongSearchPanel searchPanel;
+    private DiemCongFormPanel formPanel;
+    private DiemCongPaginationPanel paginationPanel;
     private int pageSize = 20;
-    private int selectedDiemCongId = -1;
+
+    // Form fields
+    private final JTextField idField = new JTextField();
+    private final JTextField cccdField = new JTextField();
+    private final JTextField nganhField = new JTextField();
+    private final JTextField tohopField = new JTextField();
+    private final JTextField phuongthucField = new JTextField();
+    private final JTextField diemCCField = new JTextField();
+    private final JTextField diemUtxtField = new JTextField();
+    private final JTextField diemTongField = new JTextField();
+    private final JTextArea ghichuArea = new JTextArea(2, 30);
+    private final JTextField dcKeysField = new JTextField();
 
     public DiemCongPanel() {
         setLayout(new BorderLayout());
@@ -40,11 +56,11 @@ public class DiemCongPanel extends JPanel {
         title.setBorder(BorderFactory.createEmptyBorder(12, 12, 8, 12));
         title.setFont(Style.TITLE_FONT);
 
+        // top panel already added above
+
         tableModel = new DefaultTableModel(COLS, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+            public boolean isCellEditable(int row, int column) { return false; }
         };
 
         tableView = new DiemCongTable(tableModel);
@@ -60,15 +76,17 @@ public class DiemCongPanel extends JPanel {
 
         JPanel contentPanel = new JPanel(new BorderLayout());
         contentPanel.setOpaque(false);
-        contentPanel.add(formPanel, BorderLayout.NORTH);
-        contentPanel.add(tableView, BorderLayout.CENTER);
-        contentPanel.add(paginationPanel, BorderLayout.SOUTH);
 
+        CustomTable ct = new CustomTable(tableModel);
+        table = ct.getTable();
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) onRowSelected();
+        });
+        contentPanel.add(ct, BorderLayout.CENTER);
         add(contentPanel, BorderLayout.CENTER);
 
-        bindEvents();
-        seedData();
-        applyFilter("");
+        loadData();
     }
 
     private JPanel createActionPanel() {
@@ -76,28 +94,23 @@ public class DiemCongPanel extends JPanel {
         actionPanel.setOpaque(false);
         actionPanel.setBorder(BorderFactory.createEmptyBorder(0, 8, 8, 8));
 
-        JButton importBtn = new JButton("Import danh sách");
         JButton addBtn = new JButton("Thêm điểm cộng");
         JButton editBtn = new JButton("Sửa điểm cộng");
         JButton deleteBtn = new JButton("Xóa điểm cộng");
         JButton exportBtn = new JButton("Export CSV");
         JButton refreshBtn = new JButton("Làm mới");
 
-        styleButtonBlue(importBtn);
         styleButtonGreen(addBtn);
         styleButtonBlue(editBtn);
         styleButtonRed(deleteBtn);
         styleButtonBlue(exportBtn);
         styleButtonGray(refreshBtn);
 
-        importBtn.addActionListener(e -> onImportCsv());
         addBtn.addActionListener(e -> onAdd());
         editBtn.addActionListener(e -> onUpdate());
         deleteBtn.addActionListener(e -> onDelete());
-        exportBtn.addActionListener(e -> onExportCsv());
-        refreshBtn.addActionListener(e -> clearForm());
+        refreshBtn.addActionListener(e -> { clearForm(); loadData(); });
 
-        actionPanel.add(importBtn);
         actionPanel.add(addBtn);
         actionPanel.add(editBtn);
         actionPanel.add(deleteBtn);
@@ -107,295 +120,212 @@ public class DiemCongPanel extends JPanel {
         return actionPanel;
     }
 
-    private void styleButtonGreen(JButton b) {
-        b.setFocusPainted(false);
-        b.setFont(Style.BUTTON_FONT);
-        b.setBackground(new Color(76, 175, 80));
-        b.setForeground(Color.WHITE);
-        b.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        b.setOpaque(true);
-        b.setContentAreaFilled(true);
-        b.setBorderPainted(false); // optional: bỏ viền xám
-    }
-
-    private void styleButtonBlue(JButton b) {
-        b.setFocusPainted(false);
-        b.setFont(Style.BUTTON_FONT);
-        b.setBackground(new Color(33, 150, 243));
-        b.setForeground(Color.WHITE);
-        b.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        b.setOpaque(true);
-        b.setContentAreaFilled(true);
-        b.setBorderPainted(false); // optional: bỏ viền xám
-    }
-
-    private void styleButtonRed(JButton b) {
-        b.setFocusPainted(false);
-        b.setFont(Style.BUTTON_FONT);
-        b.setBackground(new Color(244, 67, 54));
-        b.setForeground(Color.WHITE);
-        b.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        b.setOpaque(true);
-        b.setContentAreaFilled(true);
-        b.setBorderPainted(false); // optional: bỏ viền xám
-
-    }
-
-    private void styleButtonGray(JButton b) {
-        b.setFocusPainted(false);
-        b.setFont(Style.BUTTON_FONT);
-        b.setBackground(new Color(158, 158, 158));
-        b.setForeground(Color.WHITE);
-        b.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        b.setOpaque(true);
-        b.setContentAreaFilled(true);
-        b.setBorderPainted(false);
-    }
-
-    private void bindEvents() {
-        searchPanel.addActionListener(e -> applyFilter(searchPanel.getSearchText()));
-        tableView.getTable().getSelectionModel().addListSelectionListener(this::onTableRowSelected);
-        paginationPanel.setOnPageSizeChange(selected -> {
-            pageSize = selected;
-            currentPage = 1;
-            loadPage();
-        });
-        paginationPanel.setOnPrev(() -> {
-            if (currentPage > 1) {
-                currentPage--;
-                loadPage();
-            }
-        });
-        paginationPanel.setOnNext(() -> {
-            if (currentPage < getTotalPages()) {
-                currentPage++;
-                loadPage();
-            }
-        });
-    }
-
-    private void onTableRowSelected(ListSelectionEvent e) {
-        if (e.getValueIsAdjusting()) {
-            return;
+    private void loadData() {
+        List<XtDiemcongxetuyen> rows = controller.getAll();
+        tableModel.setRowCount(0);
+        for (XtDiemcongxetuyen r : rows) {
+            tableModel.addRow(new Object[]{
+                r.getIddiemcong(), r.getTsCccd(), r.getManganh(), r.getMatohop(),
+                r.getPhuongthuc(), bd(r.getDiemcc()), bd(r.getDiemutxt()),
+                bd(r.getDiemtong()), r.getGhichu(), r.getDcKeys()
+            });
         }
-        int row = tableView.getTable().getSelectedRow();
-        if (row < 0) {
-            return;
-        }
+    }
 
-        Object[] selectedRow = new Object[COLS.length];
-        for (int i = 0; i < COLS.length; i++) {
-            selectedRow[i] = tableModel.getValueAt(row, i);
-        }
-
-        formPanel.setFormDataFromRow(selectedRow);
-        selectedDiemCongId = formPanel.getId();
+    private void onRowSelected() {
+        int row = table.getSelectedRow();
+        if (row < 0) return;
+        int mr = table.convertRowIndexToModel(row);
+        idField.setText(str(tableModel.getValueAt(mr, 0)));
+        cccdField.setText(str(tableModel.getValueAt(mr, 1)));
+        nganhField.setText(str(tableModel.getValueAt(mr, 2)));
+        tohopField.setText(str(tableModel.getValueAt(mr, 3)));
+        phuongthucField.setText(str(tableModel.getValueAt(mr, 4)));
+        diemCCField.setText(str(tableModel.getValueAt(mr, 5)));
+        diemUtxtField.setText(str(tableModel.getValueAt(mr, 6)));
+        diemTongField.setText(str(tableModel.getValueAt(mr, 7)));
+        ghichuArea.setText(str(tableModel.getValueAt(mr, 8)));
+        dcKeysField.setText(str(tableModel.getValueAt(mr, 9)));
     }
 
     private void onAdd() {
         try {
-            Object[] row = formPanel.collectFormData();
-            int id = (int) row[0];
-            if (findIndexById(id) >= 0) {
-                JOptionPane.showMessageDialog(this, "ID điểm cộng đã tồn tại.");
-                return;
-            }
-            allRows.add(row);
-            applyFilter(searchPanel.getSearchText());
+            XtDiemcongxetuyen entity = collectForm();
+                controller.add(entity);
+            loadData();
             clearForm();
-        } catch (IllegalArgumentException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage());
+            Toast.showToast(this, "Đã thêm điểm cộng.", false);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void onUpdate() {
-        if (selectedDiemCongId < 0) {
-            JOptionPane.showMessageDialog(this, "Chọn dòng cần cập nhật trước.");
+        if (idField.getText().isBlank()) {
+            JOptionPane.showMessageDialog(this, "Chọn dòng cần sửa.");
             return;
         }
         try {
-            Object[] row = formPanel.collectFormData();
-            int newId = (int) row[0];
-
-            int selectedIndex = findIndexById(selectedDiemCongId);
-            if (selectedIndex < 0) {
-                JOptionPane.showMessageDialog(this, "Không tìm thấy bản ghi cần cập nhật.");
-                return;
-            }
-
-            int duplicateIndex = findIndexById(newId);
-            if (duplicateIndex >= 0 && duplicateIndex != selectedIndex) {
-                JOptionPane.showMessageDialog(this, "ID điểm cộng mới đã tồn tại.");
-                return;
-            }
-
-            allRows.set(selectedIndex, row);
-            selectedDiemCongId = newId;
-            applyFilter(searchPanel.getSearchText());
-        } catch (IllegalArgumentException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage());
+            XtDiemcongxetuyen entity = collectForm();
+            entity.setIddiemcong(Integer.parseInt(idField.getText().trim()));
+                controller.update(entity);
+            loadData();
+            Toast.showToast(this, "Đã cập nhật điểm cộng.", false);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void onDelete() {
-        if (selectedDiemCongId < 0) {
-            JOptionPane.showMessageDialog(this, "Chọn dòng cần xóa trước.");
+        if (idField.getText().isBlank()) {
+            JOptionPane.showMessageDialog(this, "Chọn dòng cần xóa.");
             return;
         }
-        int index = findIndexById(selectedDiemCongId);
-        if (index < 0) {
-            JOptionPane.showMessageDialog(this, "Không tìm thấy bản ghi cần xóa.");
-            return;
+        int confirm = JOptionPane.showConfirmDialog(this, "Xóa bản ghi này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+        try {
+            controller.delete(Integer.parseInt(idField.getText().trim()));
+            loadData();
+            clearForm();
+            Toast.showToast(this, "Đã xóa điểm cộng.", false);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
-        allRows.remove(index);
-        applyFilter(searchPanel.getSearchText());
-        clearForm();
     }
 
-    private void seedData() {
-        allRows.clear();
-        allRows.add(new Object[]{1, "031098001234", "CNTT", "A1", "THPT", 1.5, 0.5, 2.0, "Hộ nghèo", "DC001"});
-        allRows.add(new Object[]{2, "031098001235", "CNTT", "A1", "THPT", 2.0, 0.5, 2.5, "Thương binh", "DC002"});
-        allRows.add(new Object[]{3, "031098001236", "KT", "D1", "THPT", 2.5, 1.0, 3.5, "Con liệt sĩ", "DC003"});
-    }
-
-    private void applyFilter(String keyword) {
-        String q = keyword == null ? "" : keyword.trim().toLowerCase();
-        filteredRows = new ArrayList<>();
-        for (Object[] row : allRows) {
-            String cccd = asText(row[1]).toLowerCase();
-            String nganh = asText(row[2]).toLowerCase();
-            String tohop = asText(row[3]).toLowerCase();
-            if (q.isEmpty() || cccd.contains(q) || nganh.contains(q) || tohop.contains(q)) {
-                filteredRows.add(cloneRow(row));
-            }
-        }
-        currentPage = 1;
-        loadPage();
-    }
-
-    private void loadPage() {
-        tableModel.setRowCount(0);
-        if (filteredRows.isEmpty()) {
-            paginationPanel.setPageInfo(1, 1, 0);
-            paginationPanel.setNavigationEnabled(false, false);
-            return;
-        }
-
-        int totalPages = getTotalPages();
-        if (currentPage > totalPages) {
-            currentPage = totalPages;
-        }
-
-        int from = (currentPage - 1) * pageSize;
-        int to = Math.min(from + pageSize, filteredRows.size());
-        for (int i = from; i < to; i++) {
-            tableModel.addRow(filteredRows.get(i));
-        }
-
-        paginationPanel.setPageInfo(currentPage, totalPages, filteredRows.size());
-        paginationPanel.setNavigationEnabled(currentPage > 1, currentPage < totalPages);
-    }
-
-    private int getTotalPages() {
-        if (filteredRows.isEmpty()) {
-            return 1;
-        }
-        return (int) Math.ceil(filteredRows.size() * 1.0 / pageSize);
+    private XtDiemcongxetuyen collectForm() {
+        XtDiemcongxetuyen e = new XtDiemcongxetuyen();
+        e.setTsCccd(cccdField.getText().trim());
+        e.setManganh(nganhField.getText().trim());
+        e.setMatohop(tohopField.getText().trim());
+        e.setPhuongthuc(phuongthucField.getText().trim());
+        e.setDiemcc(parseBD(diemCCField.getText()));
+        e.setDiemutxt(parseBD(diemUtxtField.getText()));
+        e.setDiemtong(parseBD(diemTongField.getText()));
+        e.setGhichu(ghichuArea.getText().trim());
+        e.setDcKeys(dcKeysField.getText().trim());
+        return e;
     }
 
     private void clearForm() {
-        formPanel.clearForm();
-        selectedDiemCongId = -1;
-        tableView.getTable().clearSelection();
+        idField.setText(""); cccdField.setText(""); nganhField.setText("");
+        tohopField.setText(""); phuongthucField.setText("");
+        diemCCField.setText(""); diemUtxtField.setText(""); diemTongField.setText("");
+        ghichuArea.setText(""); dcKeysField.setText("");
+        table.clearSelection();
     }
 
-    private void onImportCsv() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Chọn file CSV điểm cộng");
-        chooser.setFileFilter(new FileNameExtensionFilter("CSV file (*.csv)", "csv"));
-        int result = chooser.showOpenDialog(this);
-        if (result != JFileChooser.APPROVE_OPTION) {
-            return;
-        }
-
-        Path path = chooser.getSelectedFile().toPath();
-        List<Object[]> importedRows;
-        try {
-            importedRows = csvService.readRows(path, COLS);
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Không thể đọc file: " + ex.getMessage());
-            return;
-        } catch (IllegalArgumentException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage());
-            return;
-        }
-
-        if (importedRows.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "File không có dữ liệu để import.");
-            return;
-        }
-
-        for (Object[] imported : importedRows) {
-            int id = (int) imported[0];
-            int index = findIndexById(id);
-            if (index >= 0) {
-                allRows.set(index, imported);
-            } else {
-                allRows.add(imported);
-            }
-        }
-
-        applyFilter(searchPanel.getSearchText());
-        JOptionPane.showMessageDialog(this, "Import thành công " + importedRows.size() + " dòng.");
+    private String str(Object v) { return v == null ? "" : v.toString(); }
+    private String bd(BigDecimal v) { return v == null ? "" : v.toPlainString(); }
+    private BigDecimal parseBD(String s) {
+        try { return s == null || s.isBlank() ? null : new BigDecimal(s.trim()); }
+        catch (NumberFormatException e) { return null; }
     }
 
-    private void onExportCsv() {
-        List<Object[]> source = filteredRows.isEmpty() ? allRows : filteredRows;
-        if (source.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Không có dữ liệu để export.");
-            return;
-        }
-
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Lưu file CSV điểm cộng");
-        chooser.setFileFilter(new FileNameExtensionFilter("CSV file (*.csv)", "csv"));
-        int result = chooser.showSaveDialog(this);
-        if (result != JFileChooser.APPROVE_OPTION) {
-            return;
-        }
-
-        Path out = chooser.getSelectedFile().toPath();
-        if (!out.toString().toLowerCase().endsWith(".csv")) {
-            out = Path.of(out.toString() + ".csv");
-        }
-
-        try {
-            csvService.writeRows(out, COLS, source);
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Không thể ghi file: " + ex.getMessage());
-            return;
-        }
-
-        JOptionPane.showMessageDialog(this, "Export thành công " + source.size() + " dòng.");
+    // ── Styling helpers (preserved from original) ──
+    private void styleButtonGreen(JButton b) {
+        b.setFocusPainted(false); b.setFont(Style.BUTTON_FONT);
+        b.setBackground(new Color(76, 175, 80)); b.setForeground(Color.WHITE);
+        b.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        b.setOpaque(true); b.setContentAreaFilled(true); b.setBorderPainted(false);
     }
 
-    private int findIndexById(int id) {
-        for (int i = 0; i < allRows.size(); i++) {
-            if ((int) allRows.get(i)[0] == id) {
-                return i;
-            }
-        }
-        return -1;
+    private void styleButtonBlue(JButton b) {
+        b.setFocusPainted(false); b.setFont(Style.BUTTON_FONT);
+        b.setBackground(new Color(33, 150, 243)); b.setForeground(Color.WHITE);
+        b.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        b.setOpaque(true); b.setContentAreaFilled(true); b.setBorderPainted(false);
     }
 
-    private Object[] cloneRow(Object[] row) {
-        Object[] copy = new Object[row.length];
-        System.arraycopy(row, 0, copy, 0, row.length);
-        return copy;
+    private void styleButtonRed(JButton b) {
+        b.setFocusPainted(false); b.setFont(Style.BUTTON_FONT);
+        b.setBackground(new Color(244, 67, 54)); b.setForeground(Color.WHITE);
+        b.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        b.setOpaque(true); b.setContentAreaFilled(true); b.setBorderPainted(false);
     }
 
-    private String asText(Object value) {
-        return value == null ? "" : value.toString();
+    private void styleButtonGray(JButton b) {
+        b.setFocusPainted(false); b.setFont(Style.BUTTON_FONT);
+        b.setBackground(new Color(158, 158, 158)); b.setForeground(Color.WHITE);
+        b.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        b.setOpaque(true); b.setContentAreaFilled(true); b.setBorderPainted(false);
+    }
+
+    private JPanel createFormPanel() {
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setOpaque(false);
+        formPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(0, 8, 10, 8),
+                BorderFactory.createTitledBorder(
+                        BorderFactory.createLineBorder(new Color(220, 225, 235)),
+                        "Thông tin điểm cộng",
+                        TitledBorder.LEFT, TitledBorder.TOP,
+                        Style.BUTTON_FONT.deriveFont(Font.BOLD),
+                        new Color(60, 70, 90)
+                )
+        ));
+
+        ghichuArea.setLineWrap(true);
+        ghichuArea.setWrapStyleWord(true);
+        idField.setEditable(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(6, 8, 6, 8);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // Row 0
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
+        formPanel.add(new JLabel("ID"), gbc);
+        gbc.gridx = 1; gbc.weightx = 0.5;
+        formPanel.add(idField, gbc);
+        gbc.gridx = 2; gbc.weightx = 0;
+        formPanel.add(new JLabel("CCCD"), gbc);
+        gbc.gridx = 3; gbc.weightx = 0.5;
+        formPanel.add(cccdField, gbc);
+
+        // Row 1
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
+        formPanel.add(new JLabel("Mã ngành"), gbc);
+        gbc.gridx = 1; gbc.weightx = 0.5;
+        formPanel.add(nganhField, gbc);
+        gbc.gridx = 2; gbc.weightx = 0;
+        formPanel.add(new JLabel("Mã tổ hợp"), gbc);
+        gbc.gridx = 3; gbc.weightx = 0.5;
+        formPanel.add(tohopField, gbc);
+
+        // Row 2
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
+        formPanel.add(new JLabel("Phương thức"), gbc);
+        gbc.gridx = 1; gbc.weightx = 0.5;
+        formPanel.add(phuongthucField, gbc);
+        gbc.gridx = 2; gbc.weightx = 0;
+        formPanel.add(new JLabel("Điểm CC"), gbc);
+        gbc.gridx = 3; gbc.weightx = 0.5;
+        formPanel.add(diemCCField, gbc);
+
+        // Row 3
+        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
+        formPanel.add(new JLabel("Điểm UTXT"), gbc);
+        gbc.gridx = 1; gbc.weightx = 0.5;
+        formPanel.add(diemUtxtField, gbc);
+        gbc.gridx = 2; gbc.weightx = 0;
+        formPanel.add(new JLabel("Điểm tổng"), gbc);
+        gbc.gridx = 3; gbc.weightx = 0.5;
+        formPanel.add(diemTongField, gbc);
+
+        // Row 4
+        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("Ghi chú"), gbc);
+        gbc.gridx = 1; gbc.gridwidth = 3; gbc.weightx = 1;
+        formPanel.add(new JScrollPane(ghichuArea), gbc);
+
+        // Row 5
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1; gbc.weightx = 0;
+        formPanel.add(new JLabel("DC Keys"), gbc);
+        gbc.gridx = 1; gbc.gridwidth = 3; gbc.weightx = 1;
+        formPanel.add(dcKeysField, gbc);
+
+        return formPanel;
     }
 }

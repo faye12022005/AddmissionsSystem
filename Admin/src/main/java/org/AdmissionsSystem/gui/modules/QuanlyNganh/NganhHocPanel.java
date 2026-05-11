@@ -1,10 +1,15 @@
 package org.AdmissionsSystem.gui.modules.QuanlyNganh;
+
+import org.AdmissionsSystem.bus.controller.NganhHocController;
 import org.AdmissionsSystem.gui.common.Style;
+import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocDialog;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocFormPanel;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocPaginationPanel;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocSearchPanel;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.components.NganhHocTable;
+import org.AdmissionsSystem.gui.modules.QuanlyNganh.mapper.NganhHocRowMapper;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.service.NganhHocCsvService;
+import org.AdmissionsSystem.models.XtNganh;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -17,7 +22,11 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.Window;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -30,8 +39,9 @@ public class NganhHocPanel extends JPanel {
             "SL xét tuyển", "SL DGNL", "SL VSAT", "SL THPT"
     };
 
-    private final List<Object[]> allRows = new ArrayList<>();
-    private List<Object[]> filteredRows = new ArrayList<>();
+    private List<XtNganh> filteredRows = new ArrayList<>();
+    private List<XtNganh> currentPageRows = new ArrayList<>();
+    private final NganhHocController nganhHocController = new NganhHocController();
 
     private final DefaultTableModel tableModel;
     private final NganhHocTable tableView;
@@ -39,6 +49,7 @@ public class NganhHocPanel extends JPanel {
     private final NganhHocFormPanel formPanel;
     private final NganhHocPaginationPanel paginationPanel;
     private final NganhHocCsvService csvService = new NganhHocCsvService();
+    private final NganhHocRowMapper rowMapper = new NganhHocRowMapper();
 
     private int currentPage = 1;
     private int pageSize = 20;
@@ -63,19 +74,18 @@ public class NganhHocPanel extends JPanel {
 
         tableView = new NganhHocTable(tableModel);
         searchPanel = new NganhHocSearchPanel();
-    formPanel = new NganhHocFormPanel();
-    paginationPanel = new NganhHocPaginationPanel(pageSize);
+        formPanel = new NganhHocFormPanel();
+        paginationPanel = new NganhHocPaginationPanel(pageSize);
 
         JPanel body = new JPanel(new BorderLayout(8, 8));
         body.setOpaque(false);
         body.setBorder(BorderFactory.createEmptyBorder(0, 8, 8, 8));
         body.add(buildCrudPanel(), BorderLayout.NORTH);
         body.add(tableView, BorderLayout.CENTER);
-    body.add(paginationPanel, BorderLayout.SOUTH);
+        body.add(paginationPanel, BorderLayout.SOUTH);
         add(body, BorderLayout.CENTER);
 
         bindEvents();
-        seedData();
         applyFilter("");
     }
 
@@ -86,16 +96,10 @@ public class NganhHocPanel extends JPanel {
         JPanel filterRow = new JPanel();
         filterRow.setLayout(new BoxLayout(filterRow, BoxLayout.X_AXIS));
         filterRow.setOpaque(false);
-        JButton btnResetFilter = new JButton("Xóa lọc");
-        JButton btnImport = new JButton("Import CSV");
-        JButton btnExport = new JButton("Export CSV");
-        Style.styleFunctionButton(btnResetFilter, Style.BTN_FILTER_RESET);
+        JButton btnImport = new JButton("Import");
+        JButton btnExport = new JButton("Export");
         Style.styleFunctionButton(btnImport, Style.BTN_IMPORT);
         Style.styleFunctionButton(btnExport, Style.BTN_EXPORT);
-        btnResetFilter.addActionListener(e -> {
-            searchPanel.setSearchText("");
-            applyFilter("");
-        });
         btnImport.addActionListener(e -> onImportCsv());
         btnExport.addActionListener(e -> onExportCsv());
         filterRow.add(searchPanel);
@@ -103,8 +107,6 @@ public class NganhHocPanel extends JPanel {
         filterRow.add(btnImport);
         filterRow.add(Box.createRigidArea(new Dimension(8, 0)));
         filterRow.add(btnExport);
-        filterRow.add(Box.createRigidArea(new Dimension(8, 0)));
-        filterRow.add(btnResetFilter);
 
         JPanel actionPanel = new JPanel();
         actionPanel.setLayout(new BoxLayout(actionPanel, BoxLayout.X_AXIS));
@@ -131,9 +133,9 @@ public class NganhHocPanel extends JPanel {
         actionPanel.add(Box.createRigidArea(new Dimension(8, 0)));
         actionPanel.add(btnClear);
 
-        JPanel topRow = new JPanel(new BorderLayout(8, 0));
+        JPanel topRow = new JPanel(new BorderLayout(12, 0));
         topRow.setOpaque(false);
-        topRow.add(filterRow, BorderLayout.WEST);
+        topRow.add(filterRow, BorderLayout.CENTER);
         topRow.add(actionPanel, BorderLayout.EAST);
 
         wrapper.add(topRow, BorderLayout.NORTH);
@@ -168,32 +170,29 @@ public class NganhHocPanel extends JPanel {
             return;
         }
         int row = tableView.getTable().getSelectedRow();
-        if (row < 0) {
+        if (row < 0 || row >= currentPageRows.size()) {
             return;
         }
 
-        Object[] selectedRow = new Object[COLS.length];
-        for (int i = 0; i < COLS.length; i++) {
-            selectedRow[i] = tableModel.getValueAt(row, i);
-        }
-
-        formPanel.setFormDataFromRow(selectedRow);
-        selectedMaNganh = formPanel.getMaNganh();
+        XtNganh selectedRow = currentPageRows.get(row);
+        formPanel.setFormData(selectedRow);
+        selectedMaNganh = selectedRow.getManganh();
     }
 
     private void onAdd() {
-        try {
-            Object[] row = formPanel.collectFormData();
-            String ma = asText(row[0]);
-            if (findIndexByMa(ma) >= 0) {
-                JOptionPane.showMessageDialog(this, "Mã ngành đã tồn tại.");
-                return;
+        Window owner = javax.swing.SwingUtilities.getWindowAncestor(this);
+        NganhHocDialog dialog = new NganhHocDialog((Frame) owner, "Thêm Ngành Học", null);
+        dialog.setVisible(true);
+
+        if (dialog.isConfirmed()) {
+            try {
+                XtNganh model = dialog.collectFormData();
+                nganhHocController.add(model);
+                applyFilter(searchPanel.getSearchText());
+                clearForm();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Lỗi khi lưu: " + ex.getMessage());
             }
-            allRows.add(row);
-            applyFilter(searchPanel.getSearchText());
-            clearForm();
-        } catch (IllegalArgumentException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage());
         }
     }
 
@@ -202,27 +201,27 @@ public class NganhHocPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Chọn dòng cần cập nhật trước.");
             return;
         }
-        try {
-            Object[] row = formPanel.collectFormData();
-            String newMa = asText(row[0]);
 
-            int selectedIndex = findIndexByMa(selectedMaNganh);
-            if (selectedIndex < 0) {
-                JOptionPane.showMessageDialog(this, "Không tìm thấy bản ghi cần cập nhật.");
-                return;
+        int row = tableView.getTable().getSelectedRow();
+        if (row < 0 || row >= currentPageRows.size())
+            return;
+        XtNganh currentData = currentPageRows.get(row);
+
+        Window owner = javax.swing.SwingUtilities.getWindowAncestor(this);
+        NganhHocDialog dialog = new NganhHocDialog((Frame) owner, "Cập nhật Ngành Học", currentData);
+        dialog.setVisible(true);
+
+        if (dialog.isConfirmed()) {
+            try {
+                XtNganh updatedModel = dialog.collectFormData();
+                nganhHocController.update(selectedMaNganh, updatedModel);
+                selectedMaNganh = updatedModel.getManganh();
+                applyFilter(searchPanel.getSearchText());
+                // Refresh form display
+                formPanel.setFormData(updatedModel);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật: " + ex.getMessage());
             }
-
-            int duplicateIndex = findIndexByMa(newMa);
-            if (duplicateIndex >= 0 && duplicateIndex != selectedIndex) {
-                JOptionPane.showMessageDialog(this, "Mã ngành mới đã tồn tại.");
-                return;
-            }
-
-            allRows.set(selectedIndex, row);
-            selectedMaNganh = newMa;
-            applyFilter(searchPanel.getSearchText());
-        } catch (IllegalArgumentException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage());
         }
     }
 
@@ -231,44 +230,24 @@ public class NganhHocPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Chọn dòng cần xóa trước.");
             return;
         }
-        int index = findIndexByMa(selectedMaNganh);
-        if (index < 0) {
-            JOptionPane.showMessageDialog(this, "Không tìm thấy bản ghi cần xóa.");
-            return;
+        try {
+            nganhHocController.deleteByMaNganh(selectedMaNganh);
+            applyFilter(searchPanel.getSearchText());
+            clearForm();
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage());
         }
-        allRows.remove(index);
-        applyFilter(searchPanel.getSearchText());
-        clearForm();
-    }
-
-    private void seedData() {
-        allRows.clear();
-        allRows.add(new Object[]{"CNTT", "Công nghệ thông tin", "A00", 100, 20.0, 25.0, "N", "Y", "Y", "N", 1000, 200, 50, 750});
-        allRows.add(new Object[]{"KT", "Kinh tế", "C00", 80, 18.0, 22.0, "N", "N", "Y", "N", 800, 0, 0, 800});
-        allRows.add(new Object[]{"DTVT", "Điện tử viễn thông", "A01", 70, 19.0, 23.0, "N", "Y", "Y", "N", 650, 120, 30, 500});
-        allRows.add(new Object[]{"QTKD", "Quản trị kinh doanh", "D01", 120, 18.0, 24.0, "Y", "N", "Y", "Y", 1200, 0, 100, 1100});
-        allRows.add(new Object[]{"TCKT", "Tài chính kế toán", "A00", 95, 18.5, 23.5, "N", "Y", "Y", "N", 900, 140, 20, 740});
-        allRows.add(new Object[]{"SPTOAN", "Sư phạm Toán", "A00", 60, 19.0, 24.0, "Y", "N", "Y", "N", 420, 0, 0, 420});
-        allRows.add(new Object[]{"SPANH", "Sư phạm Anh", "D01", 55, 19.5, 24.8, "Y", "N", "Y", "Y", 410, 0, 80, 330});
     }
 
     private void applyFilter(String keyword) {
-        String q = keyword == null ? "" : keyword.trim().toLowerCase();
-        filteredRows = new ArrayList<>();
-        for (Object[] row : allRows) {
-            String ma = asText(row[0]).toLowerCase();
-            String ten = asText(row[1]).toLowerCase();
-            String toHop = asText(row[2]).toLowerCase();
-            if (q.isEmpty() || ma.contains(q) || ten.contains(q) || toHop.contains(q)) {
-                filteredRows.add(cloneRow(row));
-            }
-        }
+        filteredRows = nganhHocController.search(keyword);
         currentPage = 1;
         loadPage();
     }
 
     private void loadPage() {
         tableModel.setRowCount(0);
+        currentPageRows = new ArrayList<>();
         if (filteredRows.isEmpty()) {
             paginationPanel.setPageInfo(1, 1, 0);
             paginationPanel.setNavigationEnabled(false, false);
@@ -283,7 +262,9 @@ public class NganhHocPanel extends JPanel {
         int from = (currentPage - 1) * pageSize;
         int to = Math.min(from + pageSize, filteredRows.size());
         for (int i = from; i < to; i++) {
-            tableModel.addRow(filteredRows.get(i));
+            XtNganh model = filteredRows.get(i);
+            currentPageRows.add(model);
+            tableModel.addRow(rowMapper.toRow(model));
         }
 
         paginationPanel.setPageInfo(currentPage, totalPages, filteredRows.size());
@@ -301,12 +282,14 @@ public class NganhHocPanel extends JPanel {
         formPanel.clearForm();
         selectedMaNganh = null;
         tableView.getTable().clearSelection();
+        searchPanel.setSearchText("");
+        applyFilter("");
     }
 
     private void onImportCsv() {
         JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Chọn file CSV ngành học");
-        chooser.setFileFilter(new FileNameExtensionFilter("CSV file (*.csv)", "csv"));
+        chooser.setDialogTitle("Import dữ liệu (Hỗ trợ CSV/Excel CSV)");
+        chooser.setFileFilter(new FileNameExtensionFilter("CSV Files (*.csv)", "csv"));
         int result = chooser.showOpenDialog(this);
         if (result != JFileChooser.APPROVE_OPTION) {
             return;
@@ -330,13 +313,7 @@ public class NganhHocPanel extends JPanel {
         }
 
         for (Object[] imported : importedRows) {
-            String ma = asText(imported[0]);
-            int index = findIndexByMa(ma);
-            if (index >= 0) {
-                allRows.set(index, imported);
-            } else {
-                allRows.add(imported);
-            }
+            nganhHocController.upsert(rowMapper.fromRow(imported));
         }
 
         applyFilter(searchPanel.getSearchText());
@@ -344,15 +321,23 @@ public class NganhHocPanel extends JPanel {
     }
 
     private void onExportCsv() {
-        List<Object[]> source = filteredRows.isEmpty() ? allRows : filteredRows;
+        List<Object[]> source = new ArrayList<>();
+        for (XtNganh model : filteredRows) {
+            source.add(rowMapper.toRow(model));
+        }
         if (source.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Không có dữ liệu để export.");
             return;
         }
 
         JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Lưu file CSV ngành học");
-        chooser.setFileFilter(new FileNameExtensionFilter("CSV file (*.csv)", "csv"));
+        chooser.setDialogTitle("Xuất dữ liệu ra Excel (CSV)");
+        chooser.setFileFilter(new FileNameExtensionFilter("Excel CSV Files (*.csv)", "csv"));
+        
+        // Gợi ý tên file mặc định: DanhSachNganhHoc_yyyyMMdd.csv
+        String timestamp = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd").format(java.time.LocalDateTime.now());
+        chooser.setSelectedFile(new java.io.File("DanhSachNganhHoc_" + timestamp + ".csv"));
+        
         int result = chooser.showSaveDialog(this);
         if (result != JFileChooser.APPROVE_OPTION) {
             return;
@@ -372,25 +357,4 @@ public class NganhHocPanel extends JPanel {
 
         JOptionPane.showMessageDialog(this, "Export thành công " + source.size() + " dòng.");
     }
-
-    private int findIndexByMa(String maNganh) {
-        for (int i = 0; i < allRows.size(); i++) {
-            if (asText(allRows.get(i)[0]).equalsIgnoreCase(maNganh)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private Object[] cloneRow(Object[] row) {
-        Object[] copy = new Object[row.length];
-        System.arraycopy(row, 0, copy, 0, row.length);
-        return copy;
-    }
-
-    private String asText(Object value) {
-        return value == null ? "" : value.toString();
-    }
 }
-
-

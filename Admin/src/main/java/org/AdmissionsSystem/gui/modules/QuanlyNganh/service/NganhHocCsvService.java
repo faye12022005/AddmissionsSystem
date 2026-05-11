@@ -39,6 +39,8 @@ public class NganhHocCsvService {
 
     public void writeRows(Path out, String[] headers, List<Object[]> rows) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(out, StandardCharsets.UTF_8)) {
+            // Write BOM for Excel compatibility
+            writer.write('\uFEFF');
             writer.write(String.join(",", headers));
             writer.newLine();
 
@@ -90,10 +92,10 @@ public class NganhHocCsvService {
                     Integer.parseInt(text(cells, 3)),
                     Double.parseDouble(text(cells, 4)),
                     Double.parseDouble(text(cells, 5)),
-                    yn(text(cells, 6)),
-                    yn(text(cells, 7)),
-                    yn(text(cells, 8)),
-                    yn(text(cells, 9)),
+                    text(cells, 6),
+                    text(cells, 7),
+                    text(cells, 8),
+                    text(cells, 9),
                     Integer.parseInt(text(cells, 10)),
                     Integer.parseInt(text(cells, 11)),
                     Integer.parseInt(text(cells, 12)),
@@ -106,16 +108,6 @@ public class NganhHocCsvService {
 
     private String text(List<String> cells, int index) {
         return cells.get(index).trim();
-    }
-
-    private String yn(String value) {
-        if ("Y".equalsIgnoreCase(value) || "N".equalsIgnoreCase(value)) {
-            return value.toUpperCase();
-        }
-        if ("true".equalsIgnoreCase(value) || "1".equals(value)) {
-            return "Y";
-        }
-        return "N";
     }
 
     private String toCsvLine(Object[] row) {

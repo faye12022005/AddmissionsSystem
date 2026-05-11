@@ -1,34 +1,36 @@
 package org.AdmissionsSystem;
 
-import org.AdmissionsSystem.gui.modules.QuanLiDiem.DiemThiSinhPanel;;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import org.AdmissionsSystem.gui.main.MainFrame;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+import com.formdev.flatlaf.FlatLightLaf; // Or FlatDarkLaf for dark mode
+import javax.swing.*;
+
 public class Main {
-    public static void main(String[] args) {
-        // //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at
-        // the highlighted text
-        // // to see how IntelliJ IDEA suggests fixing it.
-        // System.out.printf("Hello and welcome!");
+	public static void main(String[] args) {
+		// 1. Setup FlatLaf BEFORE invokeLater or at the very start of it
+		try {
+			// This replaces the old UIManager.setLookAndFeel line
+			FlatLightLaf.setup();
+		} catch (Exception ex) {
+			System.err.println("Failed to initialize LaF");
+		}
 
-        // for (int i = 1; i <= 5; i++) {
-        // //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We
-        // have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-        // // for you, but you can always add more by pressing <shortcut
-        // actionId="ToggleLineBreakpoint"/>.
-        // System.out.println("i = " + i);
-        // }
+		SwingUtilities.invokeLater(() -> {
+			MainFrame frame = new MainFrame(null, "Demo", "Admin");
+			frame.setVisible(true);
+			frame.showCard("diem_thisinh");
 
-        javax.swing.SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                DiemThiSinhPanel dtsp = new DiemThiSinhPanel();
-                javax.swing.JFrame f = new javax.swing.JFrame("Test");
-                f.setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
-                f.setSize(400, 300);
-                f.add(dtsp);
-                f.setVisible(true);
-            }
-        });
-
-    }
+			JOptionPane.showMessageDialog(
+					frame,
+					"Demo Quản lý điểm thí sinh:\n"
+							+ "- Thêm/Sửa/Xóa điểm\n"
+							+ "- Import Excel\n"
+							+ "- Thống kê theo loại điểm và môn",
+					"Hướng dẫn demo",
+					JOptionPane.INFORMATION_MESSAGE);
+		});
+	}
 }

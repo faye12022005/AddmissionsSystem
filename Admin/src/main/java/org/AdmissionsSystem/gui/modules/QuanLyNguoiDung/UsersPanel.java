@@ -3,7 +3,7 @@ package org.AdmissionsSystem.gui.modules.QuanLyNguoiDung;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
-import org.AdmissionsSystem.controller.UsersController;
+import org.AdmissionsSystem.bus.controller.UsersController;
 import org.AdmissionsSystem.gui.common.Searchable;
 import org.AdmissionsSystem.gui.common.Style;
 import org.AdmissionsSystem.gui.components.CustomTable;
@@ -23,6 +23,8 @@ public class UsersPanel extends JPanel implements Searchable {
     private final JComboBox<String> cboVaiTro = new JComboBox<>(new String[] { "user", "admin" });
     private final JComboBox<String> cboTrangThai = new JComboBox<>(new String[] { "Enable", "Disable" });
 
+    private final JButton btnThem = new JButton("Thêm mới");
+    private final JButton btnLuuThem = new JButton("Lưu người dùng");
     private final JButton btnSuaThongTin = new JButton("Lưu chỉnh sửa");
     private final JButton btnDoiMatKhau = new JButton("Đổi mật khẩu");
     private final JButton btnDoiQuyen = new JButton("Đổi quyền user/admin");
@@ -81,12 +83,14 @@ public class UsersPanel extends JPanel implements Searchable {
         actionBar.setOpaque(false);
         actionBar.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 8));
 
-        JButton[] actions = { btnSuaThongTin, btnDoiMatKhau, btnDoiQuyen, btnBatTat, btnLamMoi };
+        JButton[] actions = { btnThem, btnLuuThem, btnSuaThongTin, btnDoiMatKhau, btnDoiQuyen, btnBatTat, btnLamMoi };
         for (JButton b : actions) {
             Style.styleButton(b);
             styleActionButton(b);
             actionBar.add(b);
         }
+        
+        btnLuuThem.setVisible(false); // Initially hidden
 
         return actionBar;
     }
@@ -181,6 +185,8 @@ public class UsersPanel extends JPanel implements Searchable {
     }
 
     private void bindActions() {
+        btnThem.addActionListener(e -> controller.batDauThem());
+        btnLuuThem.addActionListener(e -> controller.hoanTatThem());
         btnSuaThongTin.addActionListener(e -> controller.suaThongTin());
         btnDoiMatKhau.addActionListener(e -> controller.doiMatKhau());
         btnDoiQuyen.addActionListener(e -> controller.doiQuyen());
@@ -245,6 +251,24 @@ public class UsersPanel extends JPanel implements Searchable {
     public boolean getInputEnabled() {
         Object selected = cboTrangThai.getSelectedItem();
         return selected == null || "Enable".equalsIgnoreCase(selected.toString());
+    }
+
+    public String getInputUsername() {
+        return txtTenDangNhap.getText().trim();
+    }
+
+    public void setAddMode(boolean active) {
+        txtTenDangNhap.setEditable(active);
+        btnThem.setVisible(!active);
+        btnLuuThem.setVisible(active);
+        btnSuaThongTin.setEnabled(!active);
+        btnDoiMatKhau.setEnabled(!active);
+        btnDoiQuyen.setEnabled(!active);
+        btnBatTat.setEnabled(!active);
+        
+        if (active) {
+            txtTenDangNhap.requestFocus();
+        }
     }
 
     public String askNewPassword() {
