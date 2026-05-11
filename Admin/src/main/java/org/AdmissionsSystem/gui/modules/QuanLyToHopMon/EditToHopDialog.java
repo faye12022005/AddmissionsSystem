@@ -12,6 +12,7 @@ public class EditToHopDialog extends JDialog {
     private final JTextField subj3 = new JTextField(12);
     private final JComboBox<String> statusBox = new JComboBox<>(new String[]{"Hoạt động","Tạm ngưng"});
     private boolean saved = false;
+    private boolean deleted = false;
 
     public EditToHopDialog(Frame owner, String code, String name, String s1, String s2, String s3, String status) {
         super(owner, "Chỉnh sửa tổ hợp môn", true);
@@ -113,18 +114,23 @@ public class EditToHopDialog extends JDialog {
 
         // Buttons
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JButton delete = new JButton("Xóa");
         JButton save = new JButton("Cập nhật");
         JButton cancel = new JButton("Hủy");
         
         // Styling
+        delete.setFont(new Font("System", Font.PLAIN, 12));
         save.setFont(new Font("System", Font.BOLD, 12));
         cancel.setFont(new Font("System", Font.PLAIN, 12));
+        delete.setPreferredSize(new Dimension(80, 32));
         save.setPreferredSize(new Dimension(100, 32));
         cancel.setPreferredSize(new Dimension(80, 32));
         
+        delete.setMnemonic(KeyEvent.VK_D);
         save.setMnemonic(KeyEvent.VK_U);
         cancel.setMnemonic(KeyEvent.VK_C);
         
+        delete.addActionListener(e -> onDelete());
         save.addActionListener(e -> onSave());
         cancel.addActionListener(e -> onCancel());
         
@@ -133,6 +139,7 @@ public class EditToHopDialog extends JDialog {
             KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), 
             JComponent.WHEN_IN_FOCUSED_WINDOW);
 
+        btnRow.add(delete);
         btnRow.add(cancel);
         btnRow.add(save);
 
@@ -155,6 +162,21 @@ public class EditToHopDialog extends JDialog {
     private void onCancel() {
         saved = false;
         setVisible(false);
+    }
+
+    private void onDelete() {
+        int option = JOptionPane.showConfirmDialog(
+            this,
+            "Bạn có chắc muốn xóa tổ hợp này?",
+            "Xác nhận xóa",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+        if (option == JOptionPane.YES_OPTION) {
+            deleted = true;
+            saved = false;
+            setVisible(false);
+        }
     }
 
     private boolean validateInput() {
@@ -182,6 +204,7 @@ public class EditToHopDialog extends JDialog {
     }
 
     public boolean isSaved() { return saved; }
+    public boolean isDeleted() { return deleted; }
     public String getCode() { return codeField.getText().trim(); }
     public String getNameValue() { return nameField.getText().trim(); }
     public String getSubj1() { return subj1.getText().trim(); }
