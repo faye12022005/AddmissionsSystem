@@ -10,23 +10,23 @@ public class AppConfig {
     }
 
     public static String getDbHost() {
-        return getEnv("DB_HOST", "");
+        return getEnv("DB_HOST", "localhost");
     }
 
     public static String getDbPort() {
-        return getEnv("DB_PORT", "");
+        return getEnv("DB_PORT", "3306");
     }
 
     public static String getDbName() {
-        return getEnv("DB_NAME", "");
+        return getEnv("DB_NAME", "db_admissionssystem");
     }
 
     public static String getDbUser() {
-        return getEnv("DB_USER", "");
+        return getEnv("DB_USER", "root");
     }
 
     public static String getDbPassword() {
-        return getEnv("DB_PASSWORD", "");
+        return getEnv("DB_PASSWORD", "Hoangphuong9812113");
     }
 
     public static String getDbDriver() {
