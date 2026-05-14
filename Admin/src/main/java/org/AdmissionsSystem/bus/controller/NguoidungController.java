@@ -47,10 +47,12 @@ public class NguoidungController {
         String username = view.getInputUsername();
         String hoTen = safeTrim(view.getInputHoTen());
         String email = safeTrim(view.getInputEmail());
+        String sdt = safeTrim(view.getInputSdt());
 
         if (username.isEmpty()) { view.showWarning("Tên đăng nhập không được để trống."); return; }
         if (hoTen.isEmpty()) { view.showWarning("Họ tên không được để trống."); return; }
         if (!isValidEmail(email)) { view.showWarning("Email không hợp lệ."); return; }
+        if (!sdt.isEmpty() && !sdt.matches("\\d{10}")) { view.showWarning("Số điện thoại phải có 10 chữ số."); return; }
 
         String password = view.askNewPassword();
         if (password == null) return;
@@ -61,6 +63,7 @@ public class NguoidungController {
             newUser.setUsername(username);
             newUser.setFullName(hoTen);
             newUser.setEmail(email);
+            newUser.setSdt(sdt);
             newUser.setPassword(password);
             newUser.setRole(view.getInputVaiTro());
             newUser.setStatus(view.getInputEnabled() ? "Enable" : "Disable");
@@ -80,14 +83,17 @@ public class NguoidungController {
 
         String hoTen = safeTrim(view.getInputHoTen());
         String email = safeTrim(view.getInputEmail());
+        String sdt = safeTrim(view.getInputSdt());
         if (hoTen.isEmpty()) { view.showWarning("Họ tên không được để trống."); return; }
         if (!isValidEmail(email)) { view.showWarning("Email không hợp lệ."); return; }
+        if (!sdt.isEmpty() && !sdt.matches("\\d{10}")) { view.showWarning("Số điện thoại phải có 10 chữ số."); return; }
 
         try {
             XtNguoidung entity = service.findById(selected.getMaNguoiDung());
             if (entity == null) { view.showWarning("Người dùng không tồn tại."); return; }
             entity.setFullName(hoTen);
             entity.setEmail(email);
+            entity.setSdt(sdt);
             entity.setRole(view.getInputVaiTro());
             entity.setStatus(view.getInputEnabled() ? "Enable" : "Disable");
             service.update(entity);
@@ -192,7 +198,7 @@ public class NguoidungController {
         for (XtNguoidung u : entities) {
             viewModels.add(new UserViewModel(
                 u.getId(), u.getUsername(), u.getFullName(),
-                u.getEmail(), u.getRole(),
+                u.getEmail(), u.getSdt(), u.getRole(),
                 "Enable".equalsIgnoreCase(u.getStatus()), u.getPassword()
             ));
         }
@@ -257,13 +263,14 @@ public class NguoidungController {
         private String tenDangNhap;
         private String hoTen;
         private String email;
+        private String sdt;
         private String vaiTro;
         private boolean enabled;
         private String password;
 
-        public UserViewModel(String maNguoiDung, String tenDangNhap, String hoTen, String email, String vaiTro, boolean enabled, String password) {
+        public UserViewModel(String maNguoiDung, String tenDangNhap, String hoTen, String email, String sdt, String vaiTro, boolean enabled, String password) {
             this.maNguoiDung = maNguoiDung; this.tenDangNhap = tenDangNhap;
-            this.hoTen = hoTen; this.email = email; this.vaiTro = vaiTro;
+            this.hoTen = hoTen; this.email = email; this.sdt = sdt; this.vaiTro = vaiTro;
             this.enabled = enabled; this.password = password;
         }
 
@@ -273,6 +280,7 @@ public class NguoidungController {
         public void setHoTen(String hoTen) { this.hoTen = hoTen; }
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
+        public String getSdt() { return sdt; }
         public String getVaiTro() { return vaiTro; }
         public void setVaiTro(String vaiTro) { this.vaiTro = vaiTro; }
         public boolean isEnabled() { return enabled; }

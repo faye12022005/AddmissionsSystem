@@ -22,6 +22,7 @@ public class UsersPanel extends JPanel implements Searchable {
     private final JTextField txtTenDangNhap = new JTextField();
     private final JTextField txtHoTen = new JTextField();
     private final JTextField txtEmail = new JTextField();
+    private final JTextField txtSdt = new JTextField();
     private final JComboBox<String> cboVaiTro = new JComboBox<>(new String[] { "user", "admin" });
     private final JComboBox<String> cboTrangThai = new JComboBox<>(new String[] { "Enable", "Disable" });
 
@@ -49,7 +50,7 @@ public class UsersPanel extends JPanel implements Searchable {
         title.setFont(Style.TITLE_FONT);
         add(title, BorderLayout.NORTH);
 
-        String[] cols = { "Mã", "Tên đăng nhập", "Họ tên", "Email", "Vai trò", "Trạng thái" };
+        String[] cols = { "Mã", "Tên đăng nhập", "Họ tên", "Email", "SĐT", "Vai trò", "Trạng thái" };
         this.tableModel = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -151,6 +152,7 @@ public class UsersPanel extends JPanel implements Searchable {
         editorPanel.add(field("Tên đăng nhập", txtTenDangNhap));
         editorPanel.add(field("Họ và tên", txtHoTen));
         editorPanel.add(field("Email", txtEmail));
+        editorPanel.add(field("Số điện thoại", txtSdt));
         editorPanel.add(comboField("Vai trò", cboVaiTro));
         editorPanel.add(comboField("Trạng thái", cboTrangThai));
 
@@ -234,6 +236,7 @@ public class UsersPanel extends JPanel implements Searchable {
                     user.getTenDangNhap(),
                     user.getHoTen(),
                     user.getEmail(),
+                    user.getSdt(),
                     user.getVaiTro(),
                     user.isEnabled() ? "Enable" : "Disable"
             });
@@ -250,6 +253,7 @@ public class UsersPanel extends JPanel implements Searchable {
             txtTenDangNhap.setText("");
             txtHoTen.setText("");
             txtEmail.setText("");
+            txtSdt.setText("");
             cboVaiTro.setSelectedIndex(0);
             cboTrangThai.setSelectedIndex(0);
             return;
@@ -259,6 +263,7 @@ public class UsersPanel extends JPanel implements Searchable {
         txtTenDangNhap.setText(user.getTenDangNhap());
         txtHoTen.setText(user.getHoTen());
         txtEmail.setText(user.getEmail());
+        txtSdt.setText(user.getSdt());
         cboVaiTro.setSelectedItem(user.getVaiTro());
         cboTrangThai.setSelectedItem(user.isEnabled() ? "Enable" : "Disable");
     }
@@ -277,6 +282,10 @@ public class UsersPanel extends JPanel implements Searchable {
 
     public String getInputEmail() {
         return txtEmail.getText();
+    }
+
+    public String getInputSdt() {
+        return txtSdt.getText();
     }
 
     public String getInputVaiTro() {
