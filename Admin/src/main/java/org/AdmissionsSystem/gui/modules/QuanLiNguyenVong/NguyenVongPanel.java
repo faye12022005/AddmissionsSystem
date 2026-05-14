@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.AdmissionsSystem.bus.controller.XtNguyenvongxettuyenController;
+import org.AdmissionsSystem.bus.service.XtNguyenvongxettuyenService;
 import org.AdmissionsSystem.bus.service.NganhHocService;
 import org.AdmissionsSystem.bus.service.ThiSinhService;
 import org.AdmissionsSystem.models.XtNguyenvongxettuyen;
@@ -55,7 +56,7 @@ public class NguyenVongPanel extends JPanel {
         "THỨ TỰ", "THÍ SINH", "CCCD", "MÃ NGÀNH", "TỔ HỢP", "PHƯƠNG THỨC", "ĐIỂM XT", "TRẠNG THÁI", "HÀNH ĐỘNG"
     };
     
-    private static final int RECORDS_PER_PAGE = 5;
+    private static final int RECORDS_PER_PAGE = 8;
     private int currentPage = 1;
     private DefaultTableModel tableModel;
     private JLabel paginationInfo;
@@ -92,7 +93,6 @@ public class NguyenVongPanel extends JPanel {
 
         panel.add(buildPageTitle());
         panel.add(Box.createVerticalStrut(24));
-        panel.add(buildStatsGrid());
         panel.add(Box.createVerticalStrut(24));
         panel.add(buildFilters());
         panel.add(Box.createVerticalStrut(24));
@@ -131,6 +131,9 @@ public class NguyenVongPanel extends JPanel {
 
         JButton importBtn = makeOutlineButton("⤓ Import Excel");
         JButton addBtn    = makeOutlineButton("＋ Thêm");
+        JButton calcBtn   = makeOutlineButton("Tính ĐXT");
+        JButton reportBtn = makeOutlineButton("DS trúng tuyển theo ngành");
+        JButton countBtn  = makeOutlineButton("SL trúng tuyển theo PT");
         JButton runBtn    = makePrimaryButton("▶  Chạy xét tuyển hệ thống");
 
         importBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
@@ -141,8 +144,17 @@ public class NguyenVongPanel extends JPanel {
             "Chức năng Thêm chưa được triển khai.", "Thêm Nguyện vọng",
             JOptionPane.INFORMATION_MESSAGE));
 
+        calcBtn.addActionListener(e -> handleTinhDiemXetTuyen());
+        reportBtn.addActionListener(e -> openDanhSachTrungTuyenTheoNganh());
+        countBtn.addActionListener(e -> openSoLuongTrungTuyenTheoPhuongThuc());
+
+        runBtn.addActionListener(e -> handleRunXetTuyen());
+
         btnGroup.add(importBtn);
         btnGroup.add(addBtn);
+        btnGroup.add(calcBtn);
+        btnGroup.add(reportBtn);
+        btnGroup.add(countBtn);
         btnGroup.add(runBtn);
 
         row.add(titleBlock, BorderLayout.CENTER);
@@ -150,66 +162,6 @@ public class NguyenVongPanel extends JPanel {
         return row;
     }
 
-    // ════════════════════════════════════════════════════════
-    //  2. STATS GRID (4 thẻ)
-    // ════════════════════════════════════════════════════════
-    private JPanel buildStatsGrid() {
-        JPanel grid = new JPanel(new GridLayout(1, 4, 16, 0));
-        grid.setOpaque(false);
-        grid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
-
-        int total = allRows.size();
-        int waiting = demTheoTrangThai("Đang chờ");
-        int passed = demTheoTrangThai("Trúng tuyển");
-        int failed = demTheoTrangThai("Đã trượt");
-
-        Object[][] stats = {
-            {"👥", new Color(0xbf,0xdb,0xfe), new Color(0x1e,0x40,0xaf), "Tổng nguyện vọng", formatCount(total)},
-            {"⏳", new Color(0xff,0xed,0xd5), new Color(0xb4,0x53,0x09), "Đang chờ xử lý",   formatCount(waiting)},
-            {"✅", new Color(0xbb,0xf7,0xd0), new Color(0x15,0x80,0x3d), "Đã trúng tuyển",    formatCount(passed)},
-            {"❌", new Color(0xfe,0xca,0xca), new Color(0xdc,0x26,0x26), "Đã trượt",           formatCount(failed)},
-        };
-
-        for (Object[] s : stats)
-            grid.add(buildStatCard((String)s[0], (Color)s[1], (Color)s[2], (String)s[3], (String)s[4]));
-
-        return grid;
-    }
-
-    private JPanel buildStatCard(String icon, Color bgColor, Color iconColor,
-                                  String label, String value) {
-        RoundedPanel card = new RoundedPanel(14, WHITE);
-        card.setBorder(new CompoundBorder(
-            new RoundedBorder(14, BORDER_COLOR),
-            new EmptyBorder(18, 18, 18, 18)
-        ));
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-
-        // Icon box
-        JLabel iconLbl = new JLabel(icon);
-        iconLbl.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
-        iconLbl.setOpaque(true);
-        iconLbl.setBackground(bgColor);
-        iconLbl.setBorder(new EmptyBorder(6, 8, 6, 8));
-        iconLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel labelLbl = new JLabel(label);
-        labelLbl.setFont(FONT_PLAIN_12);
-        labelLbl.setForeground(TEXT_MUTED);
-        labelLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel valueLbl = new JLabel(value);
-        valueLbl.setFont(FONT_BOLD_24);
-        valueLbl.setForeground(TEXT_DARK);
-        valueLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        card.add(iconLbl);
-        card.add(Box.createVerticalStrut(8));
-        card.add(labelLbl);
-        card.add(Box.createVerticalStrut(4));
-        card.add(valueLbl);
-        return card;
-    }
 
     // ════════════════════════════════════════════════════════
     //  3. FILTERS
@@ -747,6 +699,94 @@ public class NguyenVongPanel extends JPanel {
         // Mở dialog
         ChiTietNguyenVong dialog = new ChiTietNguyenVong(parentFrame, data);
         dialog.setVisible(true);
+    }
+
+    private void openDanhSachTrungTuyenTheoNganh() {
+        Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+        List<XtNganh> nganhList = nganhHocService.getAll();
+        List<NguyenVong> rows = new ArrayList<>(allRows);
+        DanhSachTrungTuyenTheoNganhDialog dialog =
+            new DanhSachTrungTuyenTheoNganhDialog(parentFrame, rows, nganhList);
+        dialog.setVisible(true);
+    }
+
+    private void openSoLuongTrungTuyenTheoPhuongThuc() {
+        Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+        List<NguyenVong> rows = new ArrayList<>(allRows);
+        DanhSachSoLuongTrungTuyenTheoPhuongThucDialog dialog =
+            new DanhSachSoLuongTrungTuyenTheoPhuongThucDialog(parentFrame, rows);
+        dialog.setVisible(true);
+    }
+
+    private void handleRunXetTuyen() {
+        int option = JOptionPane.showConfirmDialog(this,
+            "Bạn có chắc muốn chạy xét tuyển hệ thống?",
+            "Xác nhận xét tuyển",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE);
+
+        if (option != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        try {
+            XtNguyenvongxettuyenService.XetTuyenResult result = controller.chayXetTuyenHeThong();
+            loadData();
+            currentPage = 1;
+            refreshTableData(currentPage);
+            updatePaginationButtons();
+            paginationInfo.setText(getPaginationText());
+
+            JOptionPane.showMessageDialog(this,
+                buildXetTuyenSummary(result),
+                "Xét tuyển hoàn tất",
+                JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                "Không thể chạy xét tuyển: " + ex.getMessage(),
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void handleTinhDiemXetTuyen() {
+        int option = JOptionPane.showConfirmDialog(this,
+            "Bạn có chắc muốn tính lại điểm xét tuyển (ĐXT) cho tất cả nguyện vọng?",
+            "Xác nhận tính ĐXT",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE);
+
+        if (option != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        try {
+            int updated = controller.tinhDiemXetTuyenAll();
+            loadData();
+            currentPage = 1;
+            refreshTableData(currentPage);
+            updatePaginationButtons();
+            paginationInfo.setText(getPaginationText());
+
+            JOptionPane.showMessageDialog(this,
+                "Đã cập nhật ĐXT cho " + updated + " nguyện vọng.",
+                "Tính ĐXT hoàn tất",
+                JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                "Không thể tính ĐXT: " + ex.getMessage(),
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private String buildXetTuyenSummary(XtNguyenvongxettuyenService.XetTuyenResult result) {
+        if (result == null) {
+            return "Không có dữ liệu để xét tuyển.";
+        }
+        return "Tổng nguyện vọng: " + result.total()
+            + "\nTrúng tuyển: " + result.passed()
+            + "\nRớt: " + result.failed()
+            + "\nKhông đạt điểm sàn: " + result.rejectedByDiemSan()
+            + "\nThiếu ngành: " + result.rejectedByMissingNganh();
     }
 
     private JComboBox<String> makeCombo(String... items) {

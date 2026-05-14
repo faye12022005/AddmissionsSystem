@@ -385,7 +385,6 @@ public class BangQuyDoiPanel extends JPanel {
         panel.add(Box.createVerticalStrut(24));
         panel.add(buildTable());
         panel.add(Box.createVerticalStrut(24));
-        panel.add(buildStatsRow());
         return panel;
     }
 
@@ -701,86 +700,6 @@ public class BangQuyDoiPanel extends JPanel {
     }
 
 
-
-    // ══════════════════════════════════════════════════════════
-    //  4. STATS ROW
-    // ══════════════════════════════════════════════════════════
-    private JPanel buildStatsRow() {
-        JPanel row = new JPanel(new GridLayout(1, 3, 16, 0));
-        row.setOpaque(false);
-
-        long totalCount = dataList.size();
-        row.add(buildInfoCard("📋", new Color(0xef, 0xf6, 0xff),
-            "TỔNG QUY TẮC", String.valueOf(totalCount), "+3 từ tuần trước", SUCCESS));
-
-        row.add(buildInfoCard("🔄", new Color(0xff, 0xfb, 0xeb),
-            "CẬP NHẬT CUỐI", "15:30, 20/10/2023", "bởi Admin: Nguyen Minh", TEXT_MUTED));
-
-        row.add(buildLogicCard());
-        return row;
-    }
-
-    private JPanel buildInfoCard(String icon, Color iconBg,
-                                 String label, String value, String sub, Color subColor) {
-        JPanel card = makeCard();
-        card.setLayout(new BorderLayout(12, 0));
-        card.setBorder(new CompoundBorder(card.getBorder(), new EmptyBorder(20, 20, 20, 20)));
-
-        JPanel iconBox = new JPanel(new GridBagLayout());
-        iconBox.setPreferredSize(new Dimension(48, 48));
-        iconBox.setBackground(iconBg);
-        iconBox.setBorder(new RoundedBorder(12, iconBg));
-        JLabel iconLbl = new JLabel(icon);
-        iconLbl.setFont(new Font("SansSerif", Font.PLAIN, 20));
-        iconBox.add(iconLbl);
-
-        JPanel info = new JPanel();
-        info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
-        info.setOpaque(false);
-        JLabel lbl = new JLabel(label);
-        lbl.setFont(new Font("SansSerif", Font.BOLD, 10));
-        lbl.setForeground(TEXT_LIGHT);
-        JLabel val = new JLabel(value);
-        val.setFont(new Font("SansSerif", Font.BOLD, value.length() < 5 ? 24 : 15));
-        val.setForeground(TEXT_DARK);
-        JLabel subLbl = new JLabel(sub);
-        subLbl.setFont(new Font("SansSerif", Font.BOLD, 11));
-        subLbl.setForeground(subColor);
-
-        info.add(lbl);
-        info.add(Box.createVerticalStrut(2));
-        info.add(val);
-        info.add(Box.createVerticalStrut(2));
-        info.add(subLbl);
-
-        card.add(iconBox, BorderLayout.WEST);
-        card.add(info, BorderLayout.CENTER);
-        return card;
-    }
-
-    private JPanel buildLogicCard() {
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(PRIMARY);
-        card.setBorder(new CompoundBorder(new RoundedBorder(14, PRIMARY), new EmptyBorder(20, 20, 20, 20)));
-
-        JLabel title = new JLabel("Kiểm tra Logic");
-        title.setFont(new Font("SansSerif", Font.BOLD, 17));
-        title.setForeground(WHITE);
-
-        JLabel desc = new JLabel("<html>Hệ thống phát hiện 2 quy tắc<br/>có thể bị trùng lặp khoảng điểm.</html>");
-        desc.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        desc.setForeground(new Color(255, 255, 255, 217));
-
-        JButton detailBtn = makeGhostButton("Xem chi tiết");
-
-        card.add(title);
-        card.add(Box.createVerticalStrut(6));
-        card.add(desc);
-        card.add(Box.createVerticalGlue());
-        card.add(detailBtn);
-        return card;
-    }
 
     // ══════════════════════════════════════════════════════════
     //  HELPERS
