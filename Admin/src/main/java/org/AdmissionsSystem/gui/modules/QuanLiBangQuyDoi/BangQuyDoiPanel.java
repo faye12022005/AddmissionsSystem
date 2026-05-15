@@ -111,15 +111,16 @@ public class BangQuyDoiPanel extends JPanel {
         for (int i = startIdx; i < endIdx; i++) {
             XtBangquydoi record = filteredList.get(i);
             String khoangDiem = formatKhoangDiem(record);
-            String quyDoi = record.getDPhanvi() != null ? record.getDPhanvi() : "";
+            String khoangDiemSau = formatKhoangDiemSau(record);
+            String phanvi = record.getDPhanvi() != null ? record.getDPhanvi() : "";
             tableModel.addRow(new Object[]{
                     record.getIdqd(),
-                    "Chứng chỉ",
                     record.getDPhuongthuc() != null ? record.getDPhuongthuc() : "",
                     record.getDTohop() != null ? record.getDTohop() : "-",
                     record.getDMon() != null ? record.getDMon() : "-",
                     khoangDiem,
-                    quyDoi,
+                    khoangDiemSau,
+                    phanvi,
                     ""  // Hành động (sẽ render bằng button)
             });
         }
@@ -370,6 +371,13 @@ public class BangQuyDoiPanel extends JPanel {
         return "";
     }
 
+    private String formatKhoangDiemSau(XtBangquydoi record) {
+        if (record.getDDiemc() != null && record.getDDiemd() != null) {
+            return record.getDDiemc() + " - " + record.getDDiemd();
+        }
+        return "";
+    }
+
     // ──────────────────────────────────────────────────────────
     // MAIN PANEL
     // ──────────────────────────────────────────────────────────
@@ -531,7 +539,7 @@ public class BangQuyDoiPanel extends JPanel {
         JPanel card = makeCard();
         card.setLayout(new BorderLayout());
 
-        String[] COLS = {"ID", "LOẠI", "PHƯƠNG THỨC", "TỔ HỢP", "MÔN", "KHOẢNG ĐIỂM", "QUY ĐỔI", "HÀNH ĐỘNG"};
+        String[] COLS = {"ID", "PHƯƠNG THỨC", "TỔ HỢP", "MÔN", "KHOẢNG ĐIỂM", "KHOẢNG ĐIỂM (SAU QUY ĐỔI)", "PHÂN VỊ", "HÀNH ĐỘNG"};
         tableModel = new DefaultTableModel(new Object[0][0], COLS) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -560,7 +568,7 @@ public class BangQuyDoiPanel extends JPanel {
         header.setReorderingAllowed(false);
         header.setPreferredSize(new Dimension(0, 36));
 
-        int[] widths = {80, 110, 140, 80, 110, 140, 90, 120};
+        int[] widths = {80, 140, 100, 110, 140, 100, 160, 120};
         for (int i = 0; i < widths.length; i++) {
             dataTable.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
@@ -576,54 +584,39 @@ public class BangQuyDoiPanel extends JPanel {
             }
         });
 
-        // Col Loại (badge)
-        dataTable.getColumnModel().getColumn(1).setCellRenderer(new DefaultTableCellRenderer() {
-            @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
-                JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 6));
-                p.setOpaque(true);
-                p.setBackground(s ? t.getSelectionBackground() : WHITE);
-                if (v == null) return p;
-                boolean isCC = "Chứng chỉ".equals(v.toString());
-                JLabel badge = new JLabel(v.toString());
-                badge.setFont(new Font("SansSerif", Font.BOLD, 10));
-                badge.setBorder(new CompoundBorder(
-                        new RoundedBorder(4, isCC ? new Color(0x25, 0x63, 0xeb) : new Color(0xd9, 0x77, 0x06)),
-                        new EmptyBorder(3, 10, 3, 10)
-                ));
-                badge.setOpaque(true);
-                badge.setBackground(isCC ? new Color(0xef, 0xf6, 0xff) : new Color(0xff, 0xfb, 0xeb));
-                badge.setForeground(isCC ? new Color(0x25, 0x63, 0xeb) : new Color(0xd9, 0x77, 0x06));
-                p.add(badge);
-                return p;
-            }
-        });
-
         // Default renderers for other cols
         DefaultTableCellRenderer textCol = new DefaultTableCellRenderer();
         textCol.setFont(new Font("SansSerif", Font.PLAIN, 13));
         textCol.setForeground(TEXT_DARK);
         textCol.setHorizontalAlignment(SwingConstants.LEFT);
-        dataTable.getColumnModel().getColumn(2).setCellRenderer(textCol);
+        dataTable.getColumnModel().getColumn(1).setCellRenderer(textCol);
 
         DefaultTableCellRenderer lightCol = new DefaultTableCellRenderer();
         lightCol.setFont(new Font("SansSerif", Font.PLAIN, 13));
         lightCol.setForeground(TEXT_LIGHT);
         lightCol.setHorizontalAlignment(SwingConstants.CENTER);
-        dataTable.getColumnModel().getColumn(3).setCellRenderer(lightCol);
+        dataTable.getColumnModel().getColumn(2).setCellRenderer(lightCol);
 
         DefaultTableCellRenderer monCol = new DefaultTableCellRenderer();
         monCol.setFont(new Font("SansSerif", Font.PLAIN, 13));
         monCol.setForeground(TEXT_DARK);
         monCol.setHorizontalAlignment(SwingConstants.LEFT);
-        dataTable.getColumnModel().getColumn(4).setCellRenderer(monCol);
+        dataTable.getColumnModel().getColumn(3).setCellRenderer(monCol);
 
         DefaultTableCellRenderer boldCol = new DefaultTableCellRenderer();
         boldCol.setFont(new Font("SansSerif", Font.BOLD, 13));
         boldCol.setForeground(TEXT_DARK);
         boldCol.setHorizontalAlignment(SwingConstants.LEFT);
-        dataTable.getColumnModel().getColumn(5).setCellRenderer(boldCol);
+        dataTable.getColumnModel().getColumn(4).setCellRenderer(boldCol);
 
-        // Col Quy đổi
+        // Col Khoảng điểm sau quy đổi
+        DefaultTableCellRenderer diemSauCol = new DefaultTableCellRenderer();
+        diemSauCol.setFont(new Font("SansSerif", Font.BOLD, 13));
+        diemSauCol.setForeground(TEXT_DARK);
+        diemSauCol.setHorizontalAlignment(SwingConstants.CENTER);
+        dataTable.getColumnModel().getColumn(5).setCellRenderer(diemSauCol);
+
+        // Col Phân vị
         dataTable.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
                 JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, v, s, f, r, c);
