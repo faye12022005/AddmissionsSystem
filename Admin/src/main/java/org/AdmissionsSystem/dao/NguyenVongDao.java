@@ -1,6 +1,8 @@
 package org.AdmissionsSystem.dao;
 
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import org.AdmissionsSystem.models.XtNguyenvongxettuyen;
 import org.hibernate.Session;
 
@@ -44,6 +46,22 @@ public class NguyenVongDao extends AbstractCrudDao<XtNguyenvongxettuyen, Integer
                     XtNguyenvongxettuyen.class)
                     .setParameter("q", q)
                     .list();
+        }
+    }
+
+    public Map<String, Long> countByMaNganh() {
+        try (Session session = getSessionFactory().openSession()) {
+            List<Object[]> rows = session.createQuery(
+                    "SELECT lower(nvManganh), count(*) FROM XtNguyenvongxettuyen GROUP BY lower(nvManganh)",
+                    Object[].class)
+                    .list();
+            Map<String, Long> result = new HashMap<>();
+            for (Object[] row : rows) {
+                String maNganh = row[0] == null ? "" : row[0].toString().trim();
+                Long count = row[1] instanceof Number ? ((Number) row[1]).longValue() : 0L;
+                result.put(maNganh, count);
+            }
+            return result;
         }
     }
 

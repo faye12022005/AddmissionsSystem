@@ -95,11 +95,7 @@ public class NganhHocCsvService {
                     text(cells, 6),
                     text(cells, 7),
                     text(cells, 8),
-                    text(cells, 9),
-                    Integer.parseInt(text(cells, 10)),
-                    Integer.parseInt(text(cells, 11)),
-                    Integer.parseInt(text(cells, 12)),
-                    Integer.parseInt(text(cells, 13))
+                    text(cells, 9)
             };
         } catch (NumberFormatException ex) {
             throw new IllegalArgumentException("Dòng " + lineNo + " có giá trị số không hợp lệ.");
