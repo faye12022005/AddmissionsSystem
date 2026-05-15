@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.Optional;
 import org.AdmissionsSystem.dao.QuanLiDiemDao;
 import org.AdmissionsSystem.models.XtDiemthixettuyen;
+import org.AdmissionsSystem.models.XtThisinhxettuyen25;
 import org.AdmissionsSystem.bus.service.ThiSinhService;
 
 public class QuanLiDiemService {
@@ -78,6 +79,26 @@ public class QuanLiDiemService {
 
 		rows.sort((a, b) -> Integer.compare(b.id(), a.id()));
 		return rows;
+	}
+
+	public PagedResult<DiemRecord> queryPage(String searchText, String loaiDiem, int page, int pageSize) {
+		String filterLoai = normalizeLoaiDiemFilter(loaiDiem);
+		String phuongThucCode = filterLoai == null ? null : resolvePhuongThucCode(filterLoai);
+		String safeSearch = safeText(searchText);
+		int safePage = Math.max(1, page);
+		int safePageSize = Math.max(1, pageSize);
+		List<String> cccdMatches = resolveCccdMatches(safeSearch);
+
+		List<XtDiemthixettuyen> entities = diemDao.findPage(safeSearch, phuongThucCode, cccdMatches,
+				safePage, safePageSize);
+		long total = diemDao.countFiltered(safeSearch, phuongThucCode, cccdMatches);
+
+		List<DiemRecord> rows = entities.stream()
+				.filter(entity -> entity != null)
+				.map(this::toRecord)
+				.toList();
+
+		return new PagedResult<>(rows, total);
 	}
 
 	public DiemRecord add(DiemInput input) {
@@ -494,6 +515,22 @@ public class QuanLiDiemService {
 				|| normalizeText(record.soBaoDanh()).contains(normalizedSearch)
 				|| normalizeText(record.hoTen()).contains(normalizedSearch)
 				|| normalizeText(record.loaiDiem()).contains(normalizedSearch);
+	}
+
+	private List<String> resolveCccdMatches(String searchText) {
+		if (isBlank(searchText)) {
+			return List.of();
+		}
+		List<XtThisinhxettuyen25> candidates = thiSinhService.search(searchText);
+		if (candidates == null || candidates.isEmpty()) {
+			return List.of();
+		}
+		return candidates.stream()
+				.map(XtThisinhxettuyen25::getCccd)
+				.filter(value -> !isBlank(value))
+				.map(value -> value.trim().toLowerCase(Locale.ROOT))
+				.distinct()
+				.toList();
 	}
 
 	private Object rowValue(Object[] row, int index) {
