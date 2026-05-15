@@ -1,6 +1,8 @@
 package org.AdmissionsSystem.gui.main;
 
 import javax.swing.*;
+
+import org.AdmissionsSystem.config.AppConfig;
 import org.AdmissionsSystem.gui.common.Searchable;
 import org.AdmissionsSystem.gui.modules.Login.LoginFrame;
 import org.AdmissionsSystem.gui.modules.Dashboard.DashboardPanel;
@@ -33,6 +35,7 @@ public class MainFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 800);
         setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout());
 
         centerPanel.setBackground(new Color(248, 250, 252));
@@ -139,6 +142,11 @@ public class MainFrame extends JFrame {
     }
 
     public static void main(String[] args) {
+        System.out.println(AppConfig.getDbHost());
+        System.out.println(AppConfig.getDbPort());
+        System.out.println(AppConfig.getDbName());
+        System.out.println(AppConfig.getDbUser());
+        System.out.println(AppConfig.getDbPassword());
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

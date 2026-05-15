@@ -1,6 +1,7 @@
 package org.AdmissionsSystem.gui.modules.QuanLyDanhSachNganh;
 
 import javax.swing.*;
+import javax.swing.border.*;
 import javax.swing.table.DefaultTableModel;
 
 import org.AdmissionsSystem.bus.service.NganhToHopService;
@@ -9,40 +10,48 @@ import org.AdmissionsSystem.gui.components.CustomTable;
 import org.AdmissionsSystem.models.XtNganhTohop;
 
 import java.awt.*;
+import java.awt.event.*;
 import java.util.List;
 
 public class NganhToHopPanel extends JPanel {
 
     private static final String[] COLS = {
-        "ID", "Mã ngành", "Mã tổ hợp", "Môn 1", "HS1", "Môn 2", "HS2", "Môn 3", "HS3", 
-        "N1", "TO", "LI", "HO", "SI", "VA", "SU", "DI", "TI", "KHAC", "KTPL", "Độ lệch"
+            "ID", "Mã ngành", "Mã tổ hợp", "Môn 1", "HS1", "Môn 2", "HS2", "Môn 3", "HS3",
+            "N1", "TO", "LI", "HO", "SI", "VA", "SU", "DI", "TI", "KHAC", "KTPL", "Độ lệch"
     };
+
+    // ── Màu sắc cho 2 widget ──────────────────────────────────────────────────
+    private static final Color BTN_PRIMARY   = new Color(33, 102, 172);
+    private static final Color BTN_DANGER    = new Color(220, 53,  69);
+    private static final Color BTN_SECONDARY = new Color(108, 117, 125);
+    private static final Color BORDER_C      = new Color(206, 212, 218);
+    private static final Color WHITE         = Color.WHITE;
 
     private final NganhToHopService service = new NganhToHopService();
     private final DefaultTableModel tableModel;
 
     // Form fields
-    private final JTextField tfId = new JTextField(8);
+    private final JTextField tfId      = new JTextField(8);
     private final JTextField tfMaNganh = new JTextField(12);
     private final JTextField tfMaToHop = new JTextField(12);
-    private final JTextField tfMon1 = new JTextField(10);
-    private final JTextField tfHs1 = new JTextField(4);
-    private final JTextField tfMon2 = new JTextField(10);
-    private final JTextField tfHs2 = new JTextField(4);
-    private final JTextField tfMon3 = new JTextField(10);
-    private final JTextField tfHs3 = new JTextField(4);
-    private final JTextField tfDolech = new JTextField(6);
-    private final JTextField tfSearch = new JTextField(18);
+    private final JTextField tfMon1    = new JTextField(10);
+    private final JTextField tfHs1     = new JTextField(4);
+    private final JTextField tfMon2    = new JTextField(10);
+    private final JTextField tfHs2     = new JTextField(4);
+    private final JTextField tfMon3    = new JTextField(10);
+    private final JTextField tfHs3     = new JTextField(4);
+    private final JTextField tfDolech  = new JTextField(6);
+    private final JTextField tfSearch  = new JTextField(18);
 
-    private final JCheckBox cbN1 = new JCheckBox("N1");
-    private final JCheckBox cbTO = new JCheckBox("TO");
-    private final JCheckBox cbLI = new JCheckBox("LI");
-    private final JCheckBox cbHO = new JCheckBox("HO");
-    private final JCheckBox cbSI = new JCheckBox("SI");
-    private final JCheckBox cbVA = new JCheckBox("VA");
-    private final JCheckBox cbSU = new JCheckBox("SU");
-    private final JCheckBox cbDI = new JCheckBox("DI");
-    private final JCheckBox cbTI = new JCheckBox("TI");
+    private final JCheckBox cbN1   = new JCheckBox("N1");
+    private final JCheckBox cbTO   = new JCheckBox("TO");
+    private final JCheckBox cbLI   = new JCheckBox("LI");
+    private final JCheckBox cbHO   = new JCheckBox("HO");
+    private final JCheckBox cbSI   = new JCheckBox("SI");
+    private final JCheckBox cbVA   = new JCheckBox("VA");
+    private final JCheckBox cbSU   = new JCheckBox("SU");
+    private final JCheckBox cbDI   = new JCheckBox("DI");
+    private final JCheckBox cbTI   = new JCheckBox("TI");
     private final JCheckBox cbKHAC = new JCheckBox("KHAC");
     private final JCheckBox cbKTPL = new JCheckBox("KTPL");
 
@@ -67,117 +76,228 @@ public class NganhToHopPanel extends JPanel {
         body.setBorder(BorderFactory.createEmptyBorder(0, 8, 8, 8));
         body.add(buildToolbar(), BorderLayout.NORTH);
 
+        // ── Bảng dữ liệu: giữ nguyên 100% của bạn ───────────────────────────
         CustomTable ct = new CustomTable(tableModel);
         table = ct.getTable();
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) onRowSelected();
+            if (!e.getValueIsAdjusting())
+                onRowSelected();
         });
+
+        // ── Điều chỉnh độ rộng cột ───────────────────────────────────────────
+        // col: 0=ID, 1=Mã ngành, 2=Mã tổ hợp, 3=Môn1, 4=HS1, 5=Môn2, 6=HS2,
+        //      7=Môn3, 8=HS3, 9=N1..19=KTPL, 20=Độ lệch
+        int[] widths = {
+            40,   // ID
+            90,   // Mã ngành
+            80,   // Mã tổ hợp
+            65,   // Môn 1
+            40,   // HS1
+            65,   // Môn 2
+            40,   // HS2
+            65,   // Môn 3
+            40,   // HS3
+            35,   // N1
+            35,   // TO
+            35,   // LI
+            35,   // HO
+            35,   // SI
+            35,   // VA
+            35,   // SU
+            35,   // DI
+            35,   // TI
+            50,   // KHAC
+            50,   // KTPL
+            70    // Độ lệch
+        };
+        for (int i = 0; i < widths.length; i++) {
+            table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+            table.getColumnModel().getColumn(i).setMinWidth(widths[i]);
+        }
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
+
         body.add(ct, BorderLayout.CENTER);
         add(body, BorderLayout.CENTER);
 
         loadData("");
     }
 
+    // =========================================================================
+    // buildToolbar: widget Chức năng (trái) + Hiển thị chi tiết (phải)
+    // =========================================================================
     private JPanel buildToolbar() {
-        JPanel wrapper = new JPanel(new BorderLayout(8, 8));
+        JPanel wrapper = new JPanel(new GridBagLayout());
         wrapper.setOpaque(false);
+        wrapper.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
 
-        // Form panel
-        JPanel form = new JPanel();
-        form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
-        form.setOpaque(true);
-        form.setBackground(Color.WHITE);
-        form.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200)),
-                "Thông tin chi tiết",
-                javax.swing.border.TitledBorder.LEFT,
-                javax.swing.border.TitledBorder.TOP,
-                new Font("Segoe UI", Font.BOLD, 12),
-                new Color(36, 56, 102)
-        ));
-        
-        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
-        row1.setOpaque(false);
-        tfId.setEditable(false);
-        row1.add(new JLabel("ID:")); row1.add(tfId);
-        row1.add(new JLabel("Mã ngành:")); row1.add(tfMaNganh);
-        row1.add(new JLabel("Mã tổ hợp:")); row1.add(tfMaToHop);
-        
-        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
-        row2.setOpaque(false);
-        row2.add(new JLabel("Môn 1:")); row2.add(tfMon1);
-        row2.add(new JLabel("HS1:")); row2.add(tfHs1);
-        row2.add(new JLabel("Môn 2:")); row2.add(tfMon2);
-        row2.add(new JLabel("HS2:")); row2.add(tfHs2);
-        row2.add(new JLabel("Môn 3:")); row2.add(tfMon3);
-        row2.add(new JLabel("HS3:")); row2.add(tfHs3);
-        row2.add(new JLabel("Độ lệch:")); row2.add(tfDolech);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill    = GridBagConstraints.BOTH;
+        gbc.weighty = 1;
 
-        form.add(row1);
-        form.add(row2);
+        // Widget TRÁI: Chức năng
+        gbc.gridx   = 0;
+        gbc.weightx = 0;
+        gbc.insets  = new Insets(0, 0, 0, 10);
+        wrapper.add(buildChucNangPanel(), gbc);
 
-        JPanel checkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        checkPanel.setOpaque(false);
-        checkPanel.add(cbN1); checkPanel.add(cbTO); checkPanel.add(cbLI);
-        checkPanel.add(cbHO); checkPanel.add(cbSI); checkPanel.add(cbVA);
-        checkPanel.add(cbSU); checkPanel.add(cbDI); checkPanel.add(cbTI);
-        checkPanel.add(cbKHAC); checkPanel.add(cbKTPL);
+        // Widget PHẢI: Hiển thị chi tiết
+        gbc.gridx   = 1;
+        gbc.weightx = 1;
+        gbc.insets  = new Insets(0, 0, 0, 0);
+        wrapper.add(buildHienThiPanel(), gbc);
 
-        // Action buttons
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
-        actions.setOpaque(false);
-        JButton btnAdd = new JButton("Thêm");
-        JButton btnUpdate = new JButton("Cập nhật");
-        JButton btnDelete = new JButton("Xóa");
-        JButton btnClear = new JButton("Làm mới");
-        Style.styleButton(btnAdd);
-        Style.styleButton(btnUpdate);
-        Style.styleButton(btnDelete);
-        Style.styleButton(btnClear);
+        return wrapper;
+    }
+
+    // ── Widget "Chức năng" ────────────────────────────────────────────────────
+    private JPanel buildChucNangPanel() {
+        JPanel p = new JPanel(new GridBagLayout());
+        p.setBackground(WHITE);
+        p.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(BORDER_C),
+                "Chức năng",
+                TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Segoe UI", Font.PLAIN, 12), BTN_SECONDARY));
+
+        GridBagConstraints g = new GridBagConstraints();
+        g.insets = new Insets(8, 8, 8, 8);
+
+        // Hàng 0: 4 nút
+        JButton btnAdd    = makeBtn("Thêm",     BTN_PRIMARY);
+        JButton btnUpdate = makeBtn("Cập nhật", BTN_PRIMARY);
+        JButton btnDelete = makeBtn("Xóa",      BTN_DANGER);
+        JButton btnClear  = makeBtn("Làm mới",  BTN_SECONDARY);
+
         btnAdd.addActionListener(e -> onAdd());
         btnUpdate.addActionListener(e -> onUpdate());
         btnDelete.addActionListener(e -> onDelete());
         btnClear.addActionListener(e -> clearForm());
-        actions.add(btnAdd);
-        actions.add(btnUpdate);
-        actions.add(btnDelete);
-        actions.add(btnClear);
 
-        // Search
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 4));
-        searchPanel.setOpaque(false);
-        searchPanel.add(new JLabel("Tìm kiếm:"));
-        searchPanel.add(tfSearch);
-        JButton btnSearch = new JButton("Tìm");
-        Style.styleButton(btnSearch);
+        g.gridy = 0;
+        g.gridx = 0; p.add(btnAdd,    g);
+        g.gridx = 1; p.add(btnUpdate, g);
+        g.gridx = 2; p.add(btnDelete, g);
+        g.gridx = 3; p.add(btnClear,  g);
+
+        // Hàng 1: Tìm kiếm
+        g.gridy = 1; g.gridx = 0;
+        g.anchor = GridBagConstraints.WEST;
+        JLabel lbSearch = new JLabel("Tìm kiếm:");
+        lbSearch.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        p.add(lbSearch, g);
+
+        g.gridx = 1; g.gridwidth = 2; g.fill = GridBagConstraints.HORIZONTAL;
+        tfSearch.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tfSearch.setPreferredSize(new Dimension(180, 28));
+        p.add(tfSearch, g);
+
+        g.gridx = 3; g.gridwidth = 1; g.fill = GridBagConstraints.NONE;
+        JButton btnSearch = makeBtn("Tìm", BTN_PRIMARY);
         btnSearch.addActionListener(e -> loadData(tfSearch.getText().trim()));
-        searchPanel.add(btnSearch);
+        p.add(btnSearch, g);
 
-        JPanel top = new JPanel(new BorderLayout());
-        top.setOpaque(false);
-        top.add(actions, BorderLayout.WEST);
-        top.add(searchPanel, BorderLayout.EAST);
-
-        wrapper.add(form, BorderLayout.NORTH);
-        wrapper.add(checkPanel, BorderLayout.CENTER);
-        wrapper.add(top, BorderLayout.SOUTH);
-        return wrapper;
+        return p;
     }
 
+    // ── Widget "Hiển thị chi tiết" ────────────────────────────────────────────
+    private JPanel buildHienThiPanel() {
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(WHITE);
+        form.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(BORDER_C),
+                "Hiển thị chi tiết",
+                TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Segoe UI", Font.PLAIN, 12), BTN_SECONDARY));
+
+        GridBagConstraints lc = new GridBagConstraints();
+        lc.insets = new Insets(4, 8, 4, 2);
+        lc.anchor = GridBagConstraints.WEST;
+        lc.fill   = GridBagConstraints.NONE;
+
+        GridBagConstraints fc = new GridBagConstraints();
+        fc.insets = new Insets(4, 2, 4, 6);
+        fc.anchor = GridBagConstraints.WEST;
+        fc.fill   = GridBagConstraints.HORIZONTAL;
+
+        tfId.setEditable(false);
+
+        // Hàng 0: ID | Môn 1 | HS1
+        addLabelField(form, lc, fc, 0, 0, "ID:",    tfId);
+        addLabelField(form, lc, fc, 0, 2, "Môn 1:", tfMon1);
+        addLabelField(form, lc, fc, 0, 4, "HS1:",   tfHs1);
+
+        // Hàng 1: Mã ngành | Môn 2 | HS2
+        addLabelField(form, lc, fc, 1, 0, "Mã ngành:", tfMaNganh);
+        addLabelField(form, lc, fc, 1, 2, "Môn 2:",    tfMon2);
+        addLabelField(form, lc, fc, 1, 4, "HS2:",      tfHs2);
+
+        // Hàng 2: Mã tổ hợp | Môn 3 | HS3 | Độ lệch
+        addLabelField(form, lc, fc, 2, 0, "Mã tổ hợp:", tfMaToHop);
+        addLabelField(form, lc, fc, 2, 2, "Môn 3:",     tfMon3);
+        addLabelField(form, lc, fc, 2, 4, "HS3:",        tfHs3);
+        addLabelField(form, lc, fc, 2, 6, "Độ lệch:",    tfDolech);
+
+        // Hàng 3: Checkboxes
+        JPanel checkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        checkPanel.setOpaque(false);
+        for (JCheckBox cb : new JCheckBox[]{cbN1,cbTO,cbLI,cbHO,cbSI,cbVA,cbSU,cbDI,cbTI,cbKHAC,cbKTPL}) {
+            cb.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            cb.setOpaque(false);
+            checkPanel.add(cb);
+        }
+        GridBagConstraints spanC = new GridBagConstraints();
+        spanC.gridx = 0; spanC.gridy = 3;
+        spanC.gridwidth = GridBagConstraints.REMAINDER;
+        spanC.fill = GridBagConstraints.HORIZONTAL;
+        spanC.insets = new Insets(4, 6, 4, 6);
+        form.add(checkPanel, spanC);
+
+        return form;
+    }
+
+    // ── Layout helper ─────────────────────────────────────────────────────────
+    private void addLabelField(JPanel p,
+                               GridBagConstraints lc, GridBagConstraints fc,
+                               int row, int colStart, String label, JTextField tf) {
+        lc.gridx = colStart;     lc.gridy = row; lc.gridwidth = 1; lc.weightx = 0;
+        p.add(new JLabel(label), lc);
+        fc.gridx = colStart + 1; fc.gridy = row; fc.gridwidth = 1; fc.weightx = 0.3;
+        p.add(tf, fc);
+    }
+
+    private JButton makeBtn(String text, Color bg) {
+        JButton b = new JButton(text);
+        b.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        b.setBackground(bg);
+        b.setForeground(WHITE);
+        b.setFocusPainted(false);
+        b.setBorderPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        b.setPreferredSize(new Dimension(90, 32));
+        b.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent e) { b.setBackground(bg.darker()); }
+            @Override public void mouseExited (MouseEvent e) { b.setBackground(bg); }
+        });
+        return b;
+    }
+
+    // =========================================================================
+    // Data / form helpers — giữ nguyên 100% của bạn
+    // =========================================================================
     private void loadData(String keyword) {
         List<XtNganhTohop> rows = service.search(keyword);
         tableModel.setRowCount(0);
         for (XtNganhTohop r : rows) {
             tableModel.addRow(new Object[]{
-                r.getId(), r.getManganh(), r.getMatohop(),
-                r.getThMon1(), r.getHsmon1(),
-                r.getThMon2(), r.getHsmon2(),
-                r.getThMon3(), r.getHsmon3(),
-                toYN(r.getN1()), toYN(r.getTo()), toYN(r.getLi()), toYN(r.getHo()),
-                toYN(r.getSi()), toYN(r.getVa()), toYN(r.getSu()), toYN(r.getDi()),
-                toYN(r.getTi()), toYN(r.getKhac()), toYN(r.getKtpl()),
-                r.getDolech()
+                    r.getId(), r.getManganh(), r.getMatohop(),
+                    r.getThMon1(), r.getHsmon1(),
+                    r.getThMon2(), r.getHsmon2(),
+                    r.getThMon3(), r.getHsmon3(),
+                    toYN(r.getN1()), toYN(r.getTo()), toYN(r.getLi()), toYN(r.getHo()),
+                    toYN(r.getSi()), toYN(r.getVa()), toYN(r.getSu()), toYN(r.getDi()),
+                    toYN(r.getTi()), toYN(r.getKhac()), toYN(r.getKtpl()),
+                    r.getDolech()
             });
         }
     }
@@ -189,35 +309,33 @@ public class NganhToHopPanel extends JPanel {
     private void onRowSelected() {
         int row = table.getSelectedRow();
         if (row < 0) return;
-        int modelRow = table.convertRowIndexToModel(row);
-        tfId.setText(str(tableModel.getValueAt(modelRow, 0)));
-        tfMaNganh.setText(str(tableModel.getValueAt(modelRow, 1)));
-        tfMaToHop.setText(str(tableModel.getValueAt(modelRow, 2)));
-        tfMon1.setText(str(tableModel.getValueAt(modelRow, 3)));
-        tfHs1.setText(str(tableModel.getValueAt(modelRow, 4)));
-        tfMon2.setText(str(tableModel.getValueAt(modelRow, 5)));
-        tfHs2.setText(str(tableModel.getValueAt(modelRow, 6)));
-        tfMon3.setText(str(tableModel.getValueAt(modelRow, 7)));
-        tfHs3.setText(str(tableModel.getValueAt(modelRow, 8)));
-        
-        cbN1.setSelected("Y".equals(tableModel.getValueAt(modelRow, 9)));
-        cbTO.setSelected("Y".equals(tableModel.getValueAt(modelRow, 10)));
-        cbLI.setSelected("Y".equals(tableModel.getValueAt(modelRow, 11)));
-        cbHO.setSelected("Y".equals(tableModel.getValueAt(modelRow, 12)));
-        cbSI.setSelected("Y".equals(tableModel.getValueAt(modelRow, 13)));
-        cbVA.setSelected("Y".equals(tableModel.getValueAt(modelRow, 14)));
-        cbSU.setSelected("Y".equals(tableModel.getValueAt(modelRow, 15)));
-        cbDI.setSelected("Y".equals(tableModel.getValueAt(modelRow, 16)));
-        cbTI.setSelected("Y".equals(tableModel.getValueAt(modelRow, 17)));
-        cbKHAC.setSelected("Y".equals(tableModel.getValueAt(modelRow, 18)));
-        cbKTPL.setSelected("Y".equals(tableModel.getValueAt(modelRow, 19)));
-        tfDolech.setText(str(tableModel.getValueAt(modelRow, 20)));
+        int m = table.convertRowIndexToModel(row);
+        tfId.setText(str(tableModel.getValueAt(m, 0)));
+        tfMaNganh.setText(str(tableModel.getValueAt(m, 1)));
+        tfMaToHop.setText(str(tableModel.getValueAt(m, 2)));
+        tfMon1.setText(str(tableModel.getValueAt(m, 3)));
+        tfHs1.setText(str(tableModel.getValueAt(m, 4)));
+        tfMon2.setText(str(tableModel.getValueAt(m, 5)));
+        tfHs2.setText(str(tableModel.getValueAt(m, 6)));
+        tfMon3.setText(str(tableModel.getValueAt(m, 7)));
+        tfHs3.setText(str(tableModel.getValueAt(m, 8)));
+        cbN1.setSelected("Y".equals(tableModel.getValueAt(m, 9)));
+        cbTO.setSelected("Y".equals(tableModel.getValueAt(m, 10)));
+        cbLI.setSelected("Y".equals(tableModel.getValueAt(m, 11)));
+        cbHO.setSelected("Y".equals(tableModel.getValueAt(m, 12)));
+        cbSI.setSelected("Y".equals(tableModel.getValueAt(m, 13)));
+        cbVA.setSelected("Y".equals(tableModel.getValueAt(m, 14)));
+        cbSU.setSelected("Y".equals(tableModel.getValueAt(m, 15)));
+        cbDI.setSelected("Y".equals(tableModel.getValueAt(m, 16)));
+        cbTI.setSelected("Y".equals(tableModel.getValueAt(m, 17)));
+        cbKHAC.setSelected("Y".equals(tableModel.getValueAt(m, 18)));
+        cbKTPL.setSelected("Y".equals(tableModel.getValueAt(m, 19)));
+        tfDolech.setText(str(tableModel.getValueAt(m, 20)));
     }
 
     private void onAdd() {
         try {
-            XtNganhTohop entity = collectForm();
-            service.add(entity);
+            service.add(collectForm());
             loadData(tfSearch.getText().trim());
             clearForm();
             JOptionPane.showMessageDialog(this, "Thêm thành công.");
@@ -247,8 +365,8 @@ public class NganhToHopPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Chọn dòng cần xóa.");
             return;
         }
-        int confirm = JOptionPane.showConfirmDialog(this, "Xóa bản ghi này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
-        if (confirm != JOptionPane.YES_OPTION) return;
+        if (JOptionPane.showConfirmDialog(this, "Xóa bản ghi này?", "Xác nhận",
+                JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
         try {
             service.delete(Integer.parseInt(tfId.getText().trim()));
             loadData(tfSearch.getText().trim());
@@ -268,9 +386,8 @@ public class NganhToHopPanel extends JPanel {
         e.setHsmon2(parseIntSafe(tfHs2.getText()));
         e.setThMon3(tfMon3.getText().trim());
         e.setHsmon3(parseIntSafe(tfHs3.getText()));
-        
         e.setN1(cbN1.isSelected());
-        e.setTo(cbTO.isSelected()); 
+        e.setTo(cbTO.isSelected());
         e.setLi(cbLI.isSelected());
         e.setHo(cbHO.isSelected());
         e.setSi(cbSI.isSelected());
@@ -280,12 +397,9 @@ public class NganhToHopPanel extends JPanel {
         e.setTi(cbTI.isSelected());
         e.setKhac(cbKHAC.isSelected());
         e.setKtpl(cbKTPL.isSelected());
-        
         String dl = tfDolech.getText().trim();
-        if (!dl.isEmpty()) {
+        if (!dl.isEmpty())
             e.setDolech(new java.math.BigDecimal(dl));
-        }
-        
         return e;
     }
 
@@ -303,8 +417,12 @@ public class NganhToHopPanel extends JPanel {
     }
 
     private String str(Object v) { return v == null ? "" : v.toString(); }
+
     private Integer parseIntSafe(String s) {
-        try { return s == null || s.isBlank() ? null : Integer.parseInt(s.trim()); }
-        catch (NumberFormatException e) { return null; }
+        try {
+            return (s == null || s.isBlank()) ? null : Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
