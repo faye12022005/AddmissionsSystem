@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.Optional;
 import org.AdmissionsSystem.dao.QuanLiDiemVsatDao;
 import org.AdmissionsSystem.models.XtDiemVsat;
+import org.AdmissionsSystem.models.XtThisinhxettuyen25;
 import org.AdmissionsSystem.bus.service.ThiSinhService;
 
 public class QuanLiDiemVSATService {
@@ -42,6 +43,23 @@ public class QuanLiDiemVSATService {
 				.filter(record -> matchesSearch(record, normalizedSearch))
 				.sorted((a, b) -> Integer.compare(b.id(), a.id()))
 				.toList();
+	}
+
+	public PagedResult<VsatRecord> queryPage(String searchText, int page, int pageSize) {
+		String safeSearch = safeText(searchText);
+		int safePage = Math.max(1, page);
+		int safePageSize = Math.max(1, pageSize);
+		List<String> cccdMatches = resolveCccdMatches(safeSearch);
+
+		List<XtDiemVsat> entities = vsatDao.findPage(safeSearch, cccdMatches, safePage, safePageSize);
+		long total = vsatDao.countFiltered(safeSearch, cccdMatches);
+
+		List<VsatRecord> rows = entities.stream()
+				.filter(entity -> entity != null)
+				.map(this::toRecord)
+				.toList();
+
+		return new PagedResult<>(rows, total);
 	}
 
 	public VsatRecord add(VsatInput input) {
@@ -291,6 +309,22 @@ public class QuanLiDiemVSATService {
 		return normalizeText(record.cccd()).contains(normalizedSearch)
 				|| normalizeText(record.hoTen()).contains(normalizedSearch)
 				|| normalizeText(record.dotThi()).contains(normalizedSearch);
+	}
+
+	private List<String> resolveCccdMatches(String searchText) {
+		if (isBlank(searchText)) {
+			return List.of();
+		}
+		List<XtThisinhxettuyen25> candidates = thiSinhService.search(searchText);
+		if (candidates == null || candidates.isEmpty()) {
+			return List.of();
+		}
+		return candidates.stream()
+				.map(XtThisinhxettuyen25::getCccd)
+				.filter(value -> !isBlank(value))
+				.map(value -> value.trim().toLowerCase(Locale.ROOT))
+				.distinct()
+				.toList();
 	}
 
 	private Object rowValue(Object[] row, int index) {
