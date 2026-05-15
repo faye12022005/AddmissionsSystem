@@ -84,5 +84,23 @@ public class NganhToHopService {
         if (entity.getMatohop() == null || entity.getMatohop().trim().isEmpty()) {
             throw new IllegalArgumentException("Mã tổ hợp không được để trống.");
         }
+        if (entity.getThMon1() == null || entity.getThMon1().trim().isEmpty()) {
+            throw new IllegalArgumentException("Tên môn 1 không được để trống.");
+        }
+        if (entity.getThMon2() == null || entity.getThMon2().trim().isEmpty()) {
+            throw new IllegalArgumentException("Tên môn 2 không được để trống.");
+        }
+        if (entity.getThMon3() == null || entity.getThMon3().trim().isEmpty()) {
+            throw new IllegalArgumentException("Tên môn 3 không được sé trống.");
+        }
+        if (entity.getHsmon1() == null) {
+            throw new IllegalArgumentException("Hệ số môn 1 không được để trống.");
+        }
+        if (entity.getHsmon2() == null) {
+            throw new IllegalArgumentException("Hệ số môn 2 không được để trống.");
+        }
+        if (entity.getHsmon3() == null) {
+            throw new IllegalArgumentException("Hệ số môn 3 không được để trống.");
+        }
     }
 }
