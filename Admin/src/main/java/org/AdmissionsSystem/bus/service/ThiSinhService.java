@@ -155,13 +155,14 @@ public class ThiSinhService {
 
         // CCCD Validation
         String cccd = entity.getCccd();
-        if (cccd != null && !cccd.isEmpty()) {
-            if (!cccd.matches("\\d{9}") && !cccd.matches("\\d{12}")) {
-                throw new IllegalArgumentException("CCCD phải có 9 hoặc 12 chữ số.");
-            }
-        } else {
+
+        if (cccd == null || cccd.trim().isEmpty()) {
             throw new IllegalArgumentException("CCCD không được để trống.");
         }
+
+        // if (!cccd.matches("[a-zA-Z0-9]+")) {
+        //     throw new IllegalArgumentException("CCCD chỉ được chứa chữ và số.");
+        // }
 
         // Email Validation
         String email = entity.getEmail();
