@@ -1,10 +1,13 @@
 package org.AdmissionsSystem.gui.modules.QuanLyToHopMon;
 
 import javax.swing.*;
+import javax.swing.border.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import org.AdmissionsSystem.bus.controller.ToHopMonController;
+import org.AdmissionsSystem.bus.service.ToHopMonService;
+import org.AdmissionsSystem.gui.modules.QuanLiDiem.ImportPreviewDialog;
 import org.AdmissionsSystem.models.XtTohopMonthi;
 
 public class ToHopMonPanelSwing extends JPanel {
@@ -21,18 +24,24 @@ public class ToHopMonPanelSwing extends JPanel {
     private static final Color SUCCESS      = new Color(16, 185, 129);
     private static final Color AMBER        = new Color(245, 158, 11);
 
+    // ── Font ─────────────────────────────────────────────────
+    private static final Font FONT_BOLD_13  = new Font("System", Font.BOLD, 13);
+    private static final Font FONT_BOLD_11  = new Font("System", Font.BOLD, 11);
+    private static final Font FONT_PLAIN_13 = new Font("System", Font.PLAIN, 13);
+    private static final Font FONT_PLAIN_12 = new Font("System", Font.PLAIN, 12);
+    private static final Font FONT_PLAIN_11 = new Font("System", Font.PLAIN, 11);
+
     private DefaultTableModel tableModel;
     private JTable table;
-    private JComboBox<String> statusCb;
+    private JScrollPane tableScroll;
     private JLabel paginationInfo;
+    private JPanel paginationBtnGroup;
     private ToHopMonController controller;
 
     // ── Pagination Variables ─────────────────────────────────
-    private static final int ITEMS_PER_PAGE = 6;
+    private static final int ITEMS_PER_PAGE = 9;
     private int currentPage = 1;
     private int totalPages = 1;
-    private java.util.List<JButton> pageButtons = new java.util.ArrayList<>();
-    private JPanel paginationPanel;  // Reference to pagination panel for rebuilding
 
     // ── Data Model ───────────────────────────────────────────
     public static class ToHop {
@@ -117,12 +126,6 @@ public class ToHopMonPanelSwing extends JPanel {
         panel.add(buildPageHeader());
         panel.add(Box.createVerticalStrut(24));
 
-        panel.add(buildStatsGrid());
-        panel.add(Box.createVerticalStrut(24));
-
-        panel.add(buildListControl());
-        panel.add(Box.createVerticalStrut(24));
-
         panel.add(buildTableCard());
         panel.add(Box.createVerticalStrut(24));
 
@@ -178,6 +181,7 @@ public class ToHopMonPanelSwing extends JPanel {
         importBtn.setFocusPainted(false);
         importBtn.setMaximumSize(btnSize);;
         importBtn.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        importBtn.addActionListener(e -> handleImportExcel());
         importBtn.addMouseListener(createHoverListener(importBtn, new Color(11, 165, 122), SUCCESS));
 
         JButton addBtn = new JButton("＋  Thêm tổ hợp");
@@ -203,153 +207,15 @@ public class ToHopMonPanelSwing extends JPanel {
     }
 
     // ══════════════════════════════════════════════════════════
-    //  2. STATS GRID (3 thẻ)
-    // ══════════════════════════════════════════════════════════
-    private JPanel buildStatsGrid() {
-        JPanel grid = new JPanel();
-        grid.setLayout(new GridLayout(1, 3, 16, 0));
-        grid.setBackground(BG);
-        grid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
-
-        grid.add(buildStatCard("🔷", new Color(19, 127, 236, 25), PRIMARY, "Tổng số tổ hợp", "42", 1.0, PRIMARY, null));
-        grid.add(buildStatCard("✅", new Color(220, 252, 231), SUCCESS, "Đang sử dụng", "38", 0.904, SUCCESS, null));
-        grid.add(buildStatCard("🕐", new Color(254, 243, 199), AMBER, "Mới cập nhật", "12", -1, null, "Cập nhật lần cuối 2 giờ trước"));
-
-        return grid;
-    }
-
-    private JPanel buildStatCard(String icon, Color iconBg, Color iconColor, String label, String value, double barRatio, Color barColor, String note) {
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(WHITE);
-        card.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 0, BORDER));
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
-        card.setPreferredSize(new Dimension(300, 150));
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(BORDER),
-            BorderFactory.createEmptyBorder(22, 22, 22, 22)
-        ));
-
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("System", Font.PLAIN, 24));
-        iconLabel.setPreferredSize(new Dimension(40, 40));
-        card.add(iconLabel);
-        card.add(Box.createVerticalStrut(12));
-
-        JLabel labelLbl = new JLabel(label);
-        labelLbl.setFont(new Font("System", Font.PLAIN, 12));
-        labelLbl.setForeground(TEXT_MUTED);
-        card.add(labelLbl);
-
-        JLabel valueLbl = new JLabel(value);
-        valueLbl.setFont(new Font("System", Font.BOLD, 30));
-        valueLbl.setForeground(TEXT_DARK);
-        card.add(valueLbl);
-
-        if (barRatio > 0 && barColor != null) {
-            card.add(Box.createVerticalStrut(14));
-            JPanel barPanel = new JPanel() {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    super.paintComponent(g);
-                    int width = (int) (getWidth() * barRatio);
-                    g.setColor(barColor);
-                    g.fillRoundRect(0, 0, width, 5, 3, 3);
-                }
-            };
-            barPanel.setBackground(BORDER);
-            barPanel.setPreferredSize(new Dimension(200, 5));
-            barPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 5));
-            card.add(barPanel);
-        } else if (note != null) {
-            card.add(Box.createVerticalStrut(10));
-            JLabel noteLabel = new JLabel(note);
-            noteLabel.setFont(new Font("System", Font.PLAIN, 11));
-            noteLabel.setForeground(TEXT_LIGHT);
-            card.add(noteLabel);
-        }
-
-        card.add(Box.createVerticalGlue());
-        return card;
-    }
-
-    // ══════════════════════════════════════════════════════════
-    //  3. LIST CONTROL BAR
-    // ══════════════════════════════════════════════════════════
-    private JPanel buildListControl() {
-        JPanel bar = new JPanel();
-        bar.setLayout(new BoxLayout(bar, BoxLayout.X_AXIS));
-        bar.setBackground(WHITE);
-        bar.setBorder(BorderFactory.createLineBorder(BORDER));
-        bar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
-
-        bar.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(BORDER),
-            BorderFactory.createEmptyBorder(12, 16, 12, 16)
-        ));
-
-        JPanel filterBox = new JPanel();
-        filterBox.setLayout(new BoxLayout(filterBox, BoxLayout.X_AXIS));
-        filterBox.setBackground(SURFACE);
-        filterBox.setBorder(BorderFactory.createLineBorder(BORDER));
-        filterBox.setMaximumSize(new Dimension(250, 40));
-        filterBox.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(BORDER),
-            BorderFactory.createEmptyBorder(6, 12, 6, 12)
-        ));
-
-        JLabel statusLbl = new JLabel("TRẠNG THÁI:");
-        statusLbl.setFont(new Font("System", Font.BOLD, 10));
-        statusLbl.setForeground(TEXT_MUTED);
-        filterBox.add(statusLbl);
-        filterBox.add(Box.createHorizontalStrut(8));
-
-        statusCb = new JComboBox<>(new String[]{"Tất cả trạng thái", "Đang hoạt động", "Tạm ngưng"});
-        statusCb.setBackground(WHITE);
-        statusCb.setForeground(TEXT_DARK);
-        statusCb.setFont(new Font("System", Font.PLAIN, 12));
-        statusCb.setBorder(BorderFactory.createEmptyBorder());
-        statusCb.addActionListener(e -> applyStatusFilter());
-        filterBox.add(statusCb);
-
-        bar.add(filterBox);
-        bar.add(Box.createHorizontalGlue());
-
-        JButton filterBtn = buildIconToolBtn("☰");
-        JButton sortBtn = buildIconToolBtn("↕");
-
-        bar.add(filterBtn);
-        bar.add(Box.createHorizontalStrut(6));
-        bar.add(sortBtn);
-
-        return bar;
-    }
-
-    private JButton buildIconToolBtn(String icon) {
-        JButton btn = new JButton(icon);
-        btn.setFont(new Font("System", Font.PLAIN, 14));
-        btn.setBackground(WHITE);
-        btn.setForeground(TEXT_MUTED);
-        btn.setPreferredSize(new Dimension(34, 34));
-        btn.setMaximumSize(new Dimension(34, 34));
-        btn.setBorder(BorderFactory.createEmptyBorder());
-        btn.setFocusPainted(false);
-        btn.addMouseListener(createHoverListener(btn, SURFACE, WHITE));
-        return btn;
-    }
-
-    // ══════════════════════════════════════════════════════════
     //  4. TABLE CARD
     // ══════════════════════════════════════════════════════════
     private JPanel buildTableCard() {
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(BORDER),
-            BorderFactory.createEmptyBorder(0, 0, 0, 0)
+        RoundedPanel card = new RoundedPanel(12, WHITE);
+        card.setBorder(new CompoundBorder(
+            new RoundedBorder(12, BORDER),
+            new EmptyBorder(0, 0, 0, 0)
         ));
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 400));
+        card.setLayout(new BorderLayout());
 
         // Build table
         String[] columnNames = {"MÃ TỔ HỢP", "TÊN TỔ HỢP", "MÔN 1", "MÔN 2", "MÔN 3"};
@@ -361,18 +227,24 @@ public class ToHopMonPanelSwing extends JPanel {
         };
 
         table = new JTable(tableModel);
-        table.setRowHeight(40);
-        table.setFont(new Font("System", Font.PLAIN, 13));
+        table.setRowHeight(52);
+        table.setFont(FONT_PLAIN_13);
         table.setForeground(TEXT_DARK);
-        table.setGridColor(BORDER);
-        table.setShowGrid(true);
-        table.setIntercellSpacing(new Dimension(0, 1));
+        table.setGridColor(new Color(0xf1, 0xf5, 0xf9));
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(false);
+        table.setBackground(WHITE);
+        table.setSelectionBackground(new Color(0xef, 0xf6, 0xff));
+        table.setSelectionForeground(TEXT_DARK);
+        table.setFocusable(false);
 
         JTableHeader header = table.getTableHeader();
-        header.setBackground(BG);
+        header.setBackground(new Color(0xf8, 0xfa, 0xfc));
         header.setForeground(TEXT_MUTED);
-        header.setFont(new Font("System", Font.BOLD, 11));
+        header.setFont(FONT_BOLD_11);
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER));
         header.setReorderingAllowed(false);
+        header.setPreferredSize(new Dimension(0, 42));
 
         // Add table rows
         refreshTableModel();
@@ -401,14 +273,15 @@ public class ToHopMonPanelSwing extends JPanel {
             }
         });
 
-        JScrollPane scrollTable = new JScrollPane(table);
-        scrollTable.setBorder(BorderFactory.createEmptyBorder());
-        scrollTable.setPreferredSize(new Dimension(900, 270));
-        scrollTable.setMaximumSize(new Dimension(Integer.MAX_VALUE, 270));
+        tableScroll = new JScrollPane(table);
+        tableScroll.setBorder(null);
+        tableScroll.getViewport().setBackground(WHITE);
+        tableScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
 
-        card.add(scrollTable);
-        card.add(new JSeparator());
-        card.add(buildPagination());
+        updateTableHeight(table, tableScroll);
+
+        card.add(tableScroll, BorderLayout.CENTER);
+        card.add(buildPagination(), BorderLayout.SOUTH);
 
         return card;
     }
@@ -439,138 +312,158 @@ public class ToHopMonPanelSwing extends JPanel {
             tableModel.addRow(row);
         }
         
-        updatePaginationInfo();
+        updateTableHeight(table, tableScroll);
     }
 
-    // ── Pagination ──────────────────────────────────────────
     private JPanel buildPagination() {
-        paginationPanel = new JPanel();
-        paginationPanel.setLayout(new BoxLayout(paginationPanel, BoxLayout.X_AXIS));
-        paginationPanel.setBackground(new Color(248, 250, 252));
-        paginationPanel.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
+        JPanel row = new JPanel();
+        row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
+        row.setBackground(new Color(0xf8, 0xfa, 0xfc));
+        row.setBorder(new CompoundBorder(
+            BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER),
+            new EmptyBorder(4, 8, 4, 8)  // giảm padding
+        ));
 
-        paginationInfo = new JLabel();
-        paginationInfo.setFont(new Font("System", Font.PLAIN, 11));
+        paginationInfo = new JLabel(getPaginationText());
+        paginationInfo.setFont(FONT_PLAIN_11);
         paginationInfo.setForeground(TEXT_MUTED);
-        paginationPanel.add(paginationInfo);
-        paginationPanel.add(Box.createHorizontalGlue());
 
-        rebuildPaginationButtons();
+        paginationBtnGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        paginationBtnGroup.setOpaque(false);
+        updatePaginationButtons();
 
-        updatePaginationInfo();
-        return paginationPanel;
+        row.add(paginationInfo);
+        row.add(Box.createHorizontalGlue()); // đẩy buttons sang phải, không tạo khoảng trống thừa
+        row.add(paginationBtnGroup);
+
+        return row;
     }
 
-    /**
-     * Rebuild pagination buttons based on current page and total pages
-     */
-    private void rebuildPaginationButtons() {
-        if (paginationPanel == null) return;
-        
-        // Remove all existing buttons from pagination panel
-        java.awt.Component[] components = paginationPanel.getComponents();
-        for (int i = components.length - 1; i >= 0; i--) {
-            java.awt.Component c = components[i];
-            if (c instanceof JButton || (c instanceof Box && i > 1)) {
-                paginationPanel.remove(i);
-            }
-        }
-        pageButtons.clear();
+    private void updatePaginationButtons() {
+        if (paginationBtnGroup == null) return;
+        paginationBtnGroup.removeAll();
 
-        // Add "Trước" (Previous) button
-        JButton prevBtn = new JButton("‹");
-        prevBtn.setFont(new Font("System", Font.PLAIN, 12));
-        prevBtn.setBackground(WHITE);
-        prevBtn.setForeground(TEXT_MUTED);
+        int total = filteredData.size();
+        totalPages = (total + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE;
+        if (totalPages == 0) totalPages = 1;
+
+        JButton prevBtn = new JButton("‹") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        prevBtn.setMargin(new Insets(0, 0, 0, 0));
         prevBtn.setPreferredSize(new Dimension(32, 32));
-        prevBtn.setMaximumSize(new Dimension(32, 32));
-        prevBtn.setBorder(BorderFactory.createEmptyBorder());
+        prevBtn.setFont(FONT_PLAIN_12);
+        prevBtn.setForeground(TEXT_MUTED);
+        prevBtn.setBackground(new Color(0, 0, 0, 0));
+        prevBtn.setContentAreaFilled(false);
+        prevBtn.setBorderPainted(false);
         prevBtn.setFocusPainted(false);
+        prevBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         prevBtn.setEnabled(currentPage > 1);
-        prevBtn.addActionListener(e -> goToPreviousPage());
-        if (currentPage > 1) {
-            prevBtn.addMouseListener(createHoverListener(prevBtn, SURFACE, WHITE));
-        }
-        paginationPanel.add(prevBtn);
-        paginationPanel.add(Box.createHorizontalStrut(2));
+        prevBtn.addActionListener(e -> goToPage(currentPage - 1));
+        paginationBtnGroup.add(prevBtn);
 
-        // Calculate page range to display (max 5 page buttons)
-        int maxDisplayPages = 5;
-        int startPage = Math.max(1, currentPage - 2);
-        int endPage = Math.min(totalPages, startPage + maxDisplayPages - 1);
-        if (endPage - startPage + 1 < maxDisplayPages) {
-            startPage = Math.max(1, endPage - maxDisplayPages + 1);
-        }
-
-        // Add "..." if there are pages before the range
+        int startPage = Math.max(1, currentPage - 1);
+        int endPage = Math.min(totalPages, currentPage + 1);
         if (startPage > 1) {
-            JButton ellipsis = new JButton("...");
-            ellipsis.setFont(new Font("System", Font.PLAIN, 12));
-            ellipsis.setBackground(WHITE);
-            ellipsis.setForeground(TEXT_MUTED);
-            ellipsis.setPreferredSize(new Dimension(32, 32));
-            ellipsis.setMaximumSize(new Dimension(32, 32));
-            ellipsis.setBorder(BorderFactory.createEmptyBorder());
-            ellipsis.setFocusPainted(false);
-            ellipsis.setEnabled(false);
-            paginationPanel.add(ellipsis);
-            paginationPanel.add(Box.createHorizontalStrut(2));
-        }
-
-        // Add page number buttons
-        for (int i = startPage; i <= endPage; i++) {
-            final int pageNum = i;
-            boolean active = (i == currentPage);
-            JButton btn = new JButton(String.valueOf(i));
-            btn.setFont(new Font("System", active ? Font.BOLD : Font.PLAIN, 12));
-            btn.setBackground(active ? PRIMARY : WHITE);
-            btn.setForeground(active ? WHITE : TEXT_MUTED);
-            btn.setPreferredSize(new Dimension(32, 32));
-            btn.setMaximumSize(new Dimension(32, 32));
-            btn.setBorder(BorderFactory.createEmptyBorder());
-            btn.setFocusPainted(false);
-            btn.addActionListener(e -> goToPage(pageNum));
-            if (!active) {
-                btn.addMouseListener(createHoverListener(btn, SURFACE, WHITE));
+            addPageButton(1, false);
+            if (startPage > 2) {
+                JLabel dots = new JLabel("...");
+                dots.setFont(FONT_PLAIN_12);
+                dots.setForeground(TEXT_MUTED);
+                dots.setBorder(new EmptyBorder(0, 4, 0, 4));
+                paginationBtnGroup.add(dots);
             }
-            paginationPanel.add(btn);
-            paginationPanel.add(Box.createHorizontalStrut(2));
-            pageButtons.add(btn);
         }
-
-        // Add "..." if there are pages after the range
+        for (int p = startPage; p <= endPage; p++) {
+            addPageButton(p, p == currentPage);
+        }
         if (endPage < totalPages) {
-            JButton ellipsis = new JButton("...");
-            ellipsis.setFont(new Font("System", Font.PLAIN, 12));
-            ellipsis.setBackground(WHITE);
-            ellipsis.setForeground(TEXT_MUTED);
-            ellipsis.setPreferredSize(new Dimension(32, 32));
-            ellipsis.setMaximumSize(new Dimension(32, 32));
-            ellipsis.setBorder(BorderFactory.createEmptyBorder());
-            ellipsis.setFocusPainted(false);
-            ellipsis.setEnabled(false);
-            paginationPanel.add(ellipsis);
-            paginationPanel.add(Box.createHorizontalStrut(2));
+            if (endPage < totalPages - 1) {
+                JLabel dots = new JLabel("...");
+                dots.setFont(FONT_PLAIN_12);
+                dots.setForeground(TEXT_MUTED);
+                dots.setBorder(new EmptyBorder(0, 4, 0, 4));
+                paginationBtnGroup.add(dots);
+            }
+            addPageButton(totalPages, false);
         }
 
-        // Add "Sau" (Next) button
-        JButton nextBtn = new JButton("›");
-        nextBtn.setFont(new Font("System", Font.PLAIN, 12));
-        nextBtn.setBackground(WHITE);
-        nextBtn.setForeground(TEXT_MUTED);
+        JButton nextBtn = new JButton("›") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        nextBtn.setMargin(new Insets(0, 0, 0, 0));
         nextBtn.setPreferredSize(new Dimension(32, 32));
-        nextBtn.setMaximumSize(new Dimension(32, 32));
-        nextBtn.setBorder(BorderFactory.createEmptyBorder());
+        nextBtn.setFont(FONT_PLAIN_12);
+        nextBtn.setForeground(TEXT_MUTED);
+        nextBtn.setBackground(new Color(0, 0, 0, 0));
+        nextBtn.setContentAreaFilled(false);
+        nextBtn.setBorderPainted(false);
         nextBtn.setFocusPainted(false);
+        nextBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         nextBtn.setEnabled(currentPage < totalPages);
-        nextBtn.addActionListener(e -> goToNextPage());
-        if (currentPage < totalPages) {
-            nextBtn.addMouseListener(createHoverListener(nextBtn, SURFACE, WHITE));
-        }
-        paginationPanel.add(nextBtn);
+        nextBtn.addActionListener(e -> goToPage(currentPage + 1));
+        paginationBtnGroup.add(nextBtn);
 
-        paginationPanel.revalidate();
-        paginationPanel.repaint();
+        paginationBtnGroup.revalidate();
+        paginationBtnGroup.repaint();
+    }
+
+    private void addPageButton(int pageNum, boolean active) {
+        JButton btn = new JButton(String.valueOf(pageNum)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(active ? PRIMARY : getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setMargin(new Insets(0, 0, 0, 0));
+        btn.setPreferredSize(new Dimension(32, 32));
+        btn.setFont(active ? FONT_BOLD_11 : FONT_PLAIN_12);
+        btn.setForeground(active ? WHITE : TEXT_MUTED);
+        btn.setBackground(active ? PRIMARY : new Color(0, 0, 0, 0));
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        int page = pageNum;
+        btn.addActionListener(e -> goToPage(page));
+        if (!active) {
+            btn.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseEntered(java.awt.event.MouseEvent e) {
+                    btn.setBackground(new Color(0xe2, 0xe8, 0xf0));
+                    btn.repaint();
+                }
+
+                @Override
+                public void mouseExited(java.awt.event.MouseEvent e) {
+                    btn.setBackground(new Color(0, 0, 0, 0));
+                    btn.repaint();
+                }
+            });
+        }
+        paginationBtnGroup.add(btn);
     }
 
     // ══════════════════════════════════════════════════════════
@@ -636,7 +529,7 @@ public class ToHopMonPanelSwing extends JPanel {
 
                 // Reload dữ liệu từ database
                 loadDataFromDatabase();
-                applyStatusFilter();
+                refreshFiltered();
 
                 JOptionPane.showMessageDialog(this, 
                     "Thêm tổ hợp môn thành công!", 
@@ -650,6 +543,67 @@ public class ToHopMonPanelSwing extends JPanel {
                     "Lỗi khi thêm tổ hợp môn: " + e.getMessage(), 
                     "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+
+    private void handleImportExcel() {
+        try {
+            ToHopMonService.ImportPreview preview = controller.previewImport(this);
+            if (preview == null || preview.totalCount() == 0) {
+                JOptionPane.showMessageDialog(this,
+                    "Không có dữ liệu nào được import.",
+                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            java.util.List<Object[]> previewRows = new java.util.ArrayList<>();
+            for (ToHopMonService.ToHopInput input : preview.validRows()) {
+                previewRows.add(toPreviewRow(input));
+            }
+
+            java.util.List<Object[]> errorRows = buildErrorRows(preview.errors());
+            String summary = buildSummary(preview.totalCount(), preview.validCount(), preview.errorCount());
+
+            boolean confirmed = ImportPreviewDialog.showDialog(
+                this,
+                "Xem trước dữ liệu import",
+                new String[] {"Mã tổ hợp", "Tên tổ hợp", "Môn 1", "Môn 2", "Môn 3"},
+                previewRows,
+                summary,
+                "Dòng lỗi import",
+                new String[] {"Dòng", "Mã tổ hợp", "Lỗi"},
+                errorRows);
+
+            if (!confirmed) {
+                return;
+            }
+
+            int importedRows = controller.commitImport(preview);
+            if (importedRows == 0) {
+                JOptionPane.showMessageDialog(this,
+                    "Không có bản ghi hợp lệ để import.",
+                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            loadDataFromDatabase();
+            refreshFiltered();
+
+            String message = "Import thành công " + importedRows + " bản ghi.";
+            if (preview.errorCount() > 0) {
+                message += " Bỏ qua " + preview.errorCount() + " dòng lỗi.";
+            }
+            JOptionPane.showMessageDialog(this,
+                message,
+                "Thành công", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this,
+                ex.getMessage(),
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                "Không thể đọc file import: " + ex.getMessage(),
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -668,7 +622,32 @@ public class ToHopMonPanelSwing extends JPanel {
             selected.getStatus()
         );
         dialog.setVisible(true);
-        
+
+        if (dialog.isDeleted()) {
+            try {
+                controller.xuLySuKienXoaTheoId(selected.getId());
+
+                loadDataFromDatabase();
+                refreshFiltered();
+
+                JOptionPane.showMessageDialog(
+                    SwingUtilities.getWindowAncestor(table),
+                    "Xóa tổ hợp môn thành công!",
+                    "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            } catch (IllegalArgumentException e) {
+                JOptionPane.showMessageDialog(
+                    SwingUtilities.getWindowAncestor(table),
+                    "Lỗi dữ liệu: " + e.getMessage(),
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                    SwingUtilities.getWindowAncestor(table),
+                    "Lỗi khi xóa: " + ex.getMessage(),
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+            return;
+        }
+
         if (dialog.isSaved()) {
             try {
                 // Kiểm tra dữ liệu nhập vào
@@ -700,7 +679,7 @@ public class ToHopMonPanelSwing extends JPanel {
                 
                 // Reload dữ liệu
                 loadDataFromDatabase();
-                applyStatusFilter();
+                refreshFiltered();
                 
                 JOptionPane.showMessageDialog(
                     SwingUtilities.getWindowAncestor(table),
@@ -737,7 +716,7 @@ public class ToHopMonPanelSwing extends JPanel {
                 
                 // Reload dữ liệu
                 loadDataFromDatabase();
-                applyStatusFilter();
+                refreshFiltered();
                 
                 JOptionPane.showMessageDialog(
                     SwingUtilities.getWindowAncestor(table),
@@ -757,60 +736,60 @@ public class ToHopMonPanelSwing extends JPanel {
         }
     }
 
-    private void applyStatusFilter() {
-        String status = (String) statusCb.getSelectedItem();
-        filteredData.clear();
-        for (ToHop item : data) {
-            if ("Tất cả trạng thái".equals(status) || item.getStatus().equals(status)) {
-                filteredData.add(item);
-            }
+    private Object[] toPreviewRow(ToHopMonService.ToHopInput row) {
+        return new Object[] {
+            row.maToHop(),
+            row.tenToHop(),
+            row.mon1(),
+            row.mon2(),
+            row.mon3()
+        };
+    }
+
+    private java.util.List<Object[]> buildErrorRows(java.util.List<ToHopMonService.ImportError> errors) {
+        java.util.List<Object[]> rows = new java.util.ArrayList<>();
+        if (errors == null) {
+            return rows;
         }
-        currentPage = 1;  // Reset to first page when filter changes
-        totalPages = (int) Math.ceil((double) filteredData.size() / ITEMS_PER_PAGE);
-        if (totalPages == 0) totalPages = 1;
-        refreshTableModel();
-        rebuildPaginationButtons();
+
+        for (ToHopMonService.ImportError error : errors) {
+            rows.add(new Object[] { error.rowNumber(), error.maToHop(), error.message() });
+        }
+        return rows;
+    }
+
+    private String buildSummary(int total, int valid, int error) {
+        return "Tổng: " + total + " | Hợp lệ: " + valid + " | Lỗi: " + error;
     }
 
     private void refreshFiltered() {
-        applyStatusFilter();
+        filteredData.clear();
+        filteredData.addAll(data);
+        currentPage = 1;
+        totalPages = (int) Math.ceil((double) filteredData.size() / ITEMS_PER_PAGE);
+        if (totalPages == 0) totalPages = 1;
+        refreshTableModel();
+        updatePaginationButtons();
+        updatePaginationInfo();
     }
 
     private void updatePaginationInfo() {
         if (paginationInfo == null) return;
-        
-        int visible = filteredData.size();
-        
-        if (visible == 0) {
-            paginationInfo.setText("Không có dữ liệu phù hợp");
-        } else {
-            int startIdx = (currentPage - 1) * ITEMS_PER_PAGE + 1;
-            int endIdx = Math.min(currentPage * ITEMS_PER_PAGE, visible);
-            paginationInfo.setText(String.format("Hiển thị %d-%d trong số %d tổ hợp | Trang %d/%d", 
-                startIdx, endIdx, visible, currentPage, totalPages));
-        }
+        paginationInfo.setText(getPaginationText());
     }
 
     /**
      * Chuyển đến trang trước đó
      */
     private void goToPreviousPage() {
-        if (currentPage > 1) {
-            currentPage--;
-            refreshTableModel();
-            rebuildPaginationButtons();
-        }
+        goToPage(currentPage - 1);
     }
 
     /**
      * Chuyển đến trang tiếp theo
      */
     private void goToNextPage() {
-        if (currentPage < totalPages) {
-            currentPage++;
-            refreshTableModel();
-            rebuildPaginationButtons();
-        }
+        goToPage(currentPage + 1);
     }
 
     /**
@@ -818,11 +797,12 @@ public class ToHopMonPanelSwing extends JPanel {
      * @param pageNum số trang
      */
     private void goToPage(int pageNum) {
-        if (pageNum >= 1 && pageNum <= totalPages) {
-            currentPage = pageNum;
-            refreshTableModel();
-            rebuildPaginationButtons();
-        }
+        if (pageNum < 1 || pageNum > totalPages) return;
+
+        currentPage = pageNum;
+        refreshTableModel();
+        updatePaginationButtons();
+        updatePaginationInfo();
     }
 
     /**
@@ -831,6 +811,30 @@ public class ToHopMonPanelSwing extends JPanel {
     private void resetPagination() {
         currentPage = 1;
         totalPages = 1;
+    }
+
+    private void updateTableHeight(JTable table, JScrollPane scroll) {
+        if (table == null || scroll == null) return;
+
+        int rowCount = table.getRowCount();
+        int rowHeight = table.getRowHeight();
+        int headerHeight = table.getTableHeader().getPreferredSize().height;
+        int height = rowCount * rowHeight + headerHeight;
+
+        scroll.setPreferredSize(new Dimension(scroll.getPreferredSize().width, height));
+        scroll.setMinimumSize(new Dimension(0, height));
+        scroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
+        scroll.revalidate();
+    }
+
+    private String getPaginationText() {
+        int total = filteredData.size();
+        if (total == 0) {
+            return "Hiển thị 0-0 trong số 0 bản ghi";
+        }
+        int startRecord = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+        int endRecord = Math.min(currentPage * ITEMS_PER_PAGE, total);
+        return "Hiển thị " + startRecord + "-" + endRecord + " trong số " + total + " bản ghi";
     }
 
     private java.awt.event.MouseListener createHoverListener(JButton btn, Color enterColor, Color exitColor) {
@@ -845,6 +849,55 @@ public class ToHopMonPanelSwing extends JPanel {
                 btn.setBackground(exitColor);
             }
         };
+    }
+
+    static class RoundedPanel extends JPanel {
+        private final int radius;
+        private final Color bg;
+
+        RoundedPanel(int radius, Color bg) {
+            this.radius = radius;
+            this.bg = bg;
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(bg);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius * 2, radius * 2);
+            g2.dispose();
+        }
+    }
+
+    static class RoundedBorder implements Border {
+        private final int radius;
+        private final Color color;
+
+        RoundedBorder(int radius, Color color) {
+            this.radius = radius;
+            this.color = color;
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c) {
+            return new Insets(radius / 2, radius / 2, radius / 2, radius / 2);
+        }
+
+        @Override
+        public boolean isBorderOpaque() {
+            return false;
+        }
+
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(color);
+            g2.drawRoundRect(x, y, w - 1, h - 1, radius * 2, radius * 2);
+            g2.dispose();
+        }
     }
 
     public static void main(String[] args) {

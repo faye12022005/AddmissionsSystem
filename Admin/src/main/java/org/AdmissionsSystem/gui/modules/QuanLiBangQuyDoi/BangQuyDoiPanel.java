@@ -6,6 +6,12 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import org.AdmissionsSystem.bus.service.BangQuyDoiService;
+import org.AdmissionsSystem.models.XtBangquydoi;
 
 public class BangQuyDoiPanel extends JPanel {
 
@@ -22,37 +28,30 @@ public class BangQuyDoiPanel extends JPanel {
     private static final Color SUCCESS      = new Color(0x10, 0xb9, 0x81);
 
     // ── Data Model ───────────────────────────────────────────
-    public static class QuyTac {
-        private final String id, loai, phuongThuc, toHop, mon, khoangDiem, quyDoi;
-        public QuyTac(String id, String loai, String phuongThuc,
-                      String toHop, String mon, String khoangDiem, String quyDoi) {
-            this.id = id; this.loai = loai; this.phuongThuc = phuongThuc;
-            this.toHop = toHop; this.mon = mon;
-            this.khoangDiem = khoangDiem; this.quyDoi = quyDoi;
-        }
-        public String getId()         { return id; }
-        public String getLoai()       { return loai; }
-        public String getPhuongThuc() { return phuongThuc; }
-        public String getToHop()      { return toHop; }
-        public String getMon()        { return mon; }
-        public String getKhoangDiem() { return khoangDiem; }
-        public String getQuyDoi()     { return quyDoi; }
-    }
+    private final BangQuyDoiService bangQuyDoiService = new BangQuyDoiService();
+    private List<XtBangquydoi> dataList = new ArrayList<>();
+    private List<XtBangquydoi> filteredList = new ArrayList<>();
+    private DefaultTableModel tableModel;
+    private JTable dataTable;
 
-    private static final String[] COLS = {
-        "ID", "LOẠI", "PHƯƠNG THỨC", "TỔ HỢP", "MÔN", "KHOẢNG ĐIỂM", "QUY ĐỔI", "HÀNH ĐỘNG"
-    };
+    // ── Filter variables ──────────────────────────────────
+    private JComboBox<String> filterPhuongThuc;
+    private JComboBox<String> filterTohop;
+    private JComboBox<String> filterMon;
 
-    private static final QuyTac[] DATA = new QuyTac[] {
-        new QuyTac("QD-001", "Chứng chỉ",    "IELTS",      "-", "Tiếng Anh", "8.0 - 9.0",  "10.0"),
-        new QuyTac("QD-002", "Chứng chỉ",    "TOEFL iBT",  "-", "Tiếng Anh", "95 - 120",   "10.0"),
-        new QuyTac("QD-003", "Điểm ưu tiên", "Đối tượng",  "-", "-",         "Nhóm 1",     "+2.0"),
-        new QuyTac("QD-004", "Chứng chỉ",    "VSTEP",      "-", "Tiếng Anh", "8.5 - 10.0", "9.0")
-    };
+    // ── Pagination variables ──────────────────────────────
+    private static final int RECORDS_PER_PAGE = 9;
+    private int currentPage = 1;
+    private int totalPages = 1;
+    private JPanel paginationPanel;
 
     public BangQuyDoiPanel() {
         setLayout(new BorderLayout());
         setBackground(BG);
+
+        // Load dữ liệu từ database
+        loadData();
+        calculateTotalPages();
 
         JPanel content = buildMainPanel();
         JScrollPane scroll = new JScrollPane(content);
@@ -62,20 +61,318 @@ public class BangQuyDoiPanel extends JPanel {
         add(scroll, BorderLayout.CENTER);
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Quản lý Bảng quy đổi");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(1000, 780);
-            frame.setLocationRelativeTo(null);
-            frame.setContentPane(new BangQuyDoiPanel());
-            frame.setVisible(true);
-        });
+    // ──────────────────────────────────────────────────────────
+    // LOAD DATA FROM SERVICE
+    // ──────────────────────────────────────────────────────────
+    private void loadData() {
+        try {
+            dataList = bangQuyDoiService.getAll();
+            if (dataList == null) dataList = new ArrayList<>();
+            filteredList = new ArrayList<>(dataList);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu: " + e.getMessage(),
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+            dataList = new ArrayList<>();
+            filteredList = new ArrayList<>();
+        }
     }
 
-    // ══════════════════════════════════════════════════════════
-    //  MAIN PANEL
-    // ══════════════════════════════════════════════════════════
+    private void applyFilters() {
+        String selectedPhuongThuc = (String) filterPhuongThuc.getSelectedItem();
+        String selectedTohop = (String) filterTohop.getSelectedItem();
+        String selectedMon = (String) filterMon.getSelectedItem();
+
+        filteredList.clear();
+        for (XtBangquydoi record : dataList) {
+            boolean matchPhuongThuc = "Chọn phương thức".equals(selectedPhuongThuc) ||
+                    (record.getDPhuongthuc() != null && record.getDPhuongthuc().equals(selectedPhuongThuc));
+            boolean matchTohop = "Tất cả tổ hợp".equals(selectedTohop) ||
+                    (record.getDTohop() != null && record.getDTohop().equals(selectedTohop));
+            boolean matchMon = "Tất cả môn".equals(selectedMon) ||
+                    (record.getDMon() != null && record.getDMon().equals(selectedMon));
+
+            if (matchPhuongThuc && matchTohop && matchMon) {
+                filteredList.add(record);
+            }
+        }
+        currentPage = 1;  // Reset về trang 1
+        calculateTotalPages();
+        updateTable();
+        updatePaginationUI();
+    }
+
+    private void updateTable() {
+        tableModel.setRowCount(0);
+        
+        // Tính toán chỉ số start và end cho trang hiện tại
+        int startIdx = (currentPage - 1) * RECORDS_PER_PAGE;
+        int endIdx = Math.min(startIdx + RECORDS_PER_PAGE, filteredList.size());
+        
+        for (int i = startIdx; i < endIdx; i++) {
+            XtBangquydoi record = filteredList.get(i);
+            String khoangDiem = formatKhoangDiem(record);
+            String quyDoi = record.getDPhanvi() != null ? record.getDPhanvi() : "";
+            tableModel.addRow(new Object[]{
+                    record.getIdqd(),
+                    "Chứng chỉ",
+                    record.getDPhuongthuc() != null ? record.getDPhuongthuc() : "",
+                    record.getDTohop() != null ? record.getDTohop() : "-",
+                    record.getDMon() != null ? record.getDMon() : "-",
+                    khoangDiem,
+                    quyDoi,
+                    ""  // Hành động (sẽ render bằng button)
+            });
+        }
+    }
+
+    private void calculateTotalPages() {
+        totalPages = (int) Math.ceil((double) filteredList.size() / RECORDS_PER_PAGE);
+        if (totalPages == 0) totalPages = 1;
+    }
+
+    private void goToPage(int pageNum) {
+        if (pageNum >= 1 && pageNum <= totalPages) {
+            currentPage = pageNum;
+            updateTable();
+            updatePaginationUI();
+        }
+    }
+
+    private void updatePaginationUI() {
+        if (paginationPanel == null) return;
+        paginationPanel.removeAll();
+        paginationPanel.add(buildPaginationContent(), BorderLayout.CENTER);
+        paginationPanel.revalidate();
+        paginationPanel.repaint();
+    }
+
+    private JPanel buildPaginationContent() {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setOpaque(false);
+        row.setBorder(new EmptyBorder(10, 16, 10, 16));
+
+        int displayStart = filteredList.size() > 0 ? (currentPage - 1) * RECORDS_PER_PAGE + 1 : 0;
+        int displayEnd = Math.min(currentPage * RECORDS_PER_PAGE, filteredList.size());
+        int total = filteredList.size();
+
+        JLabel info = new JLabel(String.format("Hiển thị %d - %d trong tổng số %d quy tắc", displayStart, displayEnd, total));
+        info.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        info.setForeground(TEXT_MUTED);
+
+        JPanel pages = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        pages.setOpaque(false);
+        
+        // Nút Previous
+        JButton prevBtn = createNavButton("‹", () -> goToPage(currentPage - 1));
+        prevBtn.addMouseListener(new HoverAdapter(prevBtn, WHITE, SURFACE));
+        prevBtn.addActionListener(e -> goToPage(currentPage - 1));
+        pages.add(prevBtn);
+        
+        // Các nút trang
+        int visiblePages = Math.min(5, totalPages);
+        int startPage = Math.max(1, currentPage - 2);
+        int endPage = Math.min(totalPages, startPage + visiblePages - 1);
+        
+        if (endPage - startPage + 1 < visiblePages) {
+            startPage = Math.max(1, endPage - visiblePages + 1);
+        }
+        
+        // Nút "1" nếu không ở trang đầu
+        if (startPage > 1) {
+            JButton btn = createPageButton("1", 1);
+            pages.add(btn);
+            if (startPage > 2) {
+                JLabel dots = new JLabel("...");
+                dots.setForeground(TEXT_LIGHT);
+                pages.add(dots);
+            }
+        }
+        
+        // Các trang ở giữa
+        for (int p = startPage; p <= endPage; p++) {
+            JButton btn = createPageButton(String.valueOf(p), p);
+            pages.add(btn);
+        }
+        
+        // Nút "..." và trang cuối nếu không ở trang cuối
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                JLabel dots = new JLabel("...");
+                dots.setForeground(TEXT_LIGHT);
+                pages.add(dots);
+            }
+            JButton btn = createPageButton(String.valueOf(totalPages), totalPages);
+            pages.add(btn);
+        }
+        
+        // Nút Next
+        JButton nextBtn = createNavButton("›", () -> goToPage(currentPage + 1));
+        nextBtn.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        nextBtn.setBorder(new CompoundBorder(
+                new RoundedBorder(6, BORDER),
+                new EmptyBorder(2, 2, 2, 2)
+        ));
+        nextBtn.addMouseListener(new HoverAdapter(nextBtn, WHITE, SURFACE));
+        nextBtn.addActionListener(e -> goToPage(currentPage + 1));
+        pages.add(nextBtn);
+
+        row.add(info, BorderLayout.WEST);
+        row.add(pages, BorderLayout.EAST);
+        return row;
+    }
+
+    private JButton createNavButton(String text, Runnable action) {
+
+        JButton btn = new JButton(text) {
+
+            @Override
+            protected void paintComponent(Graphics g) {
+
+                Graphics2D g2 = (Graphics2D) g.create();
+
+                g2.setRenderingHint(
+                    RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON
+                );
+
+                if (getModel().isRollover()) {
+                    g2.setColor(new Color(0xf1, 0xf5, 0xf9));
+                } else {
+                    g2.setColor(WHITE);
+                }
+
+                g2.fillRoundRect(
+                    0,
+                    0,
+                    getWidth(),
+                    getHeight(),
+                    10,
+                    10
+                );
+
+                g2.setColor(BORDER);
+
+                g2.drawRoundRect(
+                    0,
+                    0,
+                    getWidth() - 1,
+                    getHeight() - 1,
+                    10,
+                    10
+                );
+
+                g2.dispose();
+
+                super.paintComponent(g);
+            }
+        };
+
+        btn.setPreferredSize(new Dimension(36, 36));
+
+        btn.setFocusPainted(false);
+        btn.setFocusable(false);
+
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setOpaque(false);
+
+        btn.setForeground(TEXT_MUTED);
+        btn.setFont(new Font("SansSerif", Font.PLAIN, 13));
+
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        btn.addActionListener(e -> action.run());
+
+        return btn;
+    }
+
+    private JButton createPageButton(String label, int pageNum) {
+
+        boolean active = currentPage == pageNum;
+
+        JButton btn = new JButton(label) {
+
+            @Override
+            protected void paintComponent(Graphics g) {
+
+                Graphics2D g2 = (Graphics2D) g.create();
+
+                g2.setRenderingHint(
+                    RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON
+                );
+
+                // Background
+                if (active) {
+                    g2.setColor(PRIMARY);
+                } else if (getModel().isRollover()) {
+                    g2.setColor(new Color(0xf1, 0xf5, 0xf9));
+                } else {
+                    g2.setColor(WHITE);
+                }
+
+                g2.fillRoundRect(
+                    0,
+                    0,
+                    getWidth(),
+                    getHeight(),
+                    10,
+                    10
+                );
+
+                // Border
+                g2.setColor(active ? PRIMARY : BORDER);
+                g2.drawRoundRect(
+                    0,
+                    0,
+                    getWidth() - 1,
+                    getHeight() - 1,
+                    10,
+                    10
+                );
+
+                g2.dispose();
+
+                super.paintComponent(g);
+            }
+        };
+
+        btn.setPreferredSize(new Dimension(36, 36));
+        btn.setMargin(new Insets(0, 0, 0, 0));
+
+        btn.setFocusPainted(false);
+        btn.setFocusable(false);
+
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setOpaque(false);
+
+        btn.setForeground(active ? WHITE : TEXT_MUTED);
+
+        btn.setFont(new Font(
+            "SansSerif",
+            active ? Font.BOLD : Font.PLAIN,
+            12
+        ));
+
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        final int page = pageNum;
+        btn.addActionListener(e -> goToPage(page));
+
+        return btn;
+    }
+
+    private String formatKhoangDiem(XtBangquydoi record) {
+        if (record.getDDiema() != null && record.getDDiemb() != null) {
+            return record.getDDiema() + " - " + record.getDDiemb();
+        }
+        return "";
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // MAIN PANEL
+    // ──────────────────────────────────────────────────────────
     private JPanel buildMainPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -88,7 +385,6 @@ public class BangQuyDoiPanel extends JPanel {
         panel.add(Box.createVerticalStrut(24));
         panel.add(buildTable());
         panel.add(Box.createVerticalStrut(24));
-        panel.add(buildStatsRow());
         return panel;
     }
 
@@ -138,10 +434,53 @@ public class BangQuyDoiPanel extends JPanel {
         gbc.insets = new Insets(0, 0, 0, 12);
         gbc.weighty = 1;
 
-        JPanel f1 = buildFilterGroup("LOẠI QUY ĐỔI",  new String[]{"Tất cả loại", "Chứng chỉ", "Điểm ưu tiên"});
-        JPanel f2 = buildFilterGroup("PHƯƠNG THỨC",    new String[]{"Chọn phương thức", "IELTS", "TOEFL iBT", "VSTEP"});
-        JPanel f3 = buildFilterGroup("TỔ HỢP",         new String[]{"Tất cả tổ hợp", "A00", "D01"});
-        JPanel f4 = buildFilterGroup("MÔN",            new String[]{"Tất cả môn", "Toán", "Tiếng Anh"});
+        // Lấy các giá trị unique từ database
+        Set<String> uniquePhuongThuc = new HashSet<>();
+        Set<String> uniqueTohop = new HashSet<>();
+        Set<String> uniqueMon = new HashSet<>();
+
+        for (XtBangquydoi record : dataList) {
+            if (record.getDPhuongthuc() != null) uniquePhuongThuc.add(record.getDPhuongthuc());
+            if (record.getDTohop() != null) uniqueTohop.add(record.getDTohop());
+            if (record.getDMon() != null) uniqueMon.add(record.getDMon());
+        }
+
+        String[] phuongThucArray = new String[uniquePhuongThuc.size() + 1];
+        phuongThucArray[0] = "Chọn phương thức";
+        int idx = 1;
+        for (String pt : uniquePhuongThuc) {
+            phuongThucArray[idx++] = pt;
+        }
+
+        String[] tohopArray = new String[uniqueTohop.size() + 1];
+        tohopArray[0] = "Tất cả tổ hợp";
+        idx = 1;
+        for (String th : uniqueTohop) {
+            tohopArray[idx++] = th;
+        }
+
+        String[] monArray = new String[uniqueMon.size() + 1];
+        monArray[0] = "Tất cả môn";
+        idx = 1;
+        for (String m : uniqueMon) {
+            monArray[idx++] = m;
+        }
+
+        JPanel f1 = buildFilterGroup("LOẠI QUY ĐỔI", new String[]{"Tất cả loại", "Chứng chỉ", "Điểm ưu tiên"});
+        JPanel f2 = buildFilterGroup("PHƯƠNG THỨC", phuongThucArray);
+        JPanel f3 = buildFilterGroup("TỔ HỢP", tohopArray);
+        JPanel f4 = buildFilterGroup("MÔN", monArray);
+
+        // Lưu reference để sử dụng sau
+        // Index 2 vì: [0]=Label, [1]=Strut, [2]=JComboBox
+        filterPhuongThuc = (JComboBox<String>) f2.getComponent(2);
+        filterTohop = (JComboBox<String>) f3.getComponent(2);
+        filterMon = (JComboBox<String>) f4.getComponent(2);
+
+        // Thêm listener cho filter
+        filterPhuongThuc.addActionListener(e -> applyFilters());
+        filterTohop.addActionListener(e -> applyFilters());
+        filterMon.addActionListener(e -> applyFilters());
 
         gbc.weightx = 1; gbc.gridx = 0; row.add(f1, gbc);
         gbc.gridx = 1; row.add(f2, gbc);
@@ -149,11 +488,18 @@ public class BangQuyDoiPanel extends JPanel {
         gbc.gridx = 3; row.add(f4, gbc);
 
         JButton addBtn = makePrimaryButton("＋  Thêm mới");
-        gbc.weightx = 0; gbc.insets = new Insets(0, 0, 0, 0);
-        gbc.gridx = 4; row.add(addBtn, gbc);
+        addBtn.addActionListener(e -> handleAddNew());
+        gbc.weightx = 0; 
+        gbc.insets = new Insets(20, 0, 0, 0);
+        gbc.gridx = 4; 
+        row.add(addBtn, gbc);
 
         card.add(row, BorderLayout.CENTER);
         return card;
+    }
+
+    private void handleAddNew() {
+        JOptionPane.showMessageDialog(this, "Chức năng thêm mới sẽ được phát triển", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private JPanel buildFilterGroup(String label, String[] options) {
@@ -185,37 +531,28 @@ public class BangQuyDoiPanel extends JPanel {
         JPanel card = makeCard();
         card.setLayout(new BorderLayout());
 
-        JTable table = new JTable(new AbstractTableModel() {
-            @Override public int getRowCount() { return DATA.length; }
-            @Override public int getColumnCount() { return COLS.length; }
-            @Override public String getColumnName(int c) { return COLS[c]; }
-            @Override public Object getValueAt(int r, int c) {
-                QuyTac q = DATA[r];
-                return switch (c) {
-                    case 0 -> q.getId();
-                    case 1 -> q.getLoai();
-                    case 2 -> q.getPhuongThuc();
-                    case 3 -> q.getToHop();
-                    case 4 -> q.getMon();
-                    case 5 -> q.getKhoangDiem();
-                    case 6 -> q.getQuyDoi();
-                    default -> "";
-                };
-            }
+        String[] COLS = {"ID", "LOẠI", "PHƯƠNG THỨC", "TỔ HỢP", "MÔN", "KHOẢNG ĐIỂM", "QUY ĐỔI", "HÀNH ĐỘNG"};
+        tableModel = new DefaultTableModel(new Object[0][0], COLS) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
-        });
+        };
 
-        table.setRowHeight(42);
-        table.setShowHorizontalLines(true);
-        table.setShowVerticalLines(false);
-        table.setGridColor(SURFACE);
-        table.setBackground(WHITE);
-        table.setSelectionBackground(new Color(0xef, 0xf6, 0xff));
-        table.setSelectionForeground(TEXT_DARK);
-        table.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        table.setFocusable(false);
+        dataTable = new JTable(tableModel);
 
-        JTableHeader header = table.getTableHeader();
+        // Cập nhật bảng với dữ liệu hiện tại
+        updateTable();
+
+        dataTable.setRowHeight(42);
+        dataTable.setShowHorizontalLines(true);
+        dataTable.setShowVerticalLines(false);
+        dataTable.setGridColor(SURFACE);
+        dataTable.setBackground(WHITE);
+        dataTable.setSelectionBackground(new Color(0xef, 0xf6, 0xff));
+        dataTable.setSelectionForeground(TEXT_DARK);
+        dataTable.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        dataTable.setFocusable(false);
+        dataTable.setFillsViewportHeight(true);
+
+        JTableHeader header = dataTable.getTableHeader();
         header.setBackground(new Color(0xf8, 0xfa, 0xfc));
         header.setForeground(TEXT_MUTED);
         header.setFont(new Font("SansSerif", Font.BOLD, 10));
@@ -225,21 +562,22 @@ public class BangQuyDoiPanel extends JPanel {
 
         int[] widths = {80, 110, 140, 80, 110, 140, 90, 120};
         for (int i = 0; i < widths.length; i++) {
-            table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+            dataTable.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
 
         // Col ID
-        table.getColumnModel().getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
+        dataTable.getColumnModel().getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
                 JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, v, s, f, r, c);
                 lbl.setFont(new Font("SansSerif", Font.BOLD, 12));
                 lbl.setForeground(PRIMARY);
+                lbl.setHorizontalAlignment(SwingConstants.CENTER);
                 return lbl;
             }
         });
 
         // Col Loại (badge)
-        table.getColumnModel().getColumn(1).setCellRenderer(new DefaultTableCellRenderer() {
+        dataTable.getColumnModel().getColumn(1).setCellRenderer(new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
                 JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 6));
                 p.setOpaque(true);
@@ -248,7 +586,10 @@ public class BangQuyDoiPanel extends JPanel {
                 boolean isCC = "Chứng chỉ".equals(v.toString());
                 JLabel badge = new JLabel(v.toString());
                 badge.setFont(new Font("SansSerif", Font.BOLD, 10));
-                badge.setBorder(new EmptyBorder(2, 8, 2, 8));
+                badge.setBorder(new CompoundBorder(
+                        new RoundedBorder(4, isCC ? new Color(0x25, 0x63, 0xeb) : new Color(0xd9, 0x77, 0x06)),
+                        new EmptyBorder(3, 10, 3, 10)
+                ));
                 badge.setOpaque(true);
                 badge.setBackground(isCC ? new Color(0xef, 0xf6, 0xff) : new Color(0xff, 0xfb, 0xeb));
                 badge.setForeground(isCC ? new Color(0x25, 0x63, 0xeb) : new Color(0xd9, 0x77, 0x06));
@@ -261,173 +602,104 @@ public class BangQuyDoiPanel extends JPanel {
         DefaultTableCellRenderer textCol = new DefaultTableCellRenderer();
         textCol.setFont(new Font("SansSerif", Font.PLAIN, 13));
         textCol.setForeground(TEXT_DARK);
-        table.getColumnModel().getColumn(2).setCellRenderer(textCol);
+        textCol.setHorizontalAlignment(SwingConstants.LEFT);
+        dataTable.getColumnModel().getColumn(2).setCellRenderer(textCol);
 
         DefaultTableCellRenderer lightCol = new DefaultTableCellRenderer();
         lightCol.setFont(new Font("SansSerif", Font.PLAIN, 13));
         lightCol.setForeground(TEXT_LIGHT);
-        table.getColumnModel().getColumn(3).setCellRenderer(lightCol);
+        lightCol.setHorizontalAlignment(SwingConstants.CENTER);
+        dataTable.getColumnModel().getColumn(3).setCellRenderer(lightCol);
 
-        table.getColumnModel().getColumn(4).setCellRenderer(textCol);
+        DefaultTableCellRenderer monCol = new DefaultTableCellRenderer();
+        monCol.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        monCol.setForeground(TEXT_DARK);
+        monCol.setHorizontalAlignment(SwingConstants.LEFT);
+        dataTable.getColumnModel().getColumn(4).setCellRenderer(monCol);
 
         DefaultTableCellRenderer boldCol = new DefaultTableCellRenderer();
         boldCol.setFont(new Font("SansSerif", Font.BOLD, 13));
         boldCol.setForeground(TEXT_DARK);
-        table.getColumnModel().getColumn(5).setCellRenderer(boldCol);
+        boldCol.setHorizontalAlignment(SwingConstants.LEFT);
+        dataTable.getColumnModel().getColumn(5).setCellRenderer(boldCol);
 
         // Col Quy đổi
-        table.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
+        dataTable.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
                 JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, v, s, f, r, c);
                 lbl.setFont(new Font("SansSerif", Font.BOLD, 13));
                 String val = v == null ? "" : v.toString();
-                lbl.setHorizontalAlignment(SwingConstants.RIGHT);
+                lbl.setHorizontalAlignment(SwingConstants.LEADING);
                 lbl.setForeground(val.startsWith("+") ? SUCCESS : PRIMARY);
                 return lbl;
             }
         });
 
         // Col Hành động
-        table.getColumnModel().getColumn(7).setCellRenderer(new DefaultTableCellRenderer() {
+        dataTable.getColumnModel().getColumn(7).setCellRenderer(new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
-                JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 6));
+                JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 6));
                 p.setOpaque(true);
                 p.setBackground(s ? t.getSelectionBackground() : WHITE);
-                p.add(makeActionButton("✏", new Color(0xef, 0xf6, 0xff)));
-                p.add(makeActionButton("🗑", new Color(0xff, 0xf1, 0xf2)));
+                int rowIdx = r;
+                JButton editBtn = makeActionButton("✏", PRIMARY, new Color(0x0f, 0x6f, 0xd4));
+                editBtn.addActionListener(e -> handleEdit(rowIdx));
+                JButton deleteBtn = makeActionButton("🗑", new Color(0xdc, 0x26, 0x26), new Color(0xb9, 0x1f, 0x1f));
+                deleteBtn.addActionListener(e -> handleDelete(rowIdx));
+                p.add(editBtn);
+                p.add(deleteBtn);
                 return p;
             }
         });
 
-        JScrollPane tableScroll = new JScrollPane(table);
+        JScrollPane tableScroll = new JScrollPane(dataTable);
         tableScroll.setBorder(null);
         tableScroll.getViewport().setBackground(WHITE);
 
-        card.add(tableScroll, BorderLayout.CENTER);
-        card.add(new JSeparator(), BorderLayout.SOUTH);
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.add(tableScroll, BorderLayout.NORTH); 
+        card.add(wrapper, BorderLayout.CENTER);
         
-        JPanel pagination = buildPagination();
-        card.add(pagination, BorderLayout.SOUTH);
+        paginationPanel = new JPanel(new BorderLayout());
+        paginationPanel.setOpaque(false);
+        paginationPanel.add(buildPaginationContent(), BorderLayout.CENTER);
+        card.add(paginationPanel, BorderLayout.SOUTH);
         return card;
     }
 
-    private JPanel buildPagination() {
-        JPanel row = new JPanel(new BorderLayout());
-        row.setOpaque(false);
-        row.setBorder(new EmptyBorder(10, 16, 10, 16));
+    private void handleEdit(int rowIdx) {
+        int actualIdx = (currentPage - 1) * RECORDS_PER_PAGE + rowIdx;
+        if (actualIdx >= 0 && actualIdx < filteredList.size()) {
+            XtBangquydoi record = filteredList.get(actualIdx);
+            JOptionPane.showMessageDialog(this, "Sửa quy đổi ID: " + record.getIdqd(), 
+                    "Sửa", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
 
-        JLabel info = new JLabel("Hiển thị 1 - 4 trong tổng số 42 quy tắc");
-        info.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        info.setForeground(TEXT_MUTED);
-
-        JPanel pages = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        pages.setOpaque(false);
-        String[] items = {"‹", "1", "2", "3", "...", "12", "›"};
-        for (String p : items) {
-            if ("...".equals(p)) {
-                JLabel dots = new JLabel("...");
-                dots.setForeground(TEXT_LIGHT);
-                pages.add(dots);
-            } else {
-                JButton btn = new JButton(p);
-                btn.setPreferredSize(new Dimension(32, 32));
-                btn.setFocusPainted(false);
-                btn.setBorderPainted(false);
-                btn.setContentAreaFilled(true);
-                boolean active = "1".equals(p);
-                btn.setBackground(active ? PRIMARY : WHITE);
-                btn.setForeground(active ? WHITE : TEXT_MUTED);
-                btn.setFont(new Font("SansSerif", active ? Font.BOLD : Font.PLAIN, 12));
-                if (!active) {
-                    btn.addMouseListener(new HoverAdapter(btn, WHITE, SURFACE));
+    private void handleDelete(int rowIdx) {
+        int actualIdx = (currentPage - 1) * RECORDS_PER_PAGE + rowIdx;
+        if (actualIdx >= 0 && actualIdx < filteredList.size()) {
+            XtBangquydoi record = filteredList.get(actualIdx);
+            int option = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa?", 
+                    "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
+            if (option == JOptionPane.YES_OPTION) {
+                try {
+                    bangQuyDoiService.delete(record.getIdqd());
+                    loadData();
+                    calculateTotalPages();
+                    applyFilters();
+                    JOptionPane.showMessageDialog(this, "Xóa thành công", 
+                            "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(this, "Lỗi xóa: " + e.getMessage(), 
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
-                pages.add(btn);
             }
         }
-
-        row.add(info, BorderLayout.WEST);
-        row.add(pages, BorderLayout.EAST);
-        return row;
     }
 
-    // ══════════════════════════════════════════════════════════
-    //  4. STATS ROW
-    // ══════════════════════════════════════════════════════════
-    private JPanel buildStatsRow() {
-        JPanel row = new JPanel(new GridLayout(1, 3, 16, 0));
-        row.setOpaque(false);
 
-        row.add(buildInfoCard("📋", new Color(0xef, 0xf6, 0xff),
-            "TỔNG QUY TẮC", "42", "+3 từ tuần trước", SUCCESS));
-
-        row.add(buildInfoCard("🔄", new Color(0xff, 0xfb, 0xeb),
-            "CẬP NHẬT CUỐI", "15:30, 20/10/2023", "bởi Admin: Nguyen Minh", TEXT_MUTED));
-
-        row.add(buildLogicCard());
-        return row;
-    }
-
-    private JPanel buildInfoCard(String icon, Color iconBg,
-                                 String label, String value, String sub, Color subColor) {
-        JPanel card = makeCard();
-        card.setLayout(new BorderLayout(12, 0));
-        card.setBorder(new CompoundBorder(card.getBorder(), new EmptyBorder(20, 20, 20, 20)));
-
-        JPanel iconBox = new JPanel(new GridBagLayout());
-        iconBox.setPreferredSize(new Dimension(48, 48));
-        iconBox.setBackground(iconBg);
-        iconBox.setBorder(new RoundedBorder(12, iconBg));
-        JLabel iconLbl = new JLabel(icon);
-        iconLbl.setFont(new Font("SansSerif", Font.PLAIN, 20));
-        iconBox.add(iconLbl);
-
-        JPanel info = new JPanel();
-        info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
-        info.setOpaque(false);
-        JLabel lbl = new JLabel(label);
-        lbl.setFont(new Font("SansSerif", Font.BOLD, 10));
-        lbl.setForeground(TEXT_LIGHT);
-        JLabel val = new JLabel(value);
-        val.setFont(new Font("SansSerif", Font.BOLD, value.length() < 5 ? 24 : 15));
-        val.setForeground(TEXT_DARK);
-        JLabel subLbl = new JLabel(sub);
-        subLbl.setFont(new Font("SansSerif", Font.BOLD, 11));
-        subLbl.setForeground(subColor);
-
-        info.add(lbl);
-        info.add(Box.createVerticalStrut(2));
-        info.add(val);
-        info.add(Box.createVerticalStrut(2));
-        info.add(subLbl);
-
-        card.add(iconBox, BorderLayout.WEST);
-        card.add(info, BorderLayout.CENTER);
-        return card;
-    }
-
-    private JPanel buildLogicCard() {
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(PRIMARY);
-        card.setBorder(new CompoundBorder(new RoundedBorder(14, PRIMARY), new EmptyBorder(20, 20, 20, 20)));
-
-        JLabel title = new JLabel("Kiểm tra Logic");
-        title.setFont(new Font("SansSerif", Font.BOLD, 17));
-        title.setForeground(WHITE);
-
-        JLabel desc = new JLabel("<html>Hệ thống phát hiện 2 quy tắc<br/>có thể bị trùng lặp khoảng điểm.</html>");
-        desc.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        desc.setForeground(new Color(255, 255, 255, 217));
-
-        JButton detailBtn = makeGhostButton("Xem chi tiết");
-
-        card.add(title);
-        card.add(Box.createVerticalStrut(6));
-        card.add(desc);
-        card.add(Box.createVerticalGlue());
-        card.add(detailBtn);
-        return card;
-    }
 
     // ══════════════════════════════════════════════════════════
     //  HELPERS
@@ -441,24 +713,114 @@ public class BangQuyDoiPanel extends JPanel {
     }
 
     private JButton makeOutlineButton(String text) {
-        JButton btn = new JButton(text);
+
+        Color normalBg = new Color(0x16, 0xa3, 0x4a);
+        Color hoverBg  = new Color(0x15, 0x8a, 0x3d);
+
+        JButton btn = new JButton(text) {
+
+            @Override
+            protected void paintComponent(Graphics g) {
+
+                Graphics2D g2 = (Graphics2D) g.create();
+
+                g2.setRenderingHint(
+                    RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON
+                );
+
+                // Hover effect
+                if (getModel().isRollover()) {
+                    g2.setColor(hoverBg);
+                } else {
+                    g2.setColor(normalBg);
+                }
+
+                g2.fillRoundRect(
+                    0,
+                    0,
+                    getWidth(),
+                    getHeight(),
+                    10,
+                    10
+                );
+
+                super.paintComponent(g);
+
+                g2.dispose();
+            }
+        };
+        btn.setHorizontalTextPosition(SwingConstants.CENTER);
+        btn.setVerticalTextPosition(SwingConstants.CENTER);
+
+        btn.setFont(Font.decode("SansSerif-BOLD-13"));
+
+        btn.setForeground(Color.WHITE);
+
         btn.setFocusPainted(false);
-        btn.setBackground(WHITE);
-        btn.setForeground(TEXT_DARK);
-        btn.setBorder(new CompoundBorder(new RoundedBorder(10, BORDER), new EmptyBorder(8, 18, 8, 18)));
+        btn.setFocusable(false);
+
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setOpaque(false);
+
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.addMouseListener(new HoverAdapter(btn, WHITE, new Color(0xf8, 0xfa, 0xfc)));
+
+        btn.setBorder(new EmptyBorder(10, 18, 10, 18));
+
         return btn;
     }
 
     private JButton makePrimaryButton(String text) {
-        JButton btn = new JButton(text);
+
+        JButton btn = new JButton(text) {
+
+            @Override
+            protected void paintComponent(Graphics g) {
+
+                Graphics2D g2 = (Graphics2D) g.create();
+
+                g2.setRenderingHint(
+                    RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON
+                );
+
+                // màu hover
+                if (getModel().isRollover()) {
+                    g2.setColor(new Color(0x0f, 0x6f, 0xd4));
+                } else {
+                    g2.setColor(PRIMARY);
+                }
+
+                g2.fillRoundRect(
+                    0,
+                    0,
+                    getWidth(),
+                    getHeight(),
+                    8,
+                    8
+                );
+
+                g2.dispose();
+
+                super.paintComponent(g);
+            }
+        };
+
         btn.setFocusPainted(false);
-        btn.setBackground(PRIMARY);
+
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setOpaque(false);
+
         btn.setForeground(WHITE);
-        btn.setBorder(new CompoundBorder(new RoundedBorder(10, PRIMARY), new EmptyBorder(8, 18, 8, 18)));
+
+        btn.setFont(new Font("SansSerif", Font.BOLD, 12));
+
+        btn.setBorder(new EmptyBorder(10, 20, 10, 20));
+
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.addMouseListener(new HoverAdapter(btn, PRIMARY, new Color(0x0f, 0x6f, 0xd4)));
+
         return btn;
     }
 
@@ -473,15 +835,60 @@ public class BangQuyDoiPanel extends JPanel {
         return btn;
     }
 
-    private JButton makeActionButton(String icon, Color hoverBg) {
-        JButton btn = new JButton(icon);
-        btn.setPreferredSize(new Dimension(30, 30));
+    private JButton makeActionButton(String icon, Color normalBg, Color hoverBg) {
+
+        JButton btn = new JButton(icon) {
+
+            @Override
+            protected void paintComponent(Graphics g) {
+
+                Graphics2D g2 = (Graphics2D) g.create();
+
+                g2.setRenderingHint(
+                    RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON
+                );
+
+                // background
+                if (getModel().isRollover()) {
+                    g2.setColor(hoverBg);
+                } else {
+                    g2.setColor(normalBg);
+                }
+
+                g2.fillRoundRect(
+                    0,
+                    0,
+                    getWidth(),
+                    getHeight(),
+                    8,
+                    8
+                );
+
+                g2.dispose();
+
+                super.paintComponent(g);
+            }
+        };
+
+        btn.setPreferredSize(new Dimension(36, 36));
+
         btn.setFocusPainted(false);
+        btn.setFocusable(false);
+
+        btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
-        btn.setContentAreaFilled(true);
-        btn.setBackground(new Color(0, 0, 0, 0));
+        btn.setOpaque(false);
+
+        btn.setForeground(WHITE);
+
+        // Font emoji đẹp hơn
+        btn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 15));
+
+        btn.setBorder(new EmptyBorder(4, 4, 4, 4));
+
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.addMouseListener(new HoverAdapter(btn, new Color(0, 0, 0, 0), hoverBg));
+
         return btn;
     }
 

@@ -168,6 +168,22 @@ public class XtNguyenvongxettuyenController {
         return taiDuLieu();
     }
 
+    public XtNguyenvongxettuyenService.XetTuyenResult chayXetTuyenHeThong() {
+        try {
+            return service.chayXetTuyenHeThong();
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi chạy xét tuyển: " + e.getMessage());
+        }
+    }
+
+    public int tinhDiemXetTuyenAll() {
+        try {
+            return service.tinhDiemXetTuyenAll();
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi tính điểm xét tuyển: " + e.getMessage());
+        }
+    }
+
     /**
      * Kiểm tra dữ liệu đầu vào
      * @param model nguyện vọng cần kiểm tra

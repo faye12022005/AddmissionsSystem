@@ -4,68 +4,89 @@ import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 
 public class ChiTietNguyenVong extends JDialog {
 
-    // ── Màu sắc ──────────────────────────────────────────────
-    private static final Color PRIMARY    = new Color(0x13, 0x7f, 0xec);
-    private static final Color WHITE      = Color.WHITE;
-    private static final Color BORDER_C   = new Color(0xe2, 0xe8, 0xf0);
-    private static final Color TEXT_DARK  = new Color(0x0f, 0x17, 0x2a);
-    private static final Color TEXT_MUTED = new Color(0x64, 0x74, 0x8b);
-    private static final Color TEXT_SLATE = new Color(0x33, 0x41, 0x55);
-    private static final Color SURFACE_L  = new Color(0xf8, 0xfa, 0xfc);
-    private static final Color SURFACE_M  = new Color(0xf1, 0xf5, 0xf9);
-    private static final Color ERROR_C    = new Color(0xef, 0x44, 0x44);
-    private static final Color ERROR_BG   = new Color(0xfe, 0xe2, 0xe2);
-    private static final Color SUCCESS_BG = new Color(0xf0, 0xfd, 0xf4);
-    private static final Color SUCCESS_FG = new Color(0x16, 0xa3, 0x4a);
-    private static final Color DOT_GREEN  = new Color(0x22, 0xc5, 0x5e);
-    private static final Color AVATAR_BG  = new Color(0xcb, 0xd5, 0xe1);
+    // ────────────────────────────── Màu sắc ──────────────────────────────
+    private static final Color PRIMARY     = new Color(0x13, 0x7f, 0xec);
+    private static final Color WHITE       = Color.WHITE;
+    private static final Color BORDER_LIGHT= new Color(0xe2, 0xe8, 0xf0);
+    private static final Color TEXT_DARK   = new Color(0x0f, 0x17, 0x2a);
+    private static final Color TEXT_MUTED  = new Color(0x64, 0x74, 0x8b);
+    private static final Color TEXT_SLATE  = new Color(0x33, 0x41, 0x55);
+    private static final Color SURFACE_L   = new Color(0xf8, 0xfa, 0xfc);
+    private static final Color SURFACE_M   = new Color(0xf1, 0xf5, 0xf9);
+    private static final Color ERROR_RED   = new Color(0xef, 0x44, 0x44);
+    private static final Color ERROR_BG    = new Color(0xfe, 0xe2, 0xe2);
+    private static final Color SUCCESS_BG  = new Color(0xf0, 0xfd, 0xf4);
+    private static final Color SUCCESS_FG  = new Color(0x16, 0xa3, 0x4a);
+    private static final Color DOT_GREEN   = new Color(0x22, 0xc5, 0x5e);
+    private static final Color AVATAR_BG   = new Color(0xcb, 0xd5, 0xe1);
+    private static final int SPACE_2XL = 40;
+    // ────────────────────────────── Hệ thống spacing ─────────────────────
+    private static final int SPACE_XS = 4;
+    private static final int SPACE_SM = 8;
+    private static final int SPACE_MD = 16;
+    private static final int SPACE_LG = 24;
+    private static final int SPACE_XL = 32;
 
-    // ── Font – tất cả dùng cùng family, size nhất quán ──────
-    private static final Font FB_20 = new Font("SansSerif", Font.BOLD,  20);
-    private static final Font FB_18 = new Font("SansSerif", Font.BOLD,  18);
-    private static final Font FB_16 = new Font("SansSerif", Font.BOLD,  16);
-    private static final Font FB_15 = new Font("SansSerif", Font.BOLD,  15);
-    private static final Font FB_14 = new Font("SansSerif", Font.BOLD,  14);
-    private static final Font FB_13 = new Font("SansSerif", Font.BOLD,  13);
-    private static final Font FB_12 = new Font("SansSerif", Font.BOLD,  12);
-    private static final Font FB_11 = new Font("SansSerif", Font.BOLD,  11);
-    private static final Font FB_10 = new Font("SansSerif", Font.BOLD,  10);
-    private static final Font FB_9  = new Font("SansSerif", Font.BOLD,   9);
-    private static final Font FB_28 = new Font("SansSerif", Font.BOLD,  28);
-    private static final Font FB_26 = new Font("SansSerif", Font.BOLD,  26);
-    private static final Font FP_14 = new Font("SansSerif", Font.PLAIN, 14);
-    private static final Font FP_13 = new Font("SansSerif", Font.PLAIN, 13);
-    private static final Font FP_12 = new Font("SansSerif", Font.PLAIN, 12);
-    private static final Font FP_11 = new Font("SansSerif", Font.PLAIN, 11);
-    private static final Font FP_10 = new Font("SansSerif", Font.PLAIN, 10);
+    // ────────────────────────────── Font chữ thống nhất ──────────────────
+    private static final String FONT_FAMILY = "Segoe UI, Inter, SansSerif";
+    private static final Font FONT_TITLE      = new Font(FONT_FAMILY, Font.BOLD, 18);
+    private static final Font FONT_SUBTITLE   = new Font(FONT_FAMILY, Font.BOLD, 14);
+    private static final Font FONT_BODY_BOLD  = new Font(FONT_FAMILY, Font.BOLD, 13);
+    private static final Font FONT_BODY_PLAIN = new Font(FONT_FAMILY, Font.PLAIN, 13);
+    private static final Font FONT_LABEL      = new Font(FONT_FAMILY, Font.BOLD, 11);
+    private static final Font FONT_LARGE_NUM  = new Font(FONT_FAMILY, Font.BOLD, 28);
+    private static final Font FONT_MEDIUM_NUM = new Font(FONT_FAMILY, Font.BOLD, 22);
+    private static final Font FONT_BUTTON     = new Font(FONT_FAMILY, Font.BOLD, 13);
+    private static final Font FONT_LABEL_LARGE  = new Font(FONT_FAMILY, Font.BOLD, 12);
+    private static final Font FONT_BODY_LARGE   = new Font(FONT_FAMILY, Font.PLAIN, 15);
+    private static final Font FONT_BODY_BOLD_LARGE = new Font(FONT_FAMILY, Font.BOLD, 15);
 
-    // ── Padding nhất quán ────────────────────────────────────
-    private static final int PAD = 28;   // padding cột
-    private static final int GAP = 14;   // khoảng cách giữa các phần
+    private static final DecimalFormat SCORE_FMT = new DecimalFormat("0.00");
 
-    // ── Data ─────────────────────────────────────────────────
-    private final String tenThiSinh, sbd, maNganh, tenNganh, thuTu, tongDiem, trangThai;
+    // ────────────────────────────── Dữ liệu ──────────────────────────────
+    private final String tenThiSinh;
+    private final String sbd;
+    private final String cccd;
+    private final String ngaySinh;
+    private final String maNganh;
+    private final String tenNganh;
+    private final String thuTu;
+    private final String tongDiem;
+    private final String trangThai;
+    private final String toHop;
+    private final String phuongThuc;
+    private final BigDecimal diemThxt;
+    private final BigDecimal diemCong;
+    private final BigDecimal diemUtqd;
 
-    // ════════════════════════════════════════════════════════
-    //  CONSTRUCTOR
-    // ════════════════════════════════════════════════════════
+    // ────────────────────────────── Constructor ──────────────────────────
     public ChiTietNguyenVong(Frame owner, NguyenVongPanel.NguyenVong data) {
         super(owner, "Chi tiết Nguyện vọng", true);
-        tenThiSinh = data != null ? data.getTenThiSinh() : "Nguyễn Văn An";
-        sbd        = data != null ? data.getSbd()        : "2400015";
-        maNganh    = data != null ? data.getMaNganh()    : "7480101";
-        tenNganh   = data != null ? data.getTenNganh()   : "Khoa học máy tính";
-        thuTu      = data != null ? data.getThuTu()      : "01";
-        tongDiem   = data != null ? data.getTongDiem()   : "28.25";
-        trangThai  = data != null ? data.getTrangThai()  : "Trúng tuyển";
+        tenThiSinh = (data != null) ? data.getTenThiSinh() : "Nguyễn Văn An";
+        sbd        = (data != null) ? data.getSbd()        : "2400015";
+        cccd       = (data != null) ? data.getCccd()       : "012345678901";
+        ngaySinh   = (data != null) ? data.getNgaySinh()   : "15/04/2006";
+        maNganh    = (data != null) ? data.getMaNganh()    : "7480101";
+        tenNganh   = (data != null) ? data.getTenNganh()   : "Khoa học máy tính";
+        thuTu      = (data != null) ? data.getThuTu()      : "01";
+        tongDiem   = (data != null) ? data.getTongDiem()   : "28.25";
+        trangThai  = (data != null) ? data.getTrangThai()  : "Trúng tuyển";
+        toHop      = (data != null) ? data.getToHop()      : "A00";
+        phuongThuc = (data != null) ? data.getPhuongThuc() : "PT4";
+        diemThxt   = (data != null) ? data.getDiemThxt()   : null;
+        diemCong   = (data != null) ? data.getDiemCong()   : null;
+        diemUtqd   = (data != null) ? data.getDiemUtqd()   : null;
         initUI();
     }
 
     public ChiTietNguyenVong(Frame owner) { this(owner, null); }
 
+    // ────────────────────────────── Khởi tạo giao diện ───────────────────
     private void initUI() {
         setSize(1100, 600);
         setMinimumSize(new Dimension(900, 520));
@@ -75,128 +96,155 @@ public class ChiTietNguyenVong extends JDialog {
 
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(WHITE);
-        root.add(buildHeader(), BorderLayout.NORTH);
-        root.add(buildBody(),   BorderLayout.CENTER);
-        root.add(buildFooter(), BorderLayout.SOUTH);
+        root.add(createHeader(), BorderLayout.NORTH);
+        root.add(createBody(),   BorderLayout.CENTER);
+        root.add(createFooter(), BorderLayout.SOUTH);
         setContentPane(root);
     }
 
-    // ════════════════════════════════════════════════════════
-    //  HEADER
-    // ════════════════════════════════════════════════════════
-    private JPanel buildHeader() {
-        JPanel h = new JPanel(new BorderLayout(12, 0));
-        h.setBackground(WHITE);
-        h.setBorder(new CompoundBorder(
-            BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_C),
-            new EmptyBorder(16, 24, 16, 24)
+    // ════════════════════════════════════════════════════════════════════
+    //  HEADER – Tiêu đề và nút đóng
+    // ════════════════════════════════════════════════════════════════════
+    private JPanel createHeader() {
+        JPanel header = new JPanel(new BorderLayout(SPACE_SM, 0));
+        header.setBackground(WHITE);
+        header.setBorder(new CompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_LIGHT),
+            new EmptyBorder(SPACE_MD, SPACE_LG, SPACE_MD, SPACE_LG)
         ));
 
-        // Icon + tiêu đề
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        // Phần trái: chỉ còn tiêu đề (đã bỏ icon)
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         left.setOpaque(false);
+        JLabel title = new JLabel("Chi tiết Nguyện vọng");
+        title.setFont(FONT_TITLE);
+        title.setForeground(TEXT_DARK);
+        left.add(title);
 
-        JPanel iconBox = new JPanel(new GridBagLayout()) {
+        // Nút đóng màu đỏ
+        JButton closeBtn = createCloseButton();
+        header.add(left, BorderLayout.WEST);
+        header.add(closeBtn, BorderLayout.EAST);
+        return header;
+    }
+
+    private JButton createCloseButton() {
+        JButton btn = new JButton("X") {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(PRIMARY.getRed(), PRIMARY.getGreen(), PRIMARY.getBlue(), 26));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        iconBox.setOpaque(false);
-        iconBox.setPreferredSize(new Dimension(40, 40));
-        JLabel starLbl = new JLabel("★");
-        starLbl.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
-        starLbl.setForeground(PRIMARY);
-        iconBox.add(starLbl);
-
-        JLabel titleLbl = new JLabel("Chi tiết Nguyện vọng");
-        titleLbl.setFont(FB_18);
-        titleLbl.setForeground(TEXT_DARK);
-
-        left.add(iconBox);
-        left.add(titleLbl);
-
-        // Nút đóng
-        JButton closeBtn = new JButton("✕") {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getModel().isRollover() ? SURFACE_M : WHITE);
+                g2.setColor(getModel().isRollover() ? new Color(0xff, 0xcc, 0xcc) : WHITE);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
                 g2.dispose();
                 super.paintComponent(g);
             }
         };
-        closeBtn.setFont(FB_15);
-        closeBtn.setForeground(TEXT_MUTED);
-        closeBtn.setPreferredSize(new Dimension(36, 36));
-        closeBtn.setContentAreaFilled(false);
-        closeBtn.setBorderPainted(false);
-        closeBtn.setFocusPainted(false);
-        closeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        closeBtn.addMouseListener(new MouseAdapter() {
-            @Override public void mouseEntered(MouseEvent e) { closeBtn.setForeground(TEXT_DARK); closeBtn.repaint(); }
-            @Override public void mouseExited(MouseEvent e)  { closeBtn.setForeground(TEXT_MUTED); closeBtn.repaint(); }
+        btn.setMargin(new Insets(0, 0, 0, 0));
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btn.setForeground(ERROR_RED);   // màu đỏ
+        btn.setPreferredSize(new Dimension(36, 36));
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent e) { btn.setForeground(new Color(0xcc, 0x00, 0x00)); btn.repaint(); }
+            @Override public void mouseExited(MouseEvent e)  { btn.setForeground(ERROR_RED); btn.repaint(); }
         });
-        closeBtn.addActionListener(e -> dispose());
-
-        h.add(left,     BorderLayout.WEST);
-        h.add(closeBtn, BorderLayout.EAST);
-        return h;
+        btn.addActionListener(e -> dispose());
+        return btn;
     }
 
-    // ════════════════════════════════════════════════════════
-    //  BODY – dùng tỷ lệ cột: 28% | 34% | 38%
-    // ════════════════════════════════════════════════════════
-    private JPanel buildBody() {
-        // Dùng GridBagLayout để kiểm soát tỷ lệ cột chính xác
+    // ════════════════════════════════════════════════════════════════════
+    //  BODY – 3 cột với tỉ lệ 28% | 34% | 38%
+    // ════════════════════════════════════════════════════════════════════
+    private JPanel createBody() {
         JPanel body = new JPanel(new GridBagLayout());
         body.setBackground(WHITE);
-
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill    = GridBagConstraints.BOTH;
-        gbc.gridy   = 0;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.gridy = 0;
         gbc.weighty = 1.0;
 
-        // Cột 1: 28%
-        gbc.gridx   = 0;
-        gbc.weightx = 0.28;
-        JPanel col1 = buildCol1();
-        col1.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, BORDER_C));
+        gbc.gridx = 0; gbc.weightx = 0.28;
+        JPanel col1 = createCol1();
+        col1.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, BORDER_LIGHT));
         body.add(col1, gbc);
 
-        // Cột 2: 34%
-        gbc.gridx   = 1;
-        gbc.weightx = 0.34;
-        JPanel col2 = buildCol2();
-        col2.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, BORDER_C));
+        gbc.gridx = 1; gbc.weightx = 0.34;
+        JPanel col2 = createCol2();
+        col2.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, BORDER_LIGHT));
         body.add(col2, gbc);
 
-        // Cột 3: 38%
-        gbc.gridx   = 2;
-        gbc.weightx = 0.38;
-        body.add(buildCol3(), gbc);
-
+        gbc.gridx = 2; gbc.weightx = 0.38;
+        body.add(createCol3(), gbc);
         return body;
     }
 
-    // ════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════════════
     //  CỘT 1 – Thông tin thí sinh
-    // ════════════════════════════════════════════════════════
-    private JPanel buildCol1() {
+    // ════════════════════════════════════════════════════════════════════
+    private JPanel createCol1() {
         JPanel col = new JPanel();
         col.setLayout(new BoxLayout(col, BoxLayout.Y_AXIS));
         col.setBackground(WHITE);
-        col.setBorder(new EmptyBorder(PAD, PAD, PAD, PAD));
+        col.setBorder(new EmptyBorder(SPACE_LG, SPACE_2XL, SPACE_LG, SPACE_LG));
 
-        // ── Avatar + tên ────────────────────────────────────
-        JPanel avatarRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 14, 0));
-        avatarRow.setOpaque(false);
-        avatarRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 84));
+        col.add(createAvatarRow());
+        col.add(Box.createVerticalStrut(SPACE_LG));
+        col.add(new JSeparator() {{ setForeground(BORDER_LIGHT); }});
+        col.add(Box.createVerticalStrut(SPACE_LG));
+        col.add(createInfoBlock());
+        col.add(Box.createVerticalGlue());
+        return col;
+    }
+
+    private JPanel createInfoBlock() {
+        JPanel block = new JPanel();
+        block.setLayout(new BoxLayout(block, BoxLayout.Y_AXIS));
+        block.setOpaque(false);
+        block.add(createInfoCard("SỐ BÁO DANH", sbd, true));
+        block.add(Box.createVerticalStrut(SPACE_LG));
+        block.add(createInfoCard("CCCD", cccd, false));
+        block.add(Box.createVerticalStrut(SPACE_LG));
+        block.add(createInfoCard("NGÀY SINH", ngaySinh, false));
+        return block;
+    }
+
+    private JPanel createInfoCard(String label, String value, boolean highlight) {
+        JPanel card = new JPanel(new BorderLayout(SPACE_MD, 0));
+        card.setOpaque(false);
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+        
+        if (highlight) {
+            card.setBackground(new Color(PRIMARY.getRed(), PRIMARY.getGreen(), PRIMARY.getBlue(), 8));
+            card.setOpaque(true);
+            card.setBorder(new CompoundBorder(
+                BorderFactory.createLineBorder(new Color(PRIMARY.getRed(), PRIMARY.getGreen(), PRIMARY.getBlue(), 30), 1),
+                new EmptyBorder(SPACE_SM, SPACE_MD, SPACE_SM, SPACE_MD)
+            ));
+        } else {
+            // Thêm padding trái/phải giống hệt card highlight
+            card.setBorder(new EmptyBorder(SPACE_SM, SPACE_MD, SPACE_SM, SPACE_MD));
+        }
+
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(FONT_LABEL_LARGE);
+        lbl.setForeground(TEXT_MUTED);
+
+        JLabel val = new JLabel(value);
+        val.setFont(highlight ? FONT_BODY_BOLD_LARGE : FONT_BODY_LARGE);
+        val.setForeground(highlight ? PRIMARY : TEXT_DARK);
+
+        card.add(lbl, BorderLayout.WEST);
+        card.add(val, BorderLayout.EAST);
+        return card;
+    }
+
+    private JPanel createAvatarRow() {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, SPACE_LG, 0));
+        row.setOpaque(false);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
 
         // Avatar vẽ tay
         JPanel avatar = new JPanel() {
@@ -204,311 +252,234 @@ public class ChiTietNguyenVong extends JDialog {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(AVATAR_BG);
-                g2.fillRoundRect(0, 0, 72, 72, 14, 14);
-                // icon người
-                g2.setFont(new Font("SansSerif", Font.BOLD, 28));
+                g2.fillRoundRect(0, 0, 80, 80, 16, 16);
+                g2.setFont(new Font(FONT_FAMILY, Font.BOLD, 32));
                 g2.setColor(new Color(0x94, 0xa3, 0xb8));
-                g2.drawString("☺", 20, 50);
-                // badge online
-                g2.setColor(WHITE);    g2.fillOval(51, 51, 18, 18);
-                g2.setColor(DOT_GREEN); g2.fillOval(54, 54, 12, 12);
+                g2.drawString("☺", 22, 54);
+                g2.setColor(WHITE); 
+                g2.fillOval(58, 58, 18, 18);
+                g2.setColor(DOT_GREEN); 
+                g2.fillOval(61, 61, 12, 12);
                 g2.dispose();
             }
         };
-        avatar.setPreferredSize(new Dimension(72, 72));
+        avatar.setPreferredSize(new Dimension(80, 80));
         avatar.setOpaque(false);
 
         JPanel nameBlock = new JPanel();
         nameBlock.setLayout(new BoxLayout(nameBlock, BoxLayout.Y_AXIS));
         nameBlock.setOpaque(false);
-        JLabel nameL = new JLabel(tenThiSinh);
-        nameL.setFont(FB_16);
-        nameL.setForeground(TEXT_DARK);
-        JLabel typeL = new JLabel("Thí sinh tự do");
-        typeL.setFont(FP_13);
-        typeL.setForeground(TEXT_MUTED);
-        nameBlock.add(nameL);
-        nameBlock.add(Box.createVerticalStrut(5));
-        nameBlock.add(typeL);
+        
+        JLabel name = new JLabel(tenThiSinh);
+        name.setFont(new Font(FONT_FAMILY, Font.BOLD, 18)); // chữ to hơn
+        name.setForeground(TEXT_DARK);
+        
+        JLabel type = new JLabel("Thí sinh tự do");
+        type.setFont(new Font(FONT_FAMILY, Font.PLAIN, 14)); // to hơn
+        type.setForeground(TEXT_MUTED);
+        
+        nameBlock.add(name);
+        nameBlock.add(Box.createVerticalStrut(SPACE_XS));
+        nameBlock.add(type);
 
-        avatarRow.add(avatar);
-        avatarRow.add(nameBlock);
-
-        // ── Divider ─────────────────────────────────────────
-        JSeparator sep = new JSeparator();
-        sep.setForeground(BORDER_C);
-        sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
-
-        // ── Info rows ───────────────────────────────────────
-        JPanel infoBlock = new JPanel();
-        infoBlock.setLayout(new BoxLayout(infoBlock, BoxLayout.Y_AXIS));
-        infoBlock.setOpaque(false);
-        infoBlock.add(buildInfoRow("SỐ BÁO DANH", sbd, true));
-        infoBlock.add(Box.createVerticalStrut(16));
-        infoBlock.add(buildInfoRow("CCCD", "012345678901", false));
-        infoBlock.add(Box.createVerticalStrut(16));
-        infoBlock.add(buildInfoRow("NGÀY SINH", "15/04/2006", false));
-
-        col.add(avatarRow);
-        col.add(Box.createVerticalStrut(GAP + 4));
-        col.add(sep);
-        col.add(Box.createVerticalStrut(GAP + 4));
-        col.add(infoBlock);
-        col.add(Box.createVerticalGlue());
-        return col;
-    }
-
-    /** Một dòng label – value, full width */
-    private JPanel buildInfoRow(String label, String value, boolean highlight) {
-        JPanel row = new JPanel(new BorderLayout(8, 0));
-        row.setOpaque(false);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-
-        JLabel lbl = new JLabel(label);
-        lbl.setFont(FB_10);
-        lbl.setForeground(TEXT_MUTED);
-
-        if (highlight) {
-            // Badge xanh nhạt
-            JLabel val = new JLabel(value) {
-                @Override protected void paintComponent(Graphics g) {
-                    Graphics2D g2 = (Graphics2D) g.create();
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.setColor(new Color(PRIMARY.getRed(), PRIMARY.getGreen(), PRIMARY.getBlue(), 22));
-                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
-                    g2.dispose();
-                    super.paintComponent(g);
-                }
-            };
-            val.setFont(FB_13);
-            val.setForeground(PRIMARY);
-            val.setOpaque(false);
-            val.setBorder(new EmptyBorder(3, 10, 3, 10));
-            row.add(lbl, BorderLayout.WEST);
-            row.add(val, BorderLayout.EAST);
-        } else {
-            JLabel val = new JLabel(value);
-            val.setFont(FP_13);
-            val.setForeground(TEXT_DARK);
-            row.add(lbl, BorderLayout.WEST);
-            row.add(val, BorderLayout.EAST);
-        }
+        row.add(avatar);
+        row.add(Box.createHorizontalStrut(SPACE_MD));
+        row.add(nameBlock);
         return row;
     }
 
-    // ════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════════════
     //  CỘT 2 – Thông tin đăng ký
-    // ════════════════════════════════════════════════════════
-    private JPanel buildCol2() {
+    // ════════════════════════════════════════════════════════════════════
+    private JPanel createCol2() {
         JPanel col = new JPanel();
         col.setLayout(new BoxLayout(col, BoxLayout.Y_AXIS));
         col.setBackground(SURFACE_L);
-        col.setBorder(new EmptyBorder(PAD, PAD, PAD, PAD));
+        col.setBorder(new EmptyBorder(SPACE_LG, SPACE_LG, SPACE_LG, SPACE_LG));
 
-        // Tiêu đề section
-        JLabel secT = new JLabel("THÔNG TIN ĐĂNG KÝ");
-        secT.setFont(FB_10);
-        secT.setForeground(PRIMARY);
-        secT.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel sectionTitle = new JLabel("THÔNG TIN ĐĂNG KÝ");
+        sectionTitle.setFont(FONT_LABEL_LARGE);
+        sectionTitle.setForeground(PRIMARY);
+        sectionTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // ── Ngành học ───────────────────────────────────────
-        JPanel nganhBlock = new JPanel();
-        nganhBlock.setLayout(new BoxLayout(nganhBlock, BoxLayout.Y_AXIS));
-        nganhBlock.setOpaque(false);
-        nganhBlock.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel nganhCap = new JLabel("NGÀNH HỌC");
-        nganhCap.setFont(FB_10);
-        nganhCap.setForeground(TEXT_MUTED);
-
-        JLabel nganhVal = new JLabel(tenNganh + " (" + maNganh + ")");
-        nganhVal.setFont(FB_15);
-        nganhVal.setForeground(TEXT_DARK);
-
-        JLabel truongLbl = new JLabel("Trường Đại học Bách Khoa - ĐHQG TP.HCM");
-        truongLbl.setFont(FP_12);
-        truongLbl.setForeground(TEXT_MUTED);
-
-        nganhBlock.add(nganhCap);
-        nganhBlock.add(Box.createVerticalStrut(5));
-        nganhBlock.add(nganhVal);
-        nganhBlock.add(Box.createVerticalStrut(3));
-        nganhBlock.add(truongLbl);
-
-        // ── Tổ hợp + Thứ tự ─────────────────────────────────
-        // Dùng GridLayout 2 cột bên trong panel có max-height
-        JPanel bottomRow = new JPanel(new GridLayout(1, 2, 24, 0));
-        bottomRow.setOpaque(false);
-        bottomRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        bottomRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
-
-        // Trái: Tổ hợp
-        JPanel toHopPnl = new JPanel();
-        toHopPnl.setLayout(new BoxLayout(toHopPnl, BoxLayout.Y_AXIS));
-        toHopPnl.setOpaque(false);
-
-        JLabel thCap = new JLabel("TỔ HỢP XÉT TUYỂN");
-        thCap.setFont(FB_10);
-        thCap.setForeground(TEXT_MUTED);
-
-        // Badge A00 nền tối
-        JLabel badgeA00 = new JLabel("  A00  ") {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(0x0f, 0x17, 0x2a));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        badgeA00.setFont(FB_13);
-        badgeA00.setForeground(WHITE);
-        badgeA00.setOpaque(false);
-        badgeA00.setMaximumSize(new Dimension(62, 28));
-
-        JLabel monLbl = new JLabel("Toán, Lý, Hóa");
-        monLbl.setFont(FP_11);
-        monLbl.setForeground(TEXT_MUTED);
-
-        toHopPnl.add(thCap);
-        toHopPnl.add(Box.createVerticalStrut(7));
-        toHopPnl.add(badgeA00);
-        toHopPnl.add(Box.createVerticalStrut(5));
-        toHopPnl.add(monLbl);
-
-        // Phải: Thứ tự ưu tiên
-        JPanel thuTuPnl = new JPanel();
-        thuTuPnl.setLayout(new BoxLayout(thuTuPnl, BoxLayout.Y_AXIS));
-        thuTuPnl.setOpaque(false);
-
-        JLabel ttCap = new JLabel("THỨ TỰ ƯU TIÊN");
-        ttCap.setFont(FB_10);
-        ttCap.setForeground(TEXT_MUTED);
-
-        JLabel ttVal = new JLabel(thuTu);
-        ttVal.setFont(FB_28);
-        ttVal.setForeground(PRIMARY);
-
-        thuTuPnl.add(ttCap);
-        thuTuPnl.add(Box.createVerticalStrut(5));
-        thuTuPnl.add(ttVal);
-
-        bottomRow.add(toHopPnl);
-        bottomRow.add(thuTuPnl);
-
-        col.add(secT);
-        col.add(Box.createVerticalStrut(GAP + 4));
-        col.add(nganhBlock);
-        col.add(Box.createVerticalStrut(GAP + 4));
-        col.add(bottomRow);
+        col.add(sectionTitle);
+        col.add(Box.createVerticalStrut(SPACE_MD));
+        col.add(createNganhCard());
+        col.add(Box.createVerticalStrut(SPACE_LG));
+        col.add(createToHopThuTuPanel());
+        col.add(Box.createVerticalStrut(SPACE_LG));
+        col.add(createPhuongThucCard());
         col.add(Box.createVerticalGlue());
         return col;
     }
 
-    // ════════════════════════════════════════════════════════
+    private JPanel createNganhCard() {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(WHITE);
+        card.setBorder(new CompoundBorder(
+            BorderFactory.createLineBorder(BORDER_LIGHT, 1),
+            new EmptyBorder(SPACE_MD, SPACE_MD, SPACE_MD, SPACE_MD)
+        ));
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel label = new JLabel("NGÀNH HỌC");
+        label.setFont(FONT_LABEL_LARGE);
+        label.setForeground(TEXT_MUTED);
+        JLabel value = new JLabel(tenNganh + " (" + maNganh + ")");
+        value.setFont(FONT_BODY_BOLD_LARGE);
+        value.setForeground(TEXT_DARK);
+        JLabel school = new JLabel("Trường Đại học Sài Gòn");
+        school.setFont(FONT_BODY_LARGE);
+        school.setForeground(TEXT_MUTED);
+
+        card.add(label);
+        card.add(Box.createVerticalStrut(SPACE_XS));
+        card.add(value);
+        card.add(Box.createVerticalStrut(SPACE_XS));
+        card.add(school);
+        return card;
+    }
+
+    private JPanel createToHopThuTuPanel() {
+        JPanel panel = new JPanel(new GridLayout(1, 2, SPACE_LG, 0));
+        panel.setOpaque(false);
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
+
+        // Bên trái: Tổ hợp
+        JPanel toHopCard = new JPanel();
+        toHopCard.setLayout(new BoxLayout(toHopCard, BoxLayout.Y_AXIS));
+        toHopCard.setBackground(WHITE);
+        toHopCard.setBorder(new CompoundBorder(
+            BorderFactory.createLineBorder(BORDER_LIGHT, 1),
+            new EmptyBorder(SPACE_MD, SPACE_MD, SPACE_MD, SPACE_MD)
+        ));
+        JLabel thLabel = new JLabel("TỔ HỢP XÉT TUYỂN");
+        thLabel.setFont(FONT_LABEL_LARGE);
+        thLabel.setForeground(TEXT_MUTED);
+        JLabel badge = new JLabel("  " + toHop + "  ");
+        badge.setFont(FONT_BODY_BOLD_LARGE);
+        badge.setForeground(WHITE);
+        badge.setOpaque(true);
+        badge.setBackground(TEXT_DARK);
+        badge.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
+        JLabel mon = new JLabel(getToHopLabel(toHop));
+        mon.setFont(FONT_BODY_LARGE);
+        mon.setForeground(TEXT_MUTED);
+
+        toHopCard.add(thLabel);
+        toHopCard.add(Box.createVerticalStrut(SPACE_SM));
+        toHopCard.add(badge);
+        toHopCard.add(Box.createVerticalStrut(SPACE_SM));
+        toHopCard.add(mon);
+
+        // Bên phải: Thứ tự ưu tiên
+        JPanel thuTuCard = new JPanel();
+        thuTuCard.setLayout(new BoxLayout(thuTuCard, BoxLayout.Y_AXIS));
+        thuTuCard.setBackground(WHITE);
+        thuTuCard.setBorder(new CompoundBorder(
+            BorderFactory.createLineBorder(BORDER_LIGHT, 1),
+            new EmptyBorder(SPACE_MD, SPACE_MD, SPACE_MD, SPACE_MD)
+        ));
+        JLabel ttLabel = new JLabel("THỨ TỰ ƯU TIÊN");
+        ttLabel.setFont(FONT_LABEL_LARGE);
+        ttLabel.setForeground(TEXT_MUTED);
+        JLabel ttValue = new JLabel(thuTu);
+        ttValue.setFont(new Font(FONT_FAMILY, Font.BOLD, 36));  // số to hơn
+        ttValue.setForeground(PRIMARY);
+
+        thuTuCard.add(ttLabel);
+        thuTuCard.add(Box.createVerticalStrut(SPACE_SM));
+        thuTuCard.add(ttValue);
+
+        panel.add(toHopCard);
+        panel.add(thuTuCard);
+        return panel;
+    }
+
+    private JPanel createPhuongThucCard() {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(WHITE);
+        card.setBorder(new CompoundBorder(
+            BorderFactory.createLineBorder(BORDER_LIGHT, 1),
+            new EmptyBorder(SPACE_MD, SPACE_MD, SPACE_MD, SPACE_MD)
+        ));
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel label = new JLabel("PHƯƠNG THỨC");
+        label.setFont(FONT_LABEL_LARGE);
+        label.setForeground(TEXT_MUTED);
+        JLabel value = new JLabel(phuongThuc.isEmpty() ? "--" : phuongThuc);
+        value.setFont(FONT_BODY_BOLD_LARGE);
+        value.setForeground(TEXT_DARK);
+        card.add(label, BorderLayout.WEST);
+        card.add(value, BorderLayout.EAST);
+        return card;
+    }
+
+    // ════════════════════════════════════════════════════
     //  CỘT 3 – Kết quả xét tuyển
-    // ════════════════════════════════════════════════════════
-    private JPanel buildCol3() {
+    // ════════════════════════════════════════════════════════════════════
+    private JPanel createCol3() {
         JPanel col = new JPanel();
         col.setLayout(new BoxLayout(col, BoxLayout.Y_AXIS));
         col.setBackground(WHITE);
-        col.setBorder(new EmptyBorder(PAD, PAD, PAD, PAD));
+        col.setBorder(new EmptyBorder(SPACE_LG, SPACE_LG, SPACE_LG, SPACE_LG));
 
-        boolean trung = "Trúng tuyển".equals(trangThai);
+        boolean isPass = "Trúng tuyển".equals(trangThai);
+        col.add(createResultHeader(isPass));
+        col.add(Box.createVerticalStrut(SPACE_MD));
+        col.add(createScoresRow());
+        col.add(Box.createVerticalStrut(SPACE_MD));
+        col.add(createToHopRow());
+        col.add(Box.createVerticalStrut(SPACE_LG));
+        col.add(createTotalBox());
+        col.add(Box.createVerticalGlue());
+        return col;
+    }
 
-        // ── Tiêu đề + badge trạng thái ──────────────────────
-        JPanel titleRow = new JPanel(new BorderLayout());
-        titleRow.setOpaque(false);
-        titleRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
-        titleRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+    private JPanel createResultHeader(boolean isPass) {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setOpaque(false);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel secT = new JLabel("KẾT QUẢ CHI TIẾT");
-        secT.setFont(FB_10);
-        secT.setForeground(PRIMARY);
+        JLabel title = new JLabel("KẾT QUẢ CHI TIẾT");
+        title.setFont(FONT_LABEL);
+        title.setForeground(PRIMARY);
 
-        // Badge trạng thái
-        JLabel statusBadge = new JLabel("  ● " + trangThai + "  ") {
+        JLabel badge = new JLabel("  ● " + trangThai + "  ") {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(trung ? SUCCESS_BG : new Color(0xff, 0xfb, 0xeb));
+                g2.setColor(isPass ? SUCCESS_BG : new Color(0xff, 0xfb, 0xeb));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
                 g2.dispose();
                 super.paintComponent(g);
             }
         };
-        statusBadge.setFont(FB_12);
-        statusBadge.setForeground(trung ? SUCCESS_FG : new Color(0xd9, 0x77, 0x06));
-        statusBadge.setOpaque(false);
-        statusBadge.setBorder(new EmptyBorder(4, 4, 4, 4));
+        badge.setFont(FONT_LABEL);
+        badge.setForeground(isPass ? SUCCESS_FG : new Color(0xd9, 0x77, 0x06));
+        badge.setOpaque(false);
+        badge.setBorder(new EmptyBorder(SPACE_XS, SPACE_SM, SPACE_XS, SPACE_SM));
 
-        titleRow.add(secT,        BorderLayout.WEST);
-        titleRow.add(statusBadge, BorderLayout.EAST);
-
-        // ── 3 ô điểm – GridLayout để BẰNG NHAU ─────────────
-        JPanel scoresRow = new JPanel(new GridLayout(1, 3, 12, 0));
-        scoresRow.setOpaque(false);
-        scoresRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        scoresRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
-        scoresRow.add(buildScoreCard("TOÁN",    "9.0"));
-        scoresRow.add(buildScoreCard("VẬT LÝ",  "9.5"));
-        scoresRow.add(buildScoreCard("HÓA HỌC", "9.0")); // fix bị cắt chữ
-
-        // ── Điểm ưu tiên ────────────────────────────────────
-        JPanel uuRow = new JPanel(new BorderLayout());
-        uuRow.setOpaque(false);
-        uuRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-        uuRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JLabel uuLbl = new JLabel("Điểm ưu tiên");
-        uuLbl.setFont(FP_14);
-        uuLbl.setForeground(TEXT_MUTED);
-        JLabel uuVal = new JLabel("+0.75");
-        uuVal.setFont(FB_14);
-        uuVal.setForeground(TEXT_DARK);
-        uuRow.add(uuLbl, BorderLayout.WEST);
-        uuRow.add(uuVal, BorderLayout.EAST);
-
-        // ── Banner tổng điểm ─────────────────────────────────
-        JPanel totalBox = new JPanel(new BorderLayout()) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(PRIMARY);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        totalBox.setOpaque(false);
-        totalBox.setBorder(new EmptyBorder(16, 20, 16, 20));
-        totalBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 62));
-        totalBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel totalLbl = new JLabel("TỔNG ĐIỂM XÉT TUYỂN");
-        totalLbl.setFont(FB_11);
-        totalLbl.setForeground(new Color(255, 255, 255, 210));
-
-        JLabel totalVal = new JLabel(tongDiem);
-        totalVal.setFont(FB_26);
-        totalVal.setForeground(WHITE);
-
-        totalBox.add(totalLbl, BorderLayout.WEST);
-        totalBox.add(totalVal, BorderLayout.EAST);
-
-        col.add(titleRow);
-        col.add(Box.createVerticalStrut(GAP));
-        col.add(scoresRow);
-        col.add(Box.createVerticalStrut(GAP));
-        col.add(uuRow);
-        col.add(Box.createVerticalStrut(GAP));
-        col.add(totalBox);
-        col.add(Box.createVerticalGlue());
-        return col;
+        row.add(title, BorderLayout.WEST);
+        row.add(badge, BorderLayout.EAST);
+        return row;
     }
 
-    /** Ô điểm từng môn */
-    private JPanel buildScoreCard(String subject, String score) {
+    private JPanel createScoresRow() {
+        JPanel row = new JPanel(new GridLayout(1, 3, SPACE_MD, 0));
+        row.setOpaque(false);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 85));
+        row.add(createScoreCard("ĐTHXT", formatScore(diemThxt)));
+        row.add(createScoreCard("ĐIỂM CỘNG", formatScore(diemCong)));
+        row.add(createScoreCard("ĐƯT", formatScore(diemUtqd)));
+        return row;
+    }
+
+    private JPanel createScoreCard(String subject, String score) {
         JPanel card = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -521,37 +492,93 @@ public class ChiTietNguyenVong extends JDialog {
         };
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setOpaque(false);
-        card.setBorder(new EmptyBorder(12, 6, 12, 6));
+        card.setBorder(new EmptyBorder(SPACE_MD, SPACE_SM, SPACE_MD, SPACE_SM));
 
-        JLabel subL = new JLabel(subject, SwingConstants.CENTER);
-        subL.setFont(FB_10);
-        subL.setForeground(TEXT_MUTED);
-        subL.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel sub = new JLabel(subject);
+        sub.setFont(FONT_LABEL);
+        sub.setForeground(TEXT_MUTED);
+        sub.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel scoreL = new JLabel(score, SwingConstants.CENTER);
-        scoreL.setFont(new Font("SansSerif", Font.BOLD, 22));
-        scoreL.setForeground(TEXT_DARK);
-        scoreL.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel sco = new JLabel(score);
+        sco.setFont(FONT_MEDIUM_NUM);
+        sco.setForeground(TEXT_DARK);
+        sco.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        card.add(subL);
-        card.add(Box.createVerticalStrut(5));
-        card.add(scoreL);
+        card.add(sub);
+        card.add(Box.createVerticalStrut(SPACE_XS));
+        card.add(sco);
         return card;
     }
 
-    // ════════════════════════════════════════════════════════
-    //  FOOTER
-    // ════════════════════════════════════════════════════════
-    private JPanel buildFooter() {
+    private JPanel createToHopRow() {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setOpaque(false);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel label = new JLabel("Tổ hợp xét tuyển");
+        label.setFont(FONT_BODY_PLAIN);
+        label.setForeground(TEXT_MUTED);
+        JLabel value = new JLabel(toHop.isEmpty() ? "--" : toHop);
+        value.setFont(FONT_BODY_BOLD);
+        value.setForeground(TEXT_DARK);
+        row.add(label, BorderLayout.WEST);
+        row.add(value, BorderLayout.EAST);
+        return row;
+    }
+
+    private JPanel createTotalBox() {
+        JPanel box = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(PRIMARY);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        box.setOpaque(false);
+        box.setBorder(new EmptyBorder(SPACE_MD, SPACE_LG, SPACE_MD, SPACE_LG));
+        box.setMaximumSize(new Dimension(Integer.MAX_VALUE, 65));
+        box.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel label = new JLabel("TỔNG ĐIỂM XÉT TUYỂN");
+        label.setFont(FONT_LABEL);
+        label.setForeground(new Color(255, 255, 255, 210));
+
+        JLabel value = new JLabel(tongDiem);
+        value.setFont(FONT_LARGE_NUM);
+        value.setForeground(WHITE);
+
+        box.add(label, BorderLayout.WEST);
+        box.add(value, BorderLayout.EAST);
+        return box;
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  FOOTER – Các nút hành động
+    // ════════════════════════════════════════════════════════════════════
+    private JPanel createFooter() {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(SURFACE_L);
         footer.setBorder(new CompoundBorder(
-            BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER_C),
-            new EmptyBorder(14, 24, 14, 24)
+            BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER_LIGHT),
+            new EmptyBorder(SPACE_MD, SPACE_LG, SPACE_MD, SPACE_LG)
         ));
 
-        // Nút Xóa hồ sơ
-        JButton deleteBtn = new JButton("🗑  Xóa hồ sơ") {
+        JButton deleteBtn = createDeleteButton();
+        JPanel rightGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, SPACE_MD, 0));
+        rightGroup.setOpaque(false);
+        rightGroup.add(createOutlineButton("Chỉnh sửa"));
+        rightGroup.add(createPrimaryButton("Duyệt hồ sơ"));
+
+        footer.add(deleteBtn, BorderLayout.WEST);
+        footer.add(rightGroup, BorderLayout.EAST);
+        return footer;
+    }
+
+    private JButton createDeleteButton() {
+        JButton btn = new JButton("🗑  Xóa hồ sơ") {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -561,72 +588,49 @@ public class ChiTietNguyenVong extends JDialog {
                 super.paintComponent(g);
             }
         };
-        deleteBtn.setFont(FB_13);
-        deleteBtn.setForeground(ERROR_C);
-        deleteBtn.setContentAreaFilled(false);
-        deleteBtn.setBorderPainted(false);
-        deleteBtn.setFocusPainted(false);
-        deleteBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        deleteBtn.setBorder(new EmptyBorder(10, 16, 10, 16));
-        deleteBtn.addActionListener(e -> {
-            int r = JOptionPane.showConfirmDialog(this,
+        btn.setFont(FONT_BUTTON);
+        btn.setForeground(ERROR_RED);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setBorder(new EmptyBorder(SPACE_MD, SPACE_LG, SPACE_MD, SPACE_LG));
+        btn.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(this,
                 "Bạn có chắc muốn xóa hồ sơ này?", "Xác nhận xóa",
                 JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (r == JOptionPane.YES_OPTION) dispose();
+            if (confirm == JOptionPane.YES_OPTION) dispose();
         });
-
-        // Nhóm nút bên phải
-        JPanel rightGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        rightGroup.setOpaque(false);
-
-        JButton editBtn = makeOutlineBtn("Chỉnh sửa");
-        editBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
-            "Chức năng Chỉnh sửa chưa triển khai.", "Chỉnh sửa",
-            JOptionPane.INFORMATION_MESSAGE));
-
-        JButton approveBtn = makePrimaryBtn("Duyệt hồ sơ");
-        approveBtn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this,
-                "Đã duyệt hồ sơ thành công!", "Duyệt hồ sơ",
-                JOptionPane.INFORMATION_MESSAGE);
-            dispose();
-        });
-
-        rightGroup.add(editBtn);
-        rightGroup.add(approveBtn);
-
-        footer.add(deleteBtn,  BorderLayout.WEST);
-        footer.add(rightGroup, BorderLayout.EAST);
-        return footer;
+        return btn;
     }
 
-    // ════════════════════════════════════════════════════════
-    //  HELPER – Button builders
-    // ════════════════════════════════════════════════════════
-    private JButton makeOutlineBtn(String text) {
+    private JButton createOutlineButton(String text) {
         JButton btn = new JButton(text) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getModel().isRollover() ? new Color(0xf8, 0xfa, 0xfc) : WHITE);
+                g2.setColor(getModel().isRollover() ? SURFACE_L : WHITE);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                g2.setColor(BORDER_C);
-                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 10, 10);
+                g2.setColor(BORDER_LIGHT);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
                 g2.dispose();
                 super.paintComponent(g);
             }
         };
-        btn.setFont(FB_13);
+        btn.setFont(FONT_BUTTON);
         btn.setForeground(TEXT_SLATE);
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setBorder(new EmptyBorder(10, 24, 10, 24));
+        btn.setBorder(new EmptyBorder(SPACE_MD, SPACE_LG, SPACE_MD, SPACE_LG));
+        btn.addActionListener(e -> JOptionPane.showMessageDialog(this,
+            "Chức năng Chỉnh sửa chưa triển khai.", "Chỉnh sửa",
+            JOptionPane.INFORMATION_MESSAGE));
         return btn;
     }
 
-    private JButton makePrimaryBtn(String text) {
+    private JButton createPrimaryButton(String text) {
         JButton btn = new JButton(text) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -637,23 +641,43 @@ public class ChiTietNguyenVong extends JDialog {
                 super.paintComponent(g);
             }
         };
-        btn.setFont(FB_13);
+        btn.setFont(FONT_BUTTON);
         btn.setForeground(WHITE);
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setBorder(new EmptyBorder(10, 30, 10, 30));
+        btn.setBorder(new EmptyBorder(SPACE_MD, SPACE_LG, SPACE_MD, SPACE_LG));
+        btn.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this,
+                "Đã duyệt hồ sơ thành công!", "Duyệt hồ sơ",
+                JOptionPane.INFORMATION_MESSAGE);
+            dispose();
+        });
         return btn;
     }
 
-    // ════════════════════════════════════════════════════════
-    //  MAIN – test độc lập
-    // ════════════════════════════════════════════════════════
+    // ────────────────────────────── Helper ──────────────────────────────
+    private String formatScore(BigDecimal value) {
+        return (value == null) ? "--" : SCORE_FMT.format(value);
+    }
+
+    private String getToHopLabel(String code) {
+        String v = (code == null) ? "" : code.trim().toUpperCase();
+        switch (v) {
+            case "A00": return "Toán, Lý, Hóa";
+            case "A01": return "Toán, Lý, Anh";
+            case "B00": return "Toán, Hóa, Sinh";
+            case "C00": return "Văn, Sử, Địa";
+            case "C01": return "Văn, Toán, Lý";
+            case "D01": return "Văn, Toán, Anh";
+            case "D07": return "Toán, Hóa, Anh";
+            default:   return v.isEmpty() ? "--" : v;
+        }
+    }
+
+    // ────────────────────────────── Test ────────────────────────────────
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            ChiTietNguyenVong dlg = new ChiTietNguyenVong(null);
-            dlg.setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new ChiTietNguyenVong(null).setVisible(true));
     }
 }
