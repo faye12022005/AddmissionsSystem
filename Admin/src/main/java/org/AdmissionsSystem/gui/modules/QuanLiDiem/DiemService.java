@@ -253,8 +253,8 @@ public class DiemService {
 		if (cccd.isBlank()) {
 			throw new IllegalArgumentException("CCCD không được để trống.");
 		}
-		if (!cccd.matches("\\d{9,12}")) {
-			throw new IllegalArgumentException("CCCD phải có 9-12 chữ số.");
+		if (!cccd.matches("TS_\\d{4,}")) {
+			throw new IllegalArgumentException("CCCD phải theo định dạng TS_0001.");
 		}
 		if (soBaoDanh.isBlank()) {
 			throw new IllegalArgumentException("Số báo danh không được để trống.");

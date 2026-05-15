@@ -328,8 +328,8 @@ public class DiemModal extends JDialog {
 		if (cccd.isBlank()) {
 			setError("CCCD", "CCCD không được để trống");
 			hasError = true;
-		} else if (!cccd.matches("\\d{9,12}")) {
-			setError("CCCD", "CCCD phải có 9-12 chữ số");
+		} else if (!cccd.matches("TS_\\d{4,}")) {
+			setError("CCCD", "CCCD phải theo định dạng TS_0001");
 			hasError = true;
 		}
 
