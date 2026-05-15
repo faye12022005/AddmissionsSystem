@@ -102,8 +102,8 @@ public class QuanLiDiemVSATService {
 			List<String> errorMessages = new ArrayList<>();
 			if (isBlank(cccd)) {
 				errorMessages.add("CCCD không được để trống");
-			} else if (!cccd.matches("\\d{9,12}")) {
-				errorMessages.add("CCCD phải có 9-12 chữ số");
+			} else if (!cccd.matches("TS_\\d{4,}")) {
+				errorMessages.add("CCCD phải theo định dạng TS_0001");
 			}
 			if (isBlank(dotThi)) {
 				errorMessages.add("Đợt thi không được để trống");
@@ -191,8 +191,8 @@ public class QuanLiDiemVSATService {
 		if (cccd.isBlank()) {
 			throw new IllegalArgumentException("CCCD không được để trống.");
 		}
-		if (!cccd.matches("\\d{9,12}")) {
-			throw new IllegalArgumentException("CCCD phải có 9-12 chữ số.");
+		if (!cccd.matches("TS_\\d{4,}")) {
+			throw new IllegalArgumentException("CCCD phải theo định dạng TS_0001.");
 		}
 		if (dotThi.isBlank()) {
 			throw new IllegalArgumentException("Đợt thi không được để trống.");
