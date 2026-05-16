@@ -33,10 +33,14 @@ public class ThisinhPanel extends JPanel {
             "Thao tác"
     };
 
+    private static final int DB_PAGE_SIZE = 1000;
+
     private final ThiSinhService thiSinhService = new ThiSinhService();
-    private final List<Object[]> allRows = new ArrayList<>();
-    private List<Object[]> filteredRows = new ArrayList<>();
     private String currentKeyword = "";
+    private long totalRecords = 0;
+    private int lastRequestId = 0;
+    private JButton btnPrevPage;
+    private JButton btnNextPage;
 
     private final DefaultTableModel tableModel;
     private final CustomTable customTable;
@@ -46,7 +50,6 @@ public class ThisinhPanel extends JPanel {
     private final JLabel lblPageInfo = new JLabel("Trang 1/1", SwingConstants.RIGHT);
 
     private int currentPage = 1;
-    private final int pageSize = 20;
 
     private final JTextField txtCccd = new JTextField(12);
     private final JTextField txtSbd = new JTextField(10);
@@ -233,30 +236,30 @@ public class ThisinhPanel extends JPanel {
         JPanel pager = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 6));
         pager.setOpaque(false);
 
-        JButton btnPrev = new JButton("< Trang trước");
-        JButton btnNext = new JButton("Trang sau >");
+        btnPrevPage = new JButton("< Trang trước");
+        btnNextPage = new JButton("Trang sau >");
 
-        Style.stylePaginationButton(btnPrev);
-        Style.stylePaginationButton(btnNext);
+        Style.stylePaginationButton(btnPrevPage);
+        Style.stylePaginationButton(btnNextPage);
         Style.stylePaginationInfoLabel(lblPageInfo);
 
-        btnPrev.addActionListener(e -> {
+        btnPrevPage.addActionListener(e -> {
             if (currentPage > 1) {
                 currentPage--;
-                loadPage();
+                loadPageAsync();
             }
         });
 
-        btnNext.addActionListener(e -> {
+        btnNextPage.addActionListener(e -> {
             if (currentPage < getTotalPages()) {
                 currentPage++;
-                loadPage();
+                loadPageAsync();
             }
         });
 
-        pager.add(btnPrev);
+        pager.add(btnPrevPage);
         pager.add(lblPageInfo);
-        pager.add(btnNext);
+        pager.add(btnNextPage);
 
         return pager;
     }
@@ -370,18 +373,8 @@ public class ThisinhPanel extends JPanel {
 
     private void loadFromDb(String keyword) {
         currentKeyword = keyword == null ? "" : keyword.trim();
-        try {
-            List<XtThisinhxettuyen25> entities = thiSinhService.search(currentKeyword);
-            allRows.clear();
-            for (XtThisinhxettuyen25 ts : entities) {
-                allRows.add(entityToRow(ts));
-            }
-            filteredRows = new ArrayList<>(allRows);
-            currentPage = 1;
-            loadPage();
-        } catch (Exception e) {
-            ToastThiSinh.showError(this, "Lỗi tải dữ liệu: " + e.getMessage());
-        }
+        currentPage = 1;
+        loadPageAsync();
     }
 
     private Object[] entityToRow(XtThisinhxettuyen25 ts) {
@@ -432,34 +425,68 @@ public class ThisinhPanel extends JPanel {
         loadFromDb(keyword);
     }
 
-    private void loadPage() {
-        tableModel.setRowCount(0);
+    private void loadPageAsync() {
+        final int requestId = ++lastRequestId;
+        final int pageToLoad = currentPage;
+        final String keyword = currentKeyword;
+        setLoadingState(true);
 
-        if (filteredRows.isEmpty()) {
-            lblPageInfo.setText("Trang 1/1");
-            return;
-        }
+        new SwingWorker<PageResult, Void>() {
+            @Override
+            protected PageResult doInBackground() {
+                List<XtThisinhxettuyen25> entities = thiSinhService.searchPaginated(keyword, pageToLoad, DB_PAGE_SIZE);
+                long total = thiSinhService.countByKeyword(keyword);
+                List<Object[]> rows = new ArrayList<>(entities.size());
+                for (XtThisinhxettuyen25 ts : entities) {
+                    rows.add(entityToRow(ts));
+                }
+                return new PageResult(rows, total);
+            }
 
-        int totalPages = getTotalPages();
-        if (currentPage > totalPages) {
-            currentPage = totalPages;
-        }
+            @Override
+            protected void done() {
+                try {
+                    if (requestId != lastRequestId) {
+                        return;
+                    }
 
-        int from = (currentPage - 1) * pageSize;
-        int to = Math.min(from + pageSize, filteredRows.size());
+                    PageResult result = get();
+                    totalRecords = result.totalRecords();
 
-        for (int i = from; i < to; i++) {
-            tableModel.addRow(filteredRows.get(i));
-        }
+                    tableModel.setRowCount(0);
+                    for (Object[] row : result.rows()) {
+                        tableModel.addRow(row);
+                    }
 
-        lblPageInfo.setText("Trang " + currentPage + "/" + totalPages + " - Tổng " + filteredRows.size() + " bản ghi");
+                    int totalPages = getTotalPages();
+                    lblPageInfo.setText("Trang " + currentPage + "/" + totalPages + " - Tổng " + totalRecords + " bản ghi");
+                } catch (Exception e) {
+                    ToastThiSinh.showError(ThisinhPanel.this, "Lỗi tải dữ liệu: " + e.getMessage());
+                } finally {
+                    setLoadingState(false);
+                }
+            }
+        }.execute();
     }
 
     private int getTotalPages() {
-        if (filteredRows.isEmpty()) {
+        if (totalRecords <= 0) {
             return 1;
         }
-        return (int) Math.ceil(filteredRows.size() * 1.0 / pageSize);
+        return (int) Math.ceil(totalRecords * 1.0 / DB_PAGE_SIZE);
+    }
+
+    private void setLoadingState(boolean loading) {
+        setCursor(loading ? Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR) : Cursor.getDefaultCursor());
+        if (btnPrevPage != null) {
+            btnPrevPage.setEnabled(!loading && currentPage > 1);
+        }
+        if (btnNextPage != null) {
+            btnNextPage.setEnabled(!loading && currentPage < getTotalPages());
+        }
+    }
+
+    private record PageResult(List<Object[]> rows, long totalRecords) {
     }
 
     private void clearForm() {

@@ -21,7 +21,7 @@ public class DiemPaginationPanel extends JPanel {
 	private final JLabel lblPageJump = new JLabel("Trang:");
 	private final JSpinner spnPage = new JSpinner(new SpinnerNumberModel(1, 1, 1, 1));
 	private final JLabel lblPageInfo = new JLabel("Trang 1/1", SwingConstants.RIGHT);
-	private final JComboBox<Integer> cboPageSize = new JComboBox<>(new Integer[] { 10, 20, 50, 100 });
+	private final JComboBox<Integer> cboPageSize = new JComboBox<>(new Integer[] { 10, 20, 50, 100, 200, 500, 1000 });
 	private boolean isUpdatingPage;
 	private IntConsumer pageJumpListener;
 

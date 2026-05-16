@@ -10,23 +10,23 @@ public class AppConfig {
     }
 
     public static String getDbHost() {
-        return getEnv("DB_HOST", "localhost");
+        return getEnv("DB_HOST", "");
     }
 
     public static String getDbPort() {
-        return getEnv("DB_PORT", "3306");
+        return getEnv("DB_PORT", "");
     }
 
     public static String getDbName() {
-        return getEnv("DB_NAME", "db_admissionssystem");
+        return getEnv("DB_NAME", "");
     }
 
     public static String getDbUser() {
-        return getEnv("DB_USER", "root");
+        return getEnv("DB_USER", "");
     }
 
     public static String getDbPassword() {
-        return getEnv("DB_PASSWORD", "Hoangphuong9812113");
+        return getEnv("DB_PASSWORD", "");
     }
 
     public static String getDbDriver() {
@@ -77,16 +77,31 @@ public class AppConfig {
         return Integer.parseInt(getEnv("HIBERNATE_JDBC_FETCH_SIZE", "50"));
     }
 
+    public static boolean isHibernateUseSecondLevelCache() {
+        return Boolean.parseBoolean(getEnv("HIBERNATE_USE_SECOND_LEVEL_CACHE", "false"));
+    }
+
+    public static boolean isHibernateUseQueryCache() {
+        return Boolean.parseBoolean(getEnv("HIBERNATE_USE_QUERY_CACHE", "false"));
+    }
+
     public static boolean getGloballyQuotedIdentifiers() {
         return Boolean.parseBoolean(getEnv("HIBERNATE_GLOBALLY_QUOTED_IDENTIFIERS", "true"));
     }
 
+    public static String getJdbcParams() {
+        return getEnv(
+                "JDBC_PARAMS",
+                "useCursorFetch=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC");
+    }
+
     public static String getJdbcUrl() {
         return String.format(
-                "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC",
+                "jdbc:mysql://%s:%s/%s?%s",
                 getDbHost(),
                 getDbPort(),
-                getDbName());
+                getDbName(),
+                getJdbcParams());
     }
 
     private static String getEnv(String key, String defaultValue) {

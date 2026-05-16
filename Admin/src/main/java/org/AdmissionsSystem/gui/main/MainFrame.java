@@ -3,7 +3,6 @@ package org.AdmissionsSystem.gui.main;
 import javax.swing.*;
 
 import org.AdmissionsSystem.config.AppConfig;
-import org.AdmissionsSystem.gui.common.Searchable;
 import org.AdmissionsSystem.gui.modules.Login.LoginFrame;
 import org.AdmissionsSystem.gui.modules.Dashboard.DashboardPanel;
 import org.AdmissionsSystem.gui.modules.QuanLiBangQuyDoi.BangQuyDoiPanel;
@@ -16,6 +15,10 @@ import org.AdmissionsSystem.gui.modules.QuanLyThiSinh.ThisinhPanel;
 import org.AdmissionsSystem.gui.modules.QuanLyToHopMon.ToHopMonPanelSwing;
 import org.AdmissionsSystem.gui.modules.QuanlyNganh.NganhHocPanel;
 import java.awt.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.Supplier;
 
 public class MainFrame extends JFrame {
 
@@ -23,6 +26,8 @@ public class MainFrame extends JFrame {
     private final JPanel centerPanel = new JPanel(cardLayout);
     private final LoginFrame loginFrame;
     private final HeaderPanel header;
+    private final Map<String, Supplier<JPanel>> panelFactories = new LinkedHashMap<>();
+    private final Map<String, JPanel> loadedPanels = new HashMap<>();
 
     public MainFrame() {
         this(null, "Lê Minh Anh", "Admin");
@@ -39,20 +44,9 @@ public class MainFrame extends JFrame {
         setLayout(new BorderLayout());
 
         centerPanel.setBackground(new Color(248, 250, 252));
+        registerPanelFactories();
 
         SidebarPanel sidebar = new SidebarPanel(displayName, role, this::logoutToLogin);
-
-        // create screens
-        centerPanel.add(new DashboardPanel(), "dashboard");
-        centerPanel.add(new UsersPanel(), "users");
-        centerPanel.add(new ThisinhPanel(), "thisinh");
-        centerPanel.add(new NganhHocPanel(), "nganh");
-        centerPanel.add(new NganhToHopPanel(), "nganh_tohop");
-        centerPanel.add(new DiemThiSinhPanel(), "diem_thisinh");
-        centerPanel.add(new DiemCongPanel(), "diem_cong");
-        centerPanel.add(new ToHopMonPanelSwing(), "tohop");
-        centerPanel.add(new NguyenVongPanel(), "nguyenvong");
-        centerPanel.add(new BangQuyDoiPanel(), "bang_quydoi");
 
         // right content area: just center content
         add(sidebar, BorderLayout.WEST);
@@ -84,17 +78,48 @@ public class MainFrame extends JFrame {
                 continue;
             final String finalCard = card;
             btn.addActionListener(e -> {
-                cardLayout.show(centerPanel, finalCard);
+                showCard(finalCard);
             });
         }
 
-        // // show diem_cong panel by default
-        // showCard("diem_cong");
+        // chỉ tải dashboard lúc đầu, các màn còn lại tải khi user mở tab
+        showCard("dashboard");
     }
 
     public void showCard(String card) {
+        ensurePanelLoaded(card);
         cardLayout.show(centerPanel, card);
         updateSearchPlaceholder(card);
+    }
+
+    private void registerPanelFactories() {
+        panelFactories.put("dashboard", DashboardPanel::new);
+        panelFactories.put("users", UsersPanel::new);
+        panelFactories.put("thisinh", ThisinhPanel::new);
+        panelFactories.put("nganh", NganhHocPanel::new);
+        panelFactories.put("tohop", ToHopMonPanelSwing::new);
+        panelFactories.put("nganh_tohop", NganhToHopPanel::new);
+        panelFactories.put("diem_thisinh", DiemThiSinhPanel::new);
+        panelFactories.put("diem_cong", DiemCongPanel::new);
+        panelFactories.put("nguyenvong", NguyenVongPanel::new);
+        panelFactories.put("bang_quydoi", BangQuyDoiPanel::new);
+    }
+
+    private void ensurePanelLoaded(String card) {
+        if (card == null || loadedPanels.containsKey(card)) {
+            return;
+        }
+
+        Supplier<JPanel> factory = panelFactories.get(card);
+        if (factory == null) {
+            return;
+        }
+
+        JPanel panel = factory.get();
+        loadedPanels.put(card, panel);
+        centerPanel.add(panel, card);
+        centerPanel.revalidate();
+        centerPanel.repaint();
     }
 
     private void updateSearchPlaceholder(String card) {
