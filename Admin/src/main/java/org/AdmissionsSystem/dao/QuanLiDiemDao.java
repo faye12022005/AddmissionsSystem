@@ -123,6 +123,10 @@ public class QuanLiDiemDao extends AbstractCrudDao<XtDiemthixettuyen, Integer> {
 		}
 	}
 
+	public List<XtDiemthixettuyen> findPage(String searchText, String phuongThucCode, int page, int pageSize) {
+		return findPage(searchText, phuongThucCode, List.of(), page, pageSize);
+	}
+
 	public long countFiltered(String searchText, String phuongThucCode, List<String> cccdMatches) {
 		try (Session session = getSessionFactory().openSession()) {
 			StringBuilder hql = new StringBuilder("SELECT COUNT(*) FROM XtDiemthixettuyen WHERE 1=1");
@@ -154,6 +158,10 @@ public class QuanLiDiemDao extends AbstractCrudDao<XtDiemthixettuyen, Integer> {
 			Long total = query.uniqueResult();
 			return total == null ? 0L : total;
 		}
+	}
+
+	public long countFiltered(String searchText, String phuongThucCode) {
+		return countFiltered(searchText, phuongThucCode, List.of());
 	}
 
 	private List<String> toLowerList(List<String> values) {
