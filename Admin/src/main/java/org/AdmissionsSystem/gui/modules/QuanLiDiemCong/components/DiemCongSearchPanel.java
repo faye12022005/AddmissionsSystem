@@ -13,7 +13,7 @@ public class DiemCongSearchPanel extends JPanel {
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
         setOpaque(false);
 
-        JLabel label = new JLabel("Tìm kiếm:");
+        JLabel label = new JLabel("CCCD:");
         label.setFont(Style.TABLE_FONT);
 
         searchField = new JTextField();

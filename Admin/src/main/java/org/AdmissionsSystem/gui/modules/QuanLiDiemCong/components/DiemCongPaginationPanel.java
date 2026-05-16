@@ -1,76 +1,61 @@
 package org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components;
 
 import org.AdmissionsSystem.gui.common.Style;
-import javax.swing.*;
-import java.awt.*;
-import java.util.function.Consumer;
+
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import java.awt.FlowLayout;
+import java.util.function.IntConsumer;
 
 public class DiemCongPaginationPanel extends JPanel {
-    private final JLabel pageInfoLabel;
-    private final JButton prevBtn;
-    private final JButton nextBtn;
-    private final JComboBox<Integer> pageSizeCombo;
-    private Runnable onPrev;
-    private Runnable onNext;
-    private Consumer<Integer> onPageSizeChange;
+    private final JButton btnPrev = new JButton("<");
+    private final JButton btnNext = new JButton(">");
+    private final JLabel lblPageInfo = new JLabel("Trang 1/1", SwingConstants.RIGHT);
+    private final JComboBox<Integer> cboPageSize = new JComboBox<>(new Integer[]{10, 20, 50, 100});
 
     public DiemCongPaginationPanel(int initialPageSize) {
-        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+        setLayout(new FlowLayout(FlowLayout.RIGHT, 8, 6));
         setOpaque(false);
-        setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        pageInfoLabel = new JLabel("Trang 1 / 1 (0 dòng)");
-        pageInfoLabel.setFont(Style.TABLE_FONT);
+        Style.stylePaginationInfoLabel(lblPageInfo);
+        Style.stylePaginationCombo(cboPageSize);
+        Style.stylePaginationButton(btnPrev);
+        Style.stylePaginationButton(btnNext);
 
-        prevBtn = new JButton("< Trang trước");
-        nextBtn = new JButton("Trang sau >");
-        Style.styleFunctionButton(prevBtn, Style.BTN_FILTER_RESET);
-        Style.styleFunctionButton(nextBtn, Style.BTN_FILTER_RESET);
-        prevBtn.addActionListener(e -> {
-            if (onPrev != null) onPrev.run();
-        });
-        nextBtn.addActionListener(e -> {
-            if (onNext != null) onNext.run();
-        });
+        cboPageSize.setSelectedItem(initialPageSize);
 
-        Integer[] sizes = {10, 20, 50, 100};
-        pageSizeCombo = new JComboBox<>(sizes);
-        pageSizeCombo.setSelectedItem(initialPageSize);
-        pageSizeCombo.addActionListener(e -> {
-            if (onPageSizeChange != null) {
-                onPageSizeChange.accept((Integer) pageSizeCombo.getSelectedItem());
+        add(cboPageSize);
+        add(btnPrev);
+        add(btnNext);
+        add(lblPageInfo);
+    }
+
+    public void setOnPageSizeChange(IntConsumer callback) {
+        cboPageSize.addActionListener(e -> {
+            Integer selected = (Integer) cboPageSize.getSelectedItem();
+            if (selected != null) {
+                callback.accept(selected);
             }
         });
-
-        add(pageInfoLabel);
-        add(Box.createHorizontalGlue());
-        add(new JLabel("Kích thước trang:"));
-        add(Box.createRigidArea(new Dimension(8, 0)));
-        add(pageSizeCombo);
-        add(Box.createRigidArea(new Dimension(16, 0)));
-        add(prevBtn);
-        add(Box.createRigidArea(new Dimension(8, 0)));
-        add(nextBtn);
-    }
-
-    public void setPageInfo(int currentPage, int totalPages, int totalRows) {
-        pageInfoLabel.setText("Trang " + currentPage + " / " + totalPages + " (" + totalRows + " dòng)");
-    }
-
-    public void setNavigationEnabled(boolean prevEnabled, boolean nextEnabled) {
-        prevBtn.setEnabled(prevEnabled);
-        nextBtn.setEnabled(nextEnabled);
     }
 
     public void setOnPrev(Runnable callback) {
-        this.onPrev = callback;
+        btnPrev.addActionListener(e -> callback.run());
     }
 
     public void setOnNext(Runnable callback) {
-        this.onNext = callback;
+        btnNext.addActionListener(e -> callback.run());
     }
 
-    public void setOnPageSizeChange(Consumer<Integer> callback) {
-        this.onPageSizeChange = callback;
+    public void setPageInfo(int currentPage, int totalPages, int totalRows) {
+        lblPageInfo.setText("Trang " + currentPage + "/" + totalPages + " - Tổng " + totalRows + " bản ghi");
+    }
+
+    public void setNavigationEnabled(boolean canPrev, boolean canNext) {
+        btnPrev.setEnabled(canPrev);
+        btnNext.setEnabled(canNext);
     }
 }
