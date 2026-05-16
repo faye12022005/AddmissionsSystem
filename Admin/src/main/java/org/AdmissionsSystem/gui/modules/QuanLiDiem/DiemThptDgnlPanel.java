@@ -29,7 +29,6 @@ public class DiemThptDgnlPanel extends JPanel implements DiemTabActions {
 			"ID",
 			"CCCD",
 			"Số báo danh",
-			"Họ tên",
 			"Phương thức",
 			"Toán",
 			"Lý",
@@ -94,7 +93,7 @@ public class DiemThptDgnlPanel extends JPanel implements DiemTabActions {
 			table.getColumnModel().getColumn(0).setPreferredWidth(60);
 			table.getColumnModel().getColumn(1).setPreferredWidth(120);
 			table.getColumnModel().getColumn(2).setPreferredWidth(120);
-			table.getColumnModel().getColumn(3).setPreferredWidth(160);
+			table.getColumnModel().getColumn(3).setPreferredWidth(120);
 		}
 
 		add(customTable, BorderLayout.CENTER);
@@ -366,7 +365,6 @@ public class DiemThptDgnlPanel extends JPanel implements DiemTabActions {
 				row.id(),
 				row.cccd(),
 				row.soBaoDanh(),
-				row.hoTen(),
 				row.loaiDiem(),
 				formatScore(row.to()),
 				formatScore(row.li()),
@@ -397,7 +395,6 @@ public class DiemThptDgnlPanel extends JPanel implements DiemTabActions {
 				"",
 				row.cccd(),
 				row.soBaoDanh(),
-				"",
 				row.loaiDiem(),
 				formatScore(row.to()),
 				formatScore(row.li()),

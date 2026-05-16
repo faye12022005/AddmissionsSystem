@@ -2,6 +2,7 @@ package org.AdmissionsSystem.dao;
 
 import org.AdmissionsSystem.models.XtDiemVsat;
 import org.hibernate.Session;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +23,17 @@ public class QuanLiDiemVsatDao extends AbstractCrudDao<XtDiemVsat, Integer> {
 					.setParameter("cccd", cccd.toLowerCase())
 					.setParameter("dotThi", dotThi.toLowerCase())
 					.uniqueResult();
+		}
+	}
+
+	public List<BigDecimal> fetchScores(String property) {
+		if (isBlank(property)) {
+			return List.of();
+		}
+		try (Session session = getSessionFactory().openSession()) {
+			String hql = "SELECT e." + property
+					+ " FROM XtDiemVsat e WHERE e." + property + " IS NOT NULL";
+			return session.createQuery(hql, BigDecimal.class).list();
 		}
 	}
 
