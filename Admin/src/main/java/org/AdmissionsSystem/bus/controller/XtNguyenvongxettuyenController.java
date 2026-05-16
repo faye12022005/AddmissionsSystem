@@ -16,6 +16,10 @@ public class XtNguyenvongxettuyenController {
         return service.layTatCa();
     }
 
+    public List<XtNguyenvongxettuyen> taiDuLieuTheoTrang(int page, int pageSize) {
+        return service.layTheoTrang(page, pageSize);
+    }
+
     /**
      * Tìm kiếm nguyện vọng theo từ khóa
      * @param keyword từ khóa tìm kiếm (CCCD, mã ngành, kết quả, v.v.)
