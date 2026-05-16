@@ -17,10 +17,6 @@ public class NganhHocRowMapper {
         model.setNDgnl(normalizeYn(asText(rowValue(row, 7))));
         model.setNThpt(normalizeYn(asText(rowValue(row, 8))));
         model.setNVsat(normalizeYn(asText(rowValue(row, 9))));
-        model.setSlXtt(parseInt(rowValue(row, 10)));
-        model.setSlDgnl(parseInt(rowValue(row, 11)));
-        model.setSlVsat(parseInt(rowValue(row, 12)));
-        model.setSlThpt(String.valueOf(parseInt(rowValue(row, 13))));
         return model;
     }
 
@@ -35,11 +31,23 @@ public class NganhHocRowMapper {
                 normalizeYn(model.getNTuyenthang()),
                 normalizeYn(model.getNDgnl()),
                 normalizeYn(model.getNThpt()),
-                normalizeYn(model.getNVsat()),
-                nvlInt(model.getSlXtt()),
-                nvlInt(model.getSlDgnl()),
-                nvlInt(model.getSlVsat()),
-                parseIntSafe(model.getSlThpt())
+                normalizeYn(model.getNVsat())
+        };
+    }
+
+    public Object[] toRowWithNguyenVongCount(XtNganh model, long count) {
+        return new Object[] {
+                asText(model.getManganh()),
+                asText(model.getTennganh()),
+                asText(model.getNTohopgoc()),
+                nvlInt(model.getNChitieu()),
+                nvlBigDecimal(model.getNDiemsan()),
+                nvlBigDecimal(model.getNDiemtrungtuyen()),
+                count,
+                normalizeYn(model.getNTuyenthang()),
+                normalizeYn(model.getNDgnl()),
+                normalizeYn(model.getNThpt()),
+                normalizeYn(model.getNVsat())
         };
     }
 

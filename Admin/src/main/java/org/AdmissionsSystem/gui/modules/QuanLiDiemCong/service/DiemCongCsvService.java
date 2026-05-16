@@ -1,4 +1,4 @@
-package org.AdmissionsSystem.gui.modules.QuanlyNganh.service;
+package org.AdmissionsSystem.gui.modules.QuanLiDiemCong.service;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NganhHocCsvService {
+public class DiemCongCsvService {
     public List<Object[]> readRows(Path path, String[] headers) throws IOException {
         List<Object[]> rows = new ArrayList<>();
         try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
@@ -39,8 +39,6 @@ public class NganhHocCsvService {
 
     public void writeRows(Path out, String[] headers, List<Object[]> rows) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(out, StandardCharsets.UTF_8)) {
-            // Write BOM for Excel compatibility
-            writer.write('\uFEFF');
             writer.write(String.join(",", headers));
             writer.newLine();
 
@@ -86,14 +84,14 @@ public class NganhHocCsvService {
     private Object[] toRow(List<String> cells, int lineNo) {
         try {
             return new Object[]{
-                    text(cells, 0),
+                    Integer.parseInt(text(cells, 0)),
                     text(cells, 1),
                     text(cells, 2),
-                    Integer.parseInt(text(cells, 3)),
-                    Double.parseDouble(text(cells, 4)),
+                    text(cells, 3),
+                    text(cells, 4),
                     Double.parseDouble(text(cells, 5)),
-                    text(cells, 6),
-                    text(cells, 7),
+                    Double.parseDouble(text(cells, 6)),
+                    Double.parseDouble(text(cells, 7)),
                     text(cells, 8),
                     text(cells, 9)
             };

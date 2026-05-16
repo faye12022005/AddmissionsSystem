@@ -2,14 +2,17 @@ package org.AdmissionsSystem.bus.service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.List;
 import java.util.Locale;
 import org.AdmissionsSystem.dao.NganhHocDao;
+import org.AdmissionsSystem.dao.NguyenVongDao;
 import org.AdmissionsSystem.models.XtNganh;
 
 public class NganhHocService {
 
     private final NganhHocDao dao = new NganhHocDao();
+    private final NguyenVongDao nguyenVongDao = new NguyenVongDao();
 
     public List<XtNganh> getAll() {
         return dao.findAll();
@@ -28,6 +31,10 @@ public class NganhHocService {
             }
         }
         return filtered;
+    }
+
+    public Map<String, Long> loadNguyenVongCounts() {
+        return nguyenVongDao.countByMaNganh();
     }
 
     public void add(XtNganh model) {

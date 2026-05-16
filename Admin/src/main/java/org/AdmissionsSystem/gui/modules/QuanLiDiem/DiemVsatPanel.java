@@ -3,6 +3,7 @@ package org.AdmissionsSystem.gui.modules.QuanLiDiem;
 import org.AdmissionsSystem.bus.controller.QuanLiDiemController;
 import org.AdmissionsSystem.gui.components.CustomTable;
 import org.AdmissionsSystem.gui.components.Toast;
+import org.AdmissionsSystem.bus.service.QuanLiDiem.PagedResult;
 import org.AdmissionsSystem.bus.service.QuanLiDiem.QuanLiDiemVSATService;
 
 import javax.swing.BorderFactory;
@@ -24,7 +25,6 @@ public class DiemVsatPanel extends JPanel implements DiemTabActions {
 	private static final String[] COLUMN_NAMES = {
 			"ID",
 			"CCCD",
-			"Họ tên",
 			"Đợt thi",
 			"Toán",
 			"Văn",
@@ -51,8 +51,8 @@ public class DiemVsatPanel extends JPanel implements DiemTabActions {
 	private int currentPage = 1;
 	private int pageSize = DEFAULT_PAGE_SIZE;
 	private String currentSearchText = "";
-	private List<QuanLiDiemVSATService.VsatRecord> currentRows = new ArrayList<>();
 	private List<QuanLiDiemVSATService.VsatRecord> currentPageRows = new ArrayList<>();
+	private long totalRows;
 
 	public DiemVsatPanel(QuanLiDiemController controller) {
 		this.controller = controller;
@@ -67,8 +67,7 @@ public class DiemVsatPanel extends JPanel implements DiemTabActions {
 		if (table.getColumnModel().getColumnCount() > 0) {
 			table.getColumnModel().getColumn(0).setPreferredWidth(60);
 			table.getColumnModel().getColumn(1).setPreferredWidth(120);
-			table.getColumnModel().getColumn(2).setPreferredWidth(160);
-			table.getColumnModel().getColumn(3).setPreferredWidth(120);
+			table.getColumnModel().getColumn(2).setPreferredWidth(120);
 		}
 
 		add(customTable, BorderLayout.CENTER);
@@ -93,6 +92,14 @@ public class DiemVsatPanel extends JPanel implements DiemTabActions {
 		paginationPanel.setOnNext(() -> {
 			if (currentPage < getTotalPages()) {
 				currentPage++;
+				loadPage();
+			}
+		});
+		paginationPanel.setOnPageJump(page -> {
+			int totalPages = getTotalPages();
+			int nextPage = Math.min(Math.max(1, page), totalPages);
+			if (nextPage != currentPage) {
+				currentPage = nextPage;
 				loadPage();
 			}
 		});
@@ -266,7 +273,6 @@ public class DiemVsatPanel extends JPanel implements DiemTabActions {
 	}
 
 	private void reloadTable() {
-		currentRows = controller.getDanhSachVsat(currentSearchText);
 		currentPage = 1;
 		loadPage();
 	}
@@ -275,35 +281,40 @@ public class DiemVsatPanel extends JPanel implements DiemTabActions {
 		tableModel.setRowCount(0);
 		currentPageRows = new ArrayList<>();
 
-		if (currentRows.isEmpty()) {
-			paginationPanel.setPageInfo(1, 1, 0);
-			paginationPanel.setNavigationEnabled(false, false);
-			return;
-		}
+		PagedResult<QuanLiDiemVSATService.VsatRecord> pageResult = controller.getDanhSachVsatPage(
+				currentSearchText,
+				currentPage,
+				pageSize);
+		totalRows = pageResult.totalRows();
 
 		int totalPages = getTotalPages();
 		if (currentPage > totalPages) {
 			currentPage = totalPages;
+			pageResult = controller.getDanhSachVsatPage(currentSearchText, currentPage, pageSize);
+			totalRows = pageResult.totalRows();
 		}
 
-		int from = (currentPage - 1) * pageSize;
-		int to = Math.min(from + pageSize, currentRows.size());
+		List<QuanLiDiemVSATService.VsatRecord> rows = pageResult.rows();
+		if (rows == null || rows.isEmpty()) {
+			paginationPanel.setPageInfo(currentPage, totalPages, totalRows);
+			paginationPanel.setNavigationEnabled(false, false);
+			return;
+		}
 
-		for (int i = from; i < to; i++) {
-			QuanLiDiemVSATService.VsatRecord row = currentRows.get(i);
+		for (QuanLiDiemVSATService.VsatRecord row : rows) {
 			currentPageRows.add(row);
 			tableModel.addRow(toRow(row));
 		}
 
-		paginationPanel.setPageInfo(currentPage, totalPages, currentRows.size());
+		paginationPanel.setPageInfo(currentPage, totalPages, totalRows);
 		paginationPanel.setNavigationEnabled(currentPage > 1, currentPage < totalPages);
 	}
 
 	private int getTotalPages() {
-		if (currentRows.isEmpty()) {
+		if (totalRows <= 0) {
 			return 1;
 		}
-		return (int) Math.ceil(currentRows.size() * 1.0 / pageSize);
+		return (int) Math.ceil(totalRows * 1.0 / pageSize);
 	}
 
 	private QuanLiDiemVSATService.VsatRecord selectedRecord() {
@@ -323,7 +334,6 @@ public class DiemVsatPanel extends JPanel implements DiemTabActions {
 		return new Object[] {
 				row.id(),
 				row.cccd(),
-				row.hoTen(),
 				row.dotThi(),
 				formatScore(row.toan()),
 				formatScore(row.van()),
@@ -340,7 +350,6 @@ public class DiemVsatPanel extends JPanel implements DiemTabActions {
 		return new Object[] {
 				"",
 				row.cccd(),
-				"",
 				row.dotThi(),
 				formatScore(row.toan()),
 				formatScore(row.van()),

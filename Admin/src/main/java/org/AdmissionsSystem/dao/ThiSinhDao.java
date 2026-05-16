@@ -44,6 +44,8 @@ public class ThiSinhDao extends AbstractCrudDao<XtThisinhxettuyen25, Integer> {
                     "FROM XtThisinhxettuyen25 WHERE lower(cccd) LIKE :q OR lower(ho) LIKE :q OR lower(ten) LIKE :q OR lower(sobaodanh) LIKE :q",
                     XtThisinhxettuyen25.class)
                     .setParameter("q", q)
+                    .setFetchSize(1000)
+                    .setReadOnly(true)
                     .list();
         }
     }
@@ -53,6 +55,8 @@ public class ThiSinhDao extends AbstractCrudDao<XtThisinhxettuyen25, Integer> {
             return session.createQuery("FROM XtThisinhxettuyen25 ORDER BY idthisinh", XtThisinhxettuyen25.class)
                     .setFirstResult((page - 1) * pageSize)
                     .setMaxResults(pageSize)
+                    .setFetchSize(pageSize)
+                    .setReadOnly(true)
                     .list();
         }
     }
@@ -66,6 +70,8 @@ public class ThiSinhDao extends AbstractCrudDao<XtThisinhxettuyen25, Integer> {
                     .setParameter("q", q)
                     .setFirstResult((page - 1) * pageSize)
                     .setMaxResults(pageSize)
+                    .setFetchSize(pageSize)
+                    .setReadOnly(true)
                     .list();
         }
     }

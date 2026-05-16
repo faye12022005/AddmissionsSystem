@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.AdmissionsSystem.gui.components.ImportExcel;
 import org.AdmissionsSystem.bus.service.QuanLiDiem.QuanLiDiemService;
 import org.AdmissionsSystem.bus.service.QuanLiDiem.QuanLiDiemVSATService;
+import org.AdmissionsSystem.bus.service.QuanLiDiem.PagedResult;
 
 public class QuanLiDiemController {
 	private final QuanLiDiemService thptDgnlService = new QuanLiDiemService();
@@ -15,6 +16,11 @@ public class QuanLiDiemController {
 
 	public List<QuanLiDiemService.DiemRecord> getDanhSach(String searchText, String loaiDiem) {
 		return thptDgnlService.query(searchText, loaiDiem);
+	}
+
+	public PagedResult<QuanLiDiemService.DiemRecord> getDanhSachPage(String searchText, String loaiDiem, int page,
+			int pageSize) {
+		return thptDgnlService.queryPage(searchText, loaiDiem, page, pageSize);
 	}
 
 	public QuanLiDiemService.DiemRecord them(QuanLiDiemService.DiemInput input) {
@@ -48,6 +54,11 @@ public class QuanLiDiemController {
 
 	public List<QuanLiDiemVSATService.VsatRecord> getDanhSachVsat(String searchText) {
 		return vsatService.query(searchText);
+	}
+
+	public PagedResult<QuanLiDiemVSATService.VsatRecord> getDanhSachVsatPage(String searchText, int page,
+			int pageSize) {
+		return vsatService.queryPage(searchText, page, pageSize);
 	}
 
 	public QuanLiDiemVSATService.VsatRecord themVsat(QuanLiDiemVSATService.VsatInput input) {

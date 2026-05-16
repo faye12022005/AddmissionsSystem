@@ -84,6 +84,11 @@ public class HibernateUtil {
 
         properties.put("hibernate.jdbc.batch_size", String.valueOf(AppConfig.getJdbcBatchSize()));
         properties.put("hibernate.jdbc.fetch_size", String.valueOf(AppConfig.getJdbcFetchSize()));
+        properties.put("hibernate.cache.use_second_level_cache",
+                String.valueOf(AppConfig.isHibernateUseSecondLevelCache()));
+        properties.put("hibernate.cache.use_query_cache", String.valueOf(AppConfig.isHibernateUseQueryCache()));
+        properties.put("hibernate.order_inserts", "true");
+        properties.put("hibernate.order_updates", "true");
 
         // Enable backtick quoting for all identifiers to handle reserved keywords as
         // column names

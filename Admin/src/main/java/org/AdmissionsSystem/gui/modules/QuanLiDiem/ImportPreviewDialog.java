@@ -128,6 +128,14 @@ public class ImportPreviewDialog extends JDialog {
 				loadPage();
 			}
 		});
+		paginationPanel.setOnPageJump(page -> {
+			int totalPages = getTotalPages();
+			int nextPage = Math.min(Math.max(1, page), totalPages);
+			if (nextPage != currentPage) {
+				currentPage = nextPage;
+				loadPage();
+			}
+		});
 
 		loadPage();
 	}
@@ -151,7 +159,7 @@ public class ImportPreviewDialog extends JDialog {
 		tableModel.setRowCount(0);
 
 		if (rows.isEmpty()) {
-			paginationPanel.setPageInfo(1, 1, 0);
+			paginationPanel.setPageInfo(1, 1, 0L);
 			paginationPanel.setNavigationEnabled(false, false);
 			return;
 		}

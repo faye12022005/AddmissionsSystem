@@ -1,13 +1,19 @@
 package org.AdmissionsSystem.gui.modules.QuanLiDiemCong;
 
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 
-import org.AdmissionsSystem.bus.service.DiemCongService;
+import org.AdmissionsSystem.bus.controller.DiemCongController;
 import org.AdmissionsSystem.gui.common.Style;
 import org.AdmissionsSystem.gui.components.CustomTable;
 import org.AdmissionsSystem.gui.components.Toast;
+import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongFormPanel;
+import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongPaginationPanel;
+import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongSearchPanel;
+import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongTable;
 import org.AdmissionsSystem.models.XtDiemcongxetuyen;
 
 import java.awt.*;
@@ -21,9 +27,14 @@ public class DiemCongPanel extends JPanel {
         "Phương thức", "Điểm CC", "Điểm UTXT", "Điểm tổng", "Ghi chú", "DC Keys"
     };
 
-    private final DiemCongService service = new DiemCongService();
+    private final DiemCongController controller = new DiemCongController();
     private final DefaultTableModel tableModel;
     private JTable table;
+    private DiemCongTable tableView;
+    private DiemCongSearchPanel searchPanel;
+    private DiemCongFormPanel formPanel;
+    private DiemCongPaginationPanel paginationPanel;
+    private int pageSize = 20;
 
     // Form fields
     private final JTextField idField = new JTextField();
@@ -45,29 +56,40 @@ public class DiemCongPanel extends JPanel {
         title.setBorder(BorderFactory.createEmptyBorder(12, 12, 8, 12));
         title.setFont(Style.TITLE_FONT);
 
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setOpaque(false);
-        topPanel.add(title, BorderLayout.NORTH);
-        topPanel.add(createActionPanel(), BorderLayout.SOUTH);
-        add(topPanel, BorderLayout.NORTH);
-
         tableModel = new DefaultTableModel(COLS, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
         };
 
-        JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.setOpaque(false);
-        contentPanel.add(createFormPanel(), BorderLayout.NORTH);
+        tableView = new DiemCongTable(tableModel);
+        searchPanel = new DiemCongSearchPanel();
+        formPanel = new DiemCongFormPanel();
+        paginationPanel = new DiemCongPaginationPanel(pageSize);
 
+        // NORTH panel: title + action buttons + form
+        JPanel northPanel = new JPanel(new BorderLayout());
+        northPanel.setOpaque(false);
+        northPanel.add(title, BorderLayout.NORTH);
+        
+        JPanel actionAndFormPanel = new JPanel(new BorderLayout());
+        actionAndFormPanel.setOpaque(false);
+        actionAndFormPanel.add(createActionPanel(), BorderLayout.NORTH);
+        actionAndFormPanel.add(createFormPanel(), BorderLayout.CENTER);
+        
+        northPanel.add(actionAndFormPanel, BorderLayout.CENTER);
+        add(northPanel, BorderLayout.NORTH);
+
+        // CENTER panel: table only
         CustomTable ct = new CustomTable(tableModel);
         table = ct.getTable();
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) onRowSelected();
         });
-        contentPanel.add(ct, BorderLayout.CENTER);
-        add(contentPanel, BorderLayout.CENTER);
+        add(ct, BorderLayout.CENTER);
+
+        // SOUTH panel: pagination
+        add(paginationPanel, BorderLayout.SOUTH);
 
         loadData();
     }
@@ -80,11 +102,13 @@ public class DiemCongPanel extends JPanel {
         JButton addBtn = new JButton("Thêm điểm cộng");
         JButton editBtn = new JButton("Sửa điểm cộng");
         JButton deleteBtn = new JButton("Xóa điểm cộng");
+        JButton exportBtn = new JButton("Export CSV");
         JButton refreshBtn = new JButton("Làm mới");
 
         styleButtonGreen(addBtn);
         styleButtonBlue(editBtn);
         styleButtonRed(deleteBtn);
+        styleButtonBlue(exportBtn);
         styleButtonGray(refreshBtn);
 
         addBtn.addActionListener(e -> onAdd());
@@ -95,13 +119,14 @@ public class DiemCongPanel extends JPanel {
         actionPanel.add(addBtn);
         actionPanel.add(editBtn);
         actionPanel.add(deleteBtn);
+        actionPanel.add(exportBtn);
         actionPanel.add(refreshBtn);
 
         return actionPanel;
     }
 
     private void loadData() {
-        List<XtDiemcongxetuyen> rows = service.getAll();
+        List<XtDiemcongxetuyen> rows = controller.getAll();
         tableModel.setRowCount(0);
         for (XtDiemcongxetuyen r : rows) {
             tableModel.addRow(new Object[]{
@@ -130,8 +155,26 @@ public class DiemCongPanel extends JPanel {
 
     private void onAdd() {
         try {
+            // Validation
+            if (cccdField.getText().isBlank()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập TS CCCD.");
+                return;
+            }
+            if (nganhField.getText().isBlank()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập Mã ngành.");
+                return;
+            }
+            if (tohopField.getText().isBlank()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập Mã tổ hợp.");
+                return;
+            }
+            if (diemCCField.getText().isBlank()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập Điểm CC.");
+                return;
+            }
+            
             XtDiemcongxetuyen entity = collectForm();
-            service.add(entity);
+            controller.add(entity);
             loadData();
             clearForm();
             Toast.showToast(this, "Đã thêm điểm cộng.", false);
@@ -145,10 +188,27 @@ public class DiemCongPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Chọn dòng cần sửa.");
             return;
         }
+        // Validation
+        if (cccdField.getText().isBlank()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập TS CCCD.");
+            return;
+        }
+        if (nganhField.getText().isBlank()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập Mã ngành.");
+            return;
+        }
+        if (tohopField.getText().isBlank()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập Mã tổ hợp.");
+            return;
+        }
+        if (diemCCField.getText().isBlank()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập Điểm CC.");
+            return;
+        }
         try {
             XtDiemcongxetuyen entity = collectForm();
             entity.setIddiemcong(Integer.parseInt(idField.getText().trim()));
-            service.update(entity);
+                controller.update(entity);
             loadData();
             Toast.showToast(this, "Đã cập nhật điểm cộng.", false);
         } catch (Exception ex) {
@@ -164,7 +224,7 @@ public class DiemCongPanel extends JPanel {
         int confirm = JOptionPane.showConfirmDialog(this, "Xóa bản ghi này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
         if (confirm != JOptionPane.YES_OPTION) return;
         try {
-            service.delete(Integer.parseInt(idField.getText().trim()));
+            controller.delete(Integer.parseInt(idField.getText().trim()));
             loadData();
             clearForm();
             Toast.showToast(this, "Đã xóa điểm cộng.", false);

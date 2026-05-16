@@ -19,14 +19,11 @@ public class NganhHocFormPanel extends JPanel {
     private final JTextField txtChiTieu = new JTextField(6);
     private final JTextField txtDiemSan = new JTextField(6);
     private final JTextField txtDiemTrungTuyen = new JTextField(6);
+    private final JTextField txtSoNguyenVong = new JTextField(6);
     private final JCheckBox chkTuyenThang = new JCheckBox("Tuyển thẳng");
     private final JCheckBox chkDGNL = new JCheckBox("Sử dụng DGNL");
     private final JCheckBox chkTHPT = new JCheckBox("Sử dụng THPT");
     private final JCheckBox chkVSAT = new JCheckBox("Sử dụng VSAT");
-    private final JTextField txtSlXetTuyen = new JTextField(8);
-    private final JTextField txtSlDGNL = new JTextField(8);
-    private final JTextField txtSlVSAT = new JTextField(8);
-    private final JTextField txtSlTHPT = new JTextField(8);
 
     public NganhHocFormPanel() {
         setOpaque(false);
@@ -48,10 +45,7 @@ public class NganhHocFormPanel extends JPanel {
         txtChiTieu.setEditable(false);
         txtDiemSan.setEditable(false);
         txtDiemTrungTuyen.setEditable(false);
-        txtSlXetTuyen.setEditable(false);
-        txtSlDGNL.setEditable(false);
-        txtSlVSAT.setEditable(false);
-        txtSlTHPT.setEditable(false);
+        txtSoNguyenVong.setEditable(false);
         
         // Disable checkboxes for display only
         chkTuyenThang.setEnabled(false);
@@ -73,12 +67,8 @@ public class NganhHocFormPanel extends JPanel {
         addField(gbc, r, "Điểm sàn", txtDiemSan, 2);
         addField(gbc, r, "Điểm trúng tuyển", txtDiemTrungTuyen, 4);
         r++;
-        addField(gbc, r, "SL xét tuyển", txtSlXetTuyen, 0);
-        addField(gbc, r, "SL DGNL", txtSlDGNL, 2);
-        addField(gbc, r, "SL VSAT", txtSlVSAT, 4);
+        addField(gbc, r, "Số nguyện vọng", txtSoNguyenVong, 0);
         r++;
-        addField(gbc, r, "SL THPT", txtSlTHPT, 0);
-
         JPanel checkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         checkPanel.setOpaque(false);
         checkPanel.add(chkTuyenThang);
@@ -104,10 +94,6 @@ public class NganhHocFormPanel extends JPanel {
         Integer chiTieu = parseInt(txtChiTieu, "Chỉ tiêu", true);
         BigDecimal diemSan = parseBigDecimal(txtDiemSan, "Điểm sàn", false);
         BigDecimal diemTrungTuyen = parseBigDecimal(txtDiemTrungTuyen, "Điểm trúng tuyển", false);
-        Integer slXetTuyen = parseInt(txtSlXetTuyen, "SL xét tuyển", false);
-        Integer slDGNL = parseInt(txtSlDGNL, "SL DGNL", false);
-        Integer slVSAT = parseInt(txtSlVSAT, "SL VSAT", false);
-        Integer slTHPT = parseInt(txtSlTHPT, "SL THPT", false);
 
         XtNganh model = new XtNganh();
         model.setManganh(ma);
@@ -120,10 +106,6 @@ public class NganhHocFormPanel extends JPanel {
         model.setNDgnl(toYN(chkDGNL.isSelected()));
         model.setNThpt(toYN(chkTHPT.isSelected()));
         model.setNVsat(toYN(chkVSAT.isSelected()));
-        model.setSlXtt(slXetTuyen);
-        model.setSlDgnl(slDGNL);
-        model.setSlVsat(slVSAT);
-        model.setSlThpt(slTHPT == null ? null : String.valueOf(slTHPT));
         return model;
     }
 
@@ -142,10 +124,10 @@ public class NganhHocFormPanel extends JPanel {
         chkDGNL.setSelected("Y".equals(asText(model.getNDgnl())));
         chkTHPT.setSelected("Y".equals(asText(model.getNThpt())));
         chkVSAT.setSelected("Y".equals(asText(model.getNVsat())));
-        txtSlXetTuyen.setText(asText(model.getSlXtt()));
-        txtSlDGNL.setText(asText(model.getSlDgnl()));
-        txtSlVSAT.setText(asText(model.getSlVsat()));
-        txtSlTHPT.setText(asText(model.getSlThpt()));
+    }
+
+    public void setNguyenVongCount(long count) {
+        txtSoNguyenVong.setText(String.valueOf(count));
     }
 
     public void clearForm() {
@@ -155,10 +137,7 @@ public class NganhHocFormPanel extends JPanel {
         txtChiTieu.setText("");
         txtDiemSan.setText("");
         txtDiemTrungTuyen.setText("");
-        txtSlXetTuyen.setText("");
-        txtSlDGNL.setText("");
-        txtSlVSAT.setText("");
-        txtSlTHPT.setText("");
+        txtSoNguyenVong.setText("");
         chkTuyenThang.setSelected(false);
         chkDGNL.setSelected(false);
         chkTHPT.setSelected(false);
