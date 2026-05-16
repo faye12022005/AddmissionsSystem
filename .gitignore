@@ -9,3 +9,6 @@
 *.png
 *.jpg
 *.jpeg
+
+# Local Maven cache generated during sandboxed builds
+Admin/.m2/

@@ -13,7 +13,6 @@ import java.util.Objects;
 import java.util.Optional;
 import org.AdmissionsSystem.dao.QuanLiDiemDao;
 import org.AdmissionsSystem.models.XtDiemthixettuyen;
-import org.AdmissionsSystem.bus.service.ThiSinhService;
 
 public class QuanLiDiemService {
 	public static final String ALL_OPTION = "Tất cả";
@@ -54,8 +53,6 @@ public class QuanLiDiemService {
 	private static final Map<String, String> LABEL_BY_CODE = buildLabelByCode();
 
 	private final QuanLiDiemDao diemDao = new QuanLiDiemDao();
-	private final ThiSinhService thiSinhService = new ThiSinhService();
-	private final Map<String, String> hoTenCache = new HashMap<>();
 
 	public List<DiemRecord> query(String searchText, String loaiDiem) {
 		String normalizedSearch = normalizeText(searchText);
@@ -78,6 +75,34 @@ public class QuanLiDiemService {
 
 		rows.sort((a, b) -> Integer.compare(b.id(), a.id()));
 		return rows;
+	}
+
+	public List<BigDecimal> fetchScoresForStatistics(String type, String subject) {
+		String property = resolveThptSubjectProperty(subject);
+		if (property == null) {
+			return List.of();
+		}
+		return diemDao.fetchScores(property, null);
+	}
+
+	public PagedResult<DiemRecord> queryPage(String searchText, String loaiDiem, int page, int pageSize) {
+		String filterLoai = normalizeLoaiDiemFilter(loaiDiem);
+		String phuongThucCode = filterLoai == null ? null : resolvePhuongThucCode(filterLoai);
+		String safeSearch = safeText(searchText);
+		int safePage = Math.max(1, page);
+		int safePageSize = Math.max(1, pageSize);
+		List<String> cccdMatches = List.of();
+
+		List<XtDiemthixettuyen> entities = diemDao.findPage(safeSearch, phuongThucCode, cccdMatches,
+				safePage, safePageSize);
+		long total = diemDao.countFiltered(safeSearch, phuongThucCode, cccdMatches);
+
+		List<DiemRecord> rows = entities.stream()
+				.filter(entity -> entity != null)
+				.map(this::toRecord)
+				.toList();
+
+		return new PagedResult<>(rows, total);
 	}
 
 	public DiemRecord add(DiemInput input) {
@@ -131,8 +156,8 @@ public class QuanLiDiemService {
 			List<String> errorMessages = new ArrayList<>();
 			if (isBlank(cccd)) {
 				errorMessages.add("CCCD không được để trống");
-			} else if (!cccd.matches("\\d{9,12}")) {
-				errorMessages.add("CCCD phải có 9-12 chữ số");
+			} else if (!cccd.matches("TS_\\d{4,}")) {
+				errorMessages.add("CCCD phải theo định dạng TS_0001");
 			}
 
 			if (isBlank(soBaoDanh)) {
@@ -283,8 +308,8 @@ public class QuanLiDiemService {
 		if (cccd.isBlank()) {
 			throw new IllegalArgumentException("CCCD không được để trống.");
 		}
-		if (!cccd.matches("\\d{9,12}")) {
-			throw new IllegalArgumentException("CCCD phải có 9-12 chữ số.");
+		if (!cccd.matches("TS_\\d{4,}")) {
+			throw new IllegalArgumentException("CCCD phải theo định dạng TS_0001.");
 		}
 		if (soBaoDanh.isBlank()) {
 			throw new IllegalArgumentException("Số báo danh không được để trống.");
@@ -403,14 +428,13 @@ public class QuanLiDiemService {
 	private DiemRecord toRecord(XtDiemthixettuyen entity) {
 		String cccd = safeText(entity.getCccd());
 		String soBaoDanh = safeText(entity.getSobaodanh());
-		String hoTen = resolveHoTen(cccd, soBaoDanh);
 		String loaiDiem = displayLoaiDiem(entity.getDPhuongthuc());
 
 		return new DiemRecord(
 				entity.getIddiemthi(),
 				cccd,
 				soBaoDanh,
-				hoTen,
+				"",
 				loaiDiem,
 				entity.getTo(),
 				entity.getLi(),
@@ -441,16 +465,6 @@ public class QuanLiDiemService {
 			entity = diemDao.findBySoBaoDanh(soBaoDanh);
 		}
 		return entity;
-	}
-
-	private String resolveHoTen(String cccd, String soBaoDanh) {
-		String key = safeText(cccd) + "|" + safeText(soBaoDanh);
-		if (hoTenCache.containsKey(key)) {
-			return hoTenCache.get(key);
-		}
-		String hoTen = thiSinhService.resolveHoTen(cccd, soBaoDanh);
-		hoTenCache.put(key, hoTen);
-		return hoTen;
 	}
 
 	private String displayLoaiDiem(String raw) {
@@ -486,13 +500,42 @@ public class QuanLiDiemService {
 		return resolveLoaiDiemLabel(loaiDiem);
 	}
 
+	private String resolveThptSubjectProperty(String subject) {
+		if (subject == null) {
+			return null;
+		}
+		return switch (subject) {
+			case "Toán" -> "to";
+			case "Lý" -> "li";
+			case "Hóa" -> "ho";
+			case "Sinh" -> "si";
+			case "Sử" -> "su";
+			case "Địa" -> "di";
+			case "Văn" -> "va";
+			case "GDCD" -> "gdcd";
+			case "N1_THI" -> "n1Thi";
+			case "N1_CC" -> "n1Cc";
+			case "CNCN" -> "cncn";
+			case "CNNN" -> "cnnn";
+			case "Tin học" -> "ti";
+			case "KTPL" -> "ktpl";
+			case "NL1" -> "nl1";
+			case "NK1" -> "nk1";
+			case "NK2" -> "nk2";
+			case "NK3" -> "nk3";
+			case "NK4" -> "nk4";
+			case "NK5" -> "nk5";
+			case "NK6" -> "nk6";
+			default -> null;
+		};
+	}
+
 	private boolean matchesSearch(DiemRecord record, String normalizedSearch) {
 		if (normalizedSearch.isBlank()) {
 			return true;
 		}
 		return normalizeText(record.cccd()).contains(normalizedSearch)
 				|| normalizeText(record.soBaoDanh()).contains(normalizedSearch)
-				|| normalizeText(record.hoTen()).contains(normalizedSearch)
 				|| normalizeText(record.loaiDiem()).contains(normalizedSearch);
 	}
 

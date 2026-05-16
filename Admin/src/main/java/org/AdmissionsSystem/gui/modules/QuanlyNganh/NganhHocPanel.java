@@ -33,10 +33,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NganhHocPanel extends JPanel {
-    private static final String[] COLS = {
-            "Mã ngành", "Tên ngành", "Tổ hợp gốc", "Chỉ tiêu", "Điểm sàn", "Điểm trúng tuyển",
-            "Tuyển thẳng", "Sử dụng DGNL", "Sử dụng THPT", "Sử dụng VSAT",
-            "SL xét tuyển", "SL DGNL", "SL VSAT", "SL THPT"
+    private static final String[] TABLE_COLS = {
+        "Mã ngành", "Tên ngành", "Tổ hợp gốc", "Chỉ tiêu", "Điểm sàn", "Điểm trúng tuyển", "Số Nguyện Vọng",
+        "Tuyển thẳng", "DGNL", "THPT", "VSAT"
+    };
+    private static final String[] CSV_COLS = {
+        "Mã ngành", "Tên ngành", "Tổ hợp gốc", "Chỉ tiêu", "Điểm sàn", "Điểm trúng tuyển",
+        "Tuyển thẳng", "DGNL", "THPT", "VSAT"
     };
 
     private List<XtNganh> filteredRows = new ArrayList<>();
@@ -54,6 +57,8 @@ public class NganhHocPanel extends JPanel {
     private int currentPage = 1;
     private int pageSize = 20;
 
+    private java.util.Map<String, Long> nguyenVongCounts = java.util.Collections.emptyMap();
+
     private String selectedMaNganh;
 
     public NganhHocPanel() {
@@ -65,7 +70,7 @@ public class NganhHocPanel extends JPanel {
         title.setFont(Style.TITLE_FONT);
         add(title, BorderLayout.NORTH);
 
-        tableModel = new DefaultTableModel(COLS, 0) {
+        tableModel = new DefaultTableModel(TABLE_COLS, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -176,6 +181,7 @@ public class NganhHocPanel extends JPanel {
 
         XtNganh selectedRow = currentPageRows.get(row);
         formPanel.setFormData(selectedRow);
+        formPanel.setNguyenVongCount(resolveNguyenVongCount(selectedRow));
         selectedMaNganh = selectedRow.getManganh();
     }
 
@@ -219,6 +225,7 @@ public class NganhHocPanel extends JPanel {
                 applyFilter(searchPanel.getSearchText());
                 // Refresh form display
                 formPanel.setFormData(updatedModel);
+                formPanel.setNguyenVongCount(resolveNguyenVongCount(updatedModel));
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật: " + ex.getMessage());
             }
@@ -248,6 +255,7 @@ public class NganhHocPanel extends JPanel {
     private void loadPage() {
         tableModel.setRowCount(0);
         currentPageRows = new ArrayList<>();
+        nguyenVongCounts = nganhHocController.loadNguyenVongCounts();
         if (filteredRows.isEmpty()) {
             paginationPanel.setPageInfo(1, 1, 0);
             paginationPanel.setNavigationEnabled(false, false);
@@ -264,7 +272,8 @@ public class NganhHocPanel extends JPanel {
         for (int i = from; i < to; i++) {
             XtNganh model = filteredRows.get(i);
             currentPageRows.add(model);
-            tableModel.addRow(rowMapper.toRow(model));
+            long count = resolveNguyenVongCount(model);
+            tableModel.addRow(rowMapper.toRowWithNguyenVongCount(model, count));
         }
 
         paginationPanel.setPageInfo(currentPage, totalPages, filteredRows.size());
@@ -286,6 +295,14 @@ public class NganhHocPanel extends JPanel {
         applyFilter("");
     }
 
+    private long resolveNguyenVongCount(XtNganh model) {
+        if (model == null) {
+            return 0L;
+        }
+        String key = model.getManganh() == null ? "" : model.getManganh().toLowerCase().trim();
+        return nguyenVongCounts.getOrDefault(key, 0L);
+    }
+
     private void onImportCsv() {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Import dữ liệu (Hỗ trợ CSV/Excel CSV)");
@@ -298,7 +315,7 @@ public class NganhHocPanel extends JPanel {
         Path path = chooser.getSelectedFile().toPath();
         List<Object[]> importedRows;
         try {
-            importedRows = csvService.readRows(path, COLS);
+            importedRows = csvService.readRows(path, CSV_COLS);
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(this, "Không thể đọc file: " + ex.getMessage());
             return;
@@ -349,7 +366,7 @@ public class NganhHocPanel extends JPanel {
         }
 
         try {
-            csvService.writeRows(out, COLS, source);
+            csvService.writeRows(out, CSV_COLS, source);
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(this, "Không thể ghi file: " + ex.getMessage());
             return;

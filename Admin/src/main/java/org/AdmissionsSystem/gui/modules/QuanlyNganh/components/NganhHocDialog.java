@@ -17,10 +17,6 @@ public class NganhHocDialog extends JDialog {
     private final JCheckBox chkDGNL = new JCheckBox("Sử dụng DGNL");
     private final JCheckBox chkTHPT = new JCheckBox("Sử dụng THPT");
     private final JCheckBox chkVSAT = new JCheckBox("Sử dụng VSAT");
-    private final JTextField txtSlXetTuyen = new JTextField(10);
-    private final JTextField txtSlDGNL = new JTextField(10);
-    private final JTextField txtSlVSAT = new JTextField(10);
-    private final JTextField txtSlTHPT = new JTextField(10);
 
     private boolean confirmed = false;
     private final boolean isEdit;
@@ -46,10 +42,6 @@ public class NganhHocDialog extends JDialog {
         addLabeledField(content, gbc, r++, "Chỉ tiêu:", txtChiTieu);
         addLabeledField(content, gbc, r++, "Điểm sàn:", txtDiemSan);
         addLabeledField(content, gbc, r++, "Điểm trúng tuyển:", txtDiemTrungTuyen);
-        addLabeledField(content, gbc, r++, "SL xét tuyển:", txtSlXetTuyen);
-        addLabeledField(content, gbc, r++, "SL DGNL:", txtSlDGNL);
-        addLabeledField(content, gbc, r++, "SL VSAT:", txtSlVSAT);
-        addLabeledField(content, gbc, r++, "SL THPT:", txtSlTHPT);
 
         JPanel checkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         checkPanel.setOpaque(false);
@@ -104,10 +96,6 @@ public class NganhHocDialog extends JDialog {
         chkDGNL.setSelected("Y".equals(asText(model.getNDgnl())));
         chkTHPT.setSelected("Y".equals(asText(model.getNThpt())));
         chkVSAT.setSelected("Y".equals(asText(model.getNVsat())));
-        txtSlXetTuyen.setText(asText(model.getSlXtt()));
-        txtSlDGNL.setText(asText(model.getSlDgnl()));
-        txtSlVSAT.setText(asText(model.getSlVsat()));
-        txtSlTHPT.setText(asText(model.getSlThpt()));
     }
 
     public XtNganh collectFormData() {
@@ -128,10 +116,6 @@ public class NganhHocDialog extends JDialog {
         model.setNDgnl(toYN(chkDGNL.isSelected()));
         model.setNThpt(toYN(chkTHPT.isSelected()));
         model.setNVsat(toYN(chkVSAT.isSelected()));
-        model.setSlXtt(parseInt(txtSlXetTuyen, "SL xét tuyển", false));
-        model.setSlDgnl(parseInt(txtSlDGNL, "SL DGNL", false));
-        model.setSlVsat(parseInt(txtSlVSAT, "SL VSAT", false));
-        model.setSlThpt(txtSlTHPT.getText().trim().isEmpty() ? null : txtSlTHPT.getText().trim());
         return model;
     }
 

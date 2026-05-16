@@ -4,7 +4,6 @@ import org.AdmissionsSystem.bus.service.ThiSinhService;
 import org.AdmissionsSystem.models.XtThisinhxettuyen25;
 import org.AdmissionsSystem.gui.common.Style;
 import org.AdmissionsSystem.gui.components.CustomTable;
-import org.AdmissionsSystem.gui.components.ImportExcel;
 import org.AdmissionsSystem.gui.components.SearchPanel;
 
 import javax.swing.*;
@@ -24,23 +23,33 @@ import java.util.List;
 public class ThisinhPanel extends JPanel {
 
     private static final String[] COLS = {
-            "CCCD", "SBD", "Họ", "Tên", "Ngày sinh", "Điện thoại",
-            "Giới tính", "Email", "Nơi sinh", "Đối tượng", "Khu vực"
+            "ID",
+            "CCCD",
+            "SBD",
+            "Họ",
+            "Tên",
+            "Ngày sinh",
+            "Giới tính",
+            "Thao tác"
     };
 
+    private static final int DB_PAGE_SIZE = 1000;
+
     private final ThiSinhService thiSinhService = new ThiSinhService();
-    private final List<Object[]> allRows = new ArrayList<>();
-    private List<Object[]> filteredRows = new ArrayList<>();
     private String currentKeyword = "";
+    private long totalRecords = 0;
+    private int lastRequestId = 0;
+    private JButton btnPrevPage;
+    private JButton btnNextPage;
 
     private final DefaultTableModel tableModel;
     private final CustomTable customTable;
     private final SearchPanel searchPanel;
+    private final JTextField txtIdthisinh = new JTextField(6);
 
     private final JLabel lblPageInfo = new JLabel("Trang 1/1", SwingConstants.RIGHT);
 
     private int currentPage = 1;
-    private final int pageSize = 20;
 
     private final JTextField txtCccd = new JTextField(12);
     private final JTextField txtSbd = new JTextField(10);
@@ -73,6 +82,38 @@ public class ThisinhPanel extends JPanel {
         };
 
         customTable = new CustomTable(tableModel);
+        // render action column as a button-like cell and handle clicks
+        JTable _table = customTable.getTable();
+        // set a renderer for the action column after table created
+        int actionCol = tableModel.getColumnCount() - 1;
+        _table.getColumnModel().getColumn(actionCol).setCellRenderer(new javax.swing.table.TableCellRenderer() {
+            private final javax.swing.JButton btn = new javax.swing.JButton("Xem chi tiết");
+
+            @Override
+            public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                btn.setFont(Style.TABLE_FONT);
+                btn.setBackground(new java.awt.Color(245, 246, 250));
+                btn.setForeground(new java.awt.Color(60, 70, 90));
+                return btn;
+            }
+        });
+        _table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int viewRow = _table.rowAtPoint(e.getPoint());
+                int viewCol = _table.columnAtPoint(e.getPoint());
+                if (viewRow < 0 || viewCol < 0)
+                    return;
+                int modelCol = _table.convertColumnIndexToModel(viewCol);
+                if (modelCol == actionCol) {
+                    int modelRow = _table.convertRowIndexToModel(viewRow);
+                    String cccd = asText(tableModel.getValueAt(modelRow, 1));
+                    ThisinhDetailDialog.showDialog(javax.swing.SwingUtilities.getWindowAncestor(ThisinhPanel.this),
+                            cccd);
+                }
+            }
+        });
         searchPanel = new SearchPanel(350, "Nhập CCCD hoặc Họ Tên...", "Tìm kiếm");
 
         JPanel body = new JPanel(new BorderLayout(8, 8));
@@ -87,10 +128,6 @@ public class ThisinhPanel extends JPanel {
 
         bindEvents();
         loadFromDb("");
-    }
-
-    private void applyStyle(JButton btn) {
-        Style.styleFunctionButton(btn);
     }
 
     private void applyStyle(JButton btn, Color color) {
@@ -199,30 +236,30 @@ public class ThisinhPanel extends JPanel {
         JPanel pager = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 6));
         pager.setOpaque(false);
 
-        JButton btnPrev = new JButton("< Trang trước");
-        JButton btnNext = new JButton("Trang sau >");
+        btnPrevPage = new JButton("< Trang trước");
+        btnNextPage = new JButton("Trang sau >");
 
-        Style.stylePaginationButton(btnPrev);
-        Style.stylePaginationButton(btnNext);
+        Style.stylePaginationButton(btnPrevPage);
+        Style.stylePaginationButton(btnNextPage);
         Style.stylePaginationInfoLabel(lblPageInfo);
 
-        btnPrev.addActionListener(e -> {
+        btnPrevPage.addActionListener(e -> {
             if (currentPage > 1) {
                 currentPage--;
-                loadPage();
+                loadPageAsync();
             }
         });
 
-        btnNext.addActionListener(e -> {
+        btnNextPage.addActionListener(e -> {
             if (currentPage < getTotalPages()) {
                 currentPage++;
-                loadPage();
+                loadPageAsync();
             }
         });
 
-        pager.add(btnPrev);
+        pager.add(btnPrevPage);
         pager.add(lblPageInfo);
-        pager.add(btnNext);
+        pager.add(btnNextPage);
 
         return pager;
     }
@@ -233,27 +270,44 @@ public class ThisinhPanel extends JPanel {
     }
 
     private void onTableRowSelected(ListSelectionEvent e) {
-        if (e.getValueIsAdjusting()) {
+
+        if (e.getValueIsAdjusting())
             return;
-        }
+
         int row = customTable.getTable().getSelectedRow();
-        if (row < 0) {
+        if (row < 0)
             return;
+
+        // lấy CCCD từ table (cột 1)
+        String cccd = asText(tableModel.getValueAt(row, 1));
+
+        try {
+            XtThisinhxettuyen25 ts = thiSinhService.findByCccd(cccd);
+
+            if (ts == null) {
+                ToastThiSinh.showError(this, "Không tìm thấy thí sinh!");
+                return;
+            }
+
+            // ===== FILL FULL 12 FIELD =====
+            txtIdthisinh.setText(asText(ts.getIdthisinh()));
+            txtCccd.setText(asText(ts.getCccd()));
+            txtSbd.setText(asText(ts.getSobaodanh()));
+            txtHo.setText(asText(ts.getHo()));
+            txtTen.setText(asText(ts.getTen()));
+            txtNgaySinh.setText(asText(ts.getNgaySinh()));
+            txtDienThoai.setText(asText(ts.getDienThoai()));
+            cboGioiTinh.setSelectedItem(asText(ts.getGioiTinh()));
+            txtEmail.setText(asText(ts.getEmail()));
+            txtNoiSinh.setText(asText(ts.getNoiSinh()));
+            txtDoiTuong.setText(asText(ts.getDoiTuong()));
+            txtKhuVuc.setText(asText(ts.getKhuVuc()));
+
+            selectedCccd = ts.getCccd();
+
+        } catch (Exception ex) {
+            ToastThiSinh.showError(this, "Lỗi load chi tiết: " + ex.getMessage());
         }
-
-        txtCccd.setText(asText(tableModel.getValueAt(row, 0)));
-        txtSbd.setText(asText(tableModel.getValueAt(row, 1)));
-        txtHo.setText(asText(tableModel.getValueAt(row, 2)));
-        txtTen.setText(asText(tableModel.getValueAt(row, 3)));
-        txtNgaySinh.setText(asText(tableModel.getValueAt(row, 4)));
-        txtDienThoai.setText(asText(tableModel.getValueAt(row, 5)));
-        cboGioiTinh.setSelectedItem(asText(tableModel.getValueAt(row, 6)));
-        txtEmail.setText(asText(tableModel.getValueAt(row, 7)));
-        txtNoiSinh.setText(asText(tableModel.getValueAt(row, 8)));
-        txtDoiTuong.setText(asText(tableModel.getValueAt(row, 9)));
-        txtKhuVuc.setText(asText(tableModel.getValueAt(row, 10)));
-
-        selectedCccd = txtCccd.getText().trim();
     }
 
     private void onAdd() {
@@ -319,25 +373,21 @@ public class ThisinhPanel extends JPanel {
 
     private void loadFromDb(String keyword) {
         currentKeyword = keyword == null ? "" : keyword.trim();
-        try {
-            List<XtThisinhxettuyen25> entities = thiSinhService.search(currentKeyword);
-            allRows.clear();
-            for (XtThisinhxettuyen25 ts : entities) {
-                allRows.add(entityToRow(ts));
-            }
-            filteredRows = new ArrayList<>(allRows);
-            currentPage = 1;
-            loadPage();
-        } catch (Exception e) {
-            ToastThiSinh.showError(this, "Lỗi tải dữ liệu: " + e.getMessage());
-        }
+        currentPage = 1;
+        loadPageAsync();
     }
 
     private Object[] entityToRow(XtThisinhxettuyen25 ts) {
-        return new Object[]{
-            asText(ts.getCccd()), asText(ts.getSobaodanh()), asText(ts.getHo()), asText(ts.getTen()),
-            asText(ts.getNgaySinh()), asText(ts.getDienThoai()), asText(ts.getGioiTinh()),
-            asText(ts.getEmail()), asText(ts.getNoiSinh()), asText(ts.getDoiTuong()), asText(ts.getKhuVuc())
+
+        return new Object[] {
+                ts.getIdthisinh(),
+                asText(ts.getCccd()),
+                asText(ts.getSobaodanh()),
+                asText(ts.getHo()),
+                asText(ts.getTen()),
+                asText(ts.getNgaySinh()),
+                asText(ts.getGioiTinh()),
+                "Xem chi tiết"
         };
     }
 
@@ -365,7 +415,8 @@ public class ThisinhPanel extends JPanel {
     }
 
     private String toNull(String s) {
-        if (s == null) return null;
+        if (s == null)
+            return null;
         String trimmed = s.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
@@ -374,34 +425,68 @@ public class ThisinhPanel extends JPanel {
         loadFromDb(keyword);
     }
 
-    private void loadPage() {
-        tableModel.setRowCount(0);
+    private void loadPageAsync() {
+        final int requestId = ++lastRequestId;
+        final int pageToLoad = currentPage;
+        final String keyword = currentKeyword;
+        setLoadingState(true);
 
-        if (filteredRows.isEmpty()) {
-            lblPageInfo.setText("Trang 1/1");
-            return;
-        }
+        new SwingWorker<PageResult, Void>() {
+            @Override
+            protected PageResult doInBackground() {
+                List<XtThisinhxettuyen25> entities = thiSinhService.searchPaginated(keyword, pageToLoad, DB_PAGE_SIZE);
+                long total = thiSinhService.countByKeyword(keyword);
+                List<Object[]> rows = new ArrayList<>(entities.size());
+                for (XtThisinhxettuyen25 ts : entities) {
+                    rows.add(entityToRow(ts));
+                }
+                return new PageResult(rows, total);
+            }
 
-        int totalPages = getTotalPages();
-        if (currentPage > totalPages) {
-            currentPage = totalPages;
-        }
+            @Override
+            protected void done() {
+                try {
+                    if (requestId != lastRequestId) {
+                        return;
+                    }
 
-        int from = (currentPage - 1) * pageSize;
-        int to = Math.min(from + pageSize, filteredRows.size());
+                    PageResult result = get();
+                    totalRecords = result.totalRecords();
 
-        for (int i = from; i < to; i++) {
-            tableModel.addRow(filteredRows.get(i));
-        }
+                    tableModel.setRowCount(0);
+                    for (Object[] row : result.rows()) {
+                        tableModel.addRow(row);
+                    }
 
-        lblPageInfo.setText("Trang " + currentPage + "/" + totalPages + " - Tổng " + filteredRows.size() + " bản ghi");
+                    int totalPages = getTotalPages();
+                    lblPageInfo.setText("Trang " + currentPage + "/" + totalPages + " - Tổng " + totalRecords + " bản ghi");
+                } catch (Exception e) {
+                    ToastThiSinh.showError(ThisinhPanel.this, "Lỗi tải dữ liệu: " + e.getMessage());
+                } finally {
+                    setLoadingState(false);
+                }
+            }
+        }.execute();
     }
 
     private int getTotalPages() {
-        if (filteredRows.isEmpty()) {
+        if (totalRecords <= 0) {
             return 1;
         }
-        return (int) Math.ceil(filteredRows.size() * 1.0 / pageSize);
+        return (int) Math.ceil(totalRecords * 1.0 / DB_PAGE_SIZE);
+    }
+
+    private void setLoadingState(boolean loading) {
+        setCursor(loading ? Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR) : Cursor.getDefaultCursor());
+        if (btnPrevPage != null) {
+            btnPrevPage.setEnabled(!loading && currentPage > 1);
+        }
+        if (btnNextPage != null) {
+            btnNextPage.setEnabled(!loading && currentPage < getTotalPages());
+        }
+    }
+
+    private record PageResult(List<Object[]> rows, long totalRecords) {
     }
 
     private void clearForm() {
@@ -422,85 +507,89 @@ public class ThisinhPanel extends JPanel {
     }
 
     private void onImportExcel() {
+
         JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Chọn file CSV Thí Sinh");
-        chooser.setFileFilter(new FileNameExtensionFilter("Data file (*.csv)", "csv"));
+        chooser.setDialogTitle("Chọn file Excel Thí Sinh");
+        chooser.setFileFilter(new FileNameExtensionFilter("Excel (*.xlsx)", "xlsx"));
 
         int result = chooser.showOpenDialog(this);
         if (result != JFileChooser.APPROVE_OPTION) {
             return;
         }
 
-        Path path = chooser.getSelectedFile().toPath();
-        List<Object[]> importedRows = new ArrayList<>();
+        Path filePath = chooser.getSelectedFile().toPath();
 
-        try (BufferedReader br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
-            String line;
-            boolean isFirstLine = true;
-            while ((line = br.readLine()) != null) {
-                if (isFirstLine) {
-                    isFirstLine = false;
+        List<XtThisinhxettuyen25> entities = new ArrayList<>();
+
+        try (var fis = Files.newInputStream(filePath);
+                var workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(fis)) {
+
+            var sheet = workbook.getSheetAt(0);
+
+            // bỏ dòng header (row 0)
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+
+                var row = sheet.getRow(i);
+                if (row == null)
                     continue;
-                }
 
-                // Loại bỏ ký tự BOM nếu có ở đầu file
-                if (line.startsWith("\uFEFF")) {
-                    line = line.substring(1);
-                }
-
-                String[] values = line.split(",", -1);
-                if (values.length >= COLS.length) {
-                    Object[] row = new Object[COLS.length];
-                    System.arraycopy(values, 0, row, 0, COLS.length);
-                    importedRows.add(row);
-                }
-            }
-        } catch (IOException ex) {
-            ToastThiSinh.showError(this, "Không thể đọc file: " + ex.getMessage());
-            return;
-        }
-
-        if (importedRows.isEmpty()) {
-            ToastThiSinh.showError(this, "File không hợp lệ hoặc không có dữ liệu.");
-            return;
-        }
-
-        // Convert to entities and batch import via service
-        try {
-            List<XtThisinhxettuyen25> entities = new ArrayList<>();
-            for (Object[] imported : importedRows) {
                 XtThisinhxettuyen25 ts = new XtThisinhxettuyen25();
-                ts.setCccd(toNull(asText(imported[0])));
-                ts.setSobaodanh(toNull(asText(imported[1])));
-                ts.setHo(toNull(asText(imported[2])));
-                ts.setTen(toNull(asText(imported[3])));
-                ts.setNgaySinh(toNull(asText(imported[4])));
-                ts.setDienThoai(toNull(asText(imported[5])));
-                ts.setGioiTinh(toNull(asText(imported[6])));
-                ts.setEmail(toNull(asText(imported[7])));
-                ts.setNoiSinh(toNull(asText(imported[8])));
-                ts.setDoiTuong(toNull(asText(imported[9])));
-                ts.setKhuVuc(toNull(asText(imported[10])));
+
+                ts.setCccd(getCell(row, 0));
+                ts.setSobaodanh(getCell(row, 1));
+                ts.setHo(getCell(row, 2));
+                ts.setTen(getCell(row, 3));
+                ts.setNgaySinh(getCell(row, 4));
+                ts.setDienThoai(getCell(row, 5));
+                ts.setGioiTinh(getCell(row, 6));
+                ts.setEmail(getCell(row, 7));
+                ts.setNoiSinh(getCell(row, 8));
+                ts.setDoiTuong(getCell(row, 9));
+                ts.setKhuVuc(getCell(row, 10));
+
                 entities.add(ts);
             }
+
+            if (entities.isEmpty()) {
+                ToastThiSinh.showError(this, "File Excel không có dữ liệu!");
+                return;
+            }
+
             thiSinhService.importBatch(entities);
+
             loadFromDb(currentKeyword);
-            ToastThiSinh.showSuccess(this, "Import thành công " + importedRows.size() + " dòng dữ liệu!");
+
+            ToastThiSinh.showSuccess(
+                    this,
+                    "Import Excel thành công " + entities.size() + " thí sinh!");
+
         } catch (Exception ex) {
-            ToastThiSinh.showError(this, "Lỗi import: " + ex.getMessage());
+            ToastThiSinh.showError(this, "Lỗi import Excel: " + ex.getMessage());
         }
     }
 
     private void onExportExcel() {
-        List<Object[]> source = filteredRows.isEmpty() ? allRows : filteredRows;
-        if (source.isEmpty()) {
-            ToastThiSinh.showError(this, "Không có dữ liệu để xuất file.");
+
+        List<XtThisinhxettuyen25> entities;
+
+        try {
+            entities = thiSinhService.search(currentKeyword);
+        } catch (Exception ex) {
+            ToastThiSinh.showError(this,
+                    "Không thể tải dữ liệu export: " + ex.getMessage());
+            return;
+        }
+
+        if (entities == null || entities.isEmpty()) {
+            ToastThiSinh.showError(this,
+                    "Không có dữ liệu để xuất file.");
             return;
         }
 
         JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Lưu file Thí Sinh");
-        chooser.setFileFilter(new FileNameExtensionFilter("Data file (*.csv)", "csv"));
+        chooser.setDialogTitle("Lưu file Excel Thí Sinh");
+        chooser.setFileFilter(
+                new FileNameExtensionFilter("Excel file (*.xlsx)", "xlsx"));
 
         int result = chooser.showSaveDialog(this);
         if (result != JFileChooser.APPROVE_OPTION) {
@@ -508,32 +597,67 @@ public class ThisinhPanel extends JPanel {
         }
 
         Path out = chooser.getSelectedFile().toPath();
-        if (!out.toString().toLowerCase().endsWith(".csv")) {
-            out = Path.of(out.toString() + ".csv");
+
+        if (!out.toString().toLowerCase().endsWith(".xlsx")) {
+            out = Path.of(out.toString() + ".xlsx");
         }
 
-        try (BufferedWriter bw = Files.newBufferedWriter(out, StandardCharsets.UTF_8)) {
-            // Ghi ký tự BOM để Excel mở lên không bị lỗi font tiếng Việt
-            bw.write("\uFEFF");
+        try (var workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook()) {
 
-            // Ghi tiêu đề cột
-            bw.write(String.join(",", COLS));
-            bw.newLine();
+            var sheet = workbook.createSheet("ThiSinh");
 
-            // Ghi dữ liệu thí sinh
-            for (Object[] row : source) {
-                String[] strRow = new String[row.length];
-                for (int i = 0; i < row.length; i++) {
-                    // Thay thế dấu phẩy trong dữ liệu bằng khoảng trắng để tránh lệch cột CSV
-                    strRow[i] = asText(row[i]).replace(",", " ");
-                }
-                bw.write(String.join(",", strRow));
-                bw.newLine();
+            // ===== HEADER =====
+            String[] headers = {
+                    "ID", "CCCD", "SBD", "Họ", "Tên",
+                    "Ngày sinh", "Điện thoại", "Giới tính",
+                    "Email", "Nơi sinh", "Đối tượng", "Khu vực"
+            };
+
+            var headerRow = sheet.createRow(0);
+
+            for (int i = 0; i < headers.length; i++) {
+                var cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
             }
 
-            ToastThiSinh.showSuccess(this, "Xuất danh sách (" + source.size() + " dòng) ra file CSV thành công!");
-        } catch (IOException ex) {
-            ToastThiSinh.showError(this, "Không thể ghi file: " + ex.getMessage());
+            // ===== DATA =====
+            int rowIndex = 1;
+
+            for (XtThisinhxettuyen25 ts : entities) {
+
+                var row = sheet.createRow(rowIndex++);
+
+                row.createCell(0).setCellValue(asText(ts.getIdthisinh()));
+                row.createCell(1).setCellValue(asText(ts.getCccd()));
+                row.createCell(2).setCellValue(asText(ts.getSobaodanh()));
+                row.createCell(3).setCellValue(asText(ts.getHo()));
+                row.createCell(4).setCellValue(asText(ts.getTen()));
+                row.createCell(5).setCellValue(asText(ts.getNgaySinh()));
+                row.createCell(6).setCellValue(asText(ts.getDienThoai()));
+                row.createCell(7).setCellValue(asText(ts.getGioiTinh()));
+                row.createCell(8).setCellValue(asText(ts.getEmail()));
+                row.createCell(9).setCellValue(asText(ts.getNoiSinh()));
+                row.createCell(10).setCellValue(asText(ts.getDoiTuong()));
+                row.createCell(11).setCellValue(asText(ts.getKhuVuc()));
+            }
+
+            // auto resize cột
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            // ghi file
+            try (var fos = Files.newOutputStream(out)) {
+                workbook.write(fos);
+            }
+
+            ToastThiSinh.showSuccess(
+                    this,
+                    "Xuất Excel thành công " + entities.size() + " thí sinh!");
+
+        } catch (Exception ex) {
+            ToastThiSinh.showError(this,
+                    "Không thể ghi file Excel: " + ex.getMessage());
         }
     }
 
@@ -551,5 +675,33 @@ public class ThisinhPanel extends JPanel {
 
     private String asText(Object value) {
         return value == null ? "-" : value.toString();
+    }
+
+    private String safeCsv(Object value) {
+
+        if (value == null) {
+            return "";
+        }
+
+        return value.toString()
+                .replace(",", " ")
+                .replace("\n", " ")
+                .replace("\r", " ");
+    }
+
+    private String getCell(org.apache.poi.ss.usermodel.Row row, int col) {
+        try {
+            var cell = row.getCell(col);
+            if (cell == null)
+                return null;
+
+            cell.setCellType(org.apache.poi.ss.usermodel.CellType.STRING);
+            String value = cell.getStringCellValue();
+
+            return (value == null || value.trim().isEmpty()) ? null : value.trim();
+
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

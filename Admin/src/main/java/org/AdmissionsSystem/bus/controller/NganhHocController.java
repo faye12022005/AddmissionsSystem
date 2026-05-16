@@ -1,6 +1,7 @@
 package org.AdmissionsSystem.bus.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.AdmissionsSystem.bus.service.NganhHocService;
 import org.AdmissionsSystem.models.XtNganh;
@@ -31,5 +32,9 @@ public class NganhHocController {
 
     public void upsert(XtNganh model) {
         service.upsert(model);
+    }
+
+    public Map<String, Long> loadNguyenVongCounts() {
+        return service.loadNguyenVongCounts();
     }
 }

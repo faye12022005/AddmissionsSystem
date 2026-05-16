@@ -30,6 +30,7 @@ import java.util.logging.Logger;
 
 public class LoginFrame extends JFrame {
     private static final Logger LOGGER = Logger.getLogger(LoginFrame.class.getName());
+    private static final boolean BYPASS_LOGIN_FOR_LOAD_TEST = true;
     private final LoginService loginService = new LoginService();
 
     private final JTextField txtUsername = new JTextField(18);
@@ -275,18 +276,18 @@ public class LoginFrame extends JFrame {
     //     }.execute();
     // }
 private void onLogin() {
-        // Bỏ qua kiểm tra đăng nhập để test nhanh
-        LoginService.AuthResult authResult = LoginService.AuthResult.success("Admin Test", "ADMIN");
-        
-        /* 
-        LoginService.AuthResult authResult = loginService.authenticate(txtUsername.getText(), txtPassword.getPassword());
-        if (!authResult.success()) {
-            JOptionPane.showMessageDialog(this, authResult.message(), "Đăng nhập thất bại", JOptionPane.WARNING_MESSAGE);
-            txtPassword.selectAll();
-            txtPassword.requestFocusInWindow();
-            return;
+        LoginService.AuthResult authResult;
+        if (BYPASS_LOGIN_FOR_LOAD_TEST) {
+            authResult = LoginService.AuthResult.success("Admin Test", "ADMIN");
+        } else {
+            authResult = loginService.authenticate(txtUsername.getText(), txtPassword.getPassword());
+            if (!authResult.success()) {
+                JOptionPane.showMessageDialog(this, authResult.message(), "Đăng nhập thất bại", JOptionPane.WARNING_MESSAGE);
+                txtPassword.selectAll();
+                txtPassword.requestFocusInWindow();
+                return;
+            }
         }
-        */
 
         // Show a loading cursor or disable button
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));

@@ -34,6 +34,20 @@ public class NganhToHopDao extends AbstractCrudDao<XtNganhTohop, Integer> {
         }
     }
 
+    /**
+     * Một dòng (ngành × mã tổ hợp đăng ký), dùng để đọc {@code dolech} khi xét tuyển.
+     */
+    public XtNganhTohop findByManganhAndMatohop(String maNganh, String maToHop) {
+        try (Session session = getSessionFactory().openSession()) {
+            return session.createQuery(
+                    "FROM XtNganhTohop WHERE lower(manganh) = :m AND lower(matohop) = :t",
+                    XtNganhTohop.class)
+                    .setParameter("m", maNganh == null ? "" : maNganh.toLowerCase().trim())
+                    .setParameter("t", maToHop == null ? "" : maToHop.toLowerCase().trim())
+                    .uniqueResult();
+        }
+    }
+
     public List<XtNganhTohop> search(String keyword) {
         try (Session session = getSessionFactory().openSession()) {
             String q = "%" + (keyword == null ? "" : keyword.trim().toLowerCase()) + "%";

@@ -32,6 +32,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
+import javax.swing.OverlayLayout;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
@@ -45,7 +46,10 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -73,6 +77,9 @@ public class ThongKeDiemPanel extends JPanel {
 	private final DefaultListModel<String> subjectModel = new DefaultListModel<>();
 	private final JList<String> lstSubjects = new JList<>(subjectModel);
 	private final ChartPanel chartPanel = new ChartPanel(null);
+	private JPanel loadingOverlay;
+	private final JLabel lblLoading = new JLabel("Đang tải dữ liệu...");
+	private final JProgressBar loadingSpinner = new JProgressBar();
 
 	private final JLabel lblCount = new JLabel("0");
 	private final JLabel lblMean = new JLabel("0");
@@ -97,6 +104,8 @@ public class ThongKeDiemPanel extends JPanel {
 	private String currentType = TYPE_THPT;
 	private String currentSubject = "";
 	private List<Double> currentScores = new ArrayList<>();
+	private SwingWorker<StatsResult, Void> statsWorker;
+	private boolean isExporting;
 
 	public ThongKeDiemPanel() {
 		setLayout(new BorderLayout(8, 8));
@@ -183,6 +192,18 @@ public class ThongKeDiemPanel extends JPanel {
 		chartPanel.setPreferredSize(new Dimension(640, 420));
 		chartPanel.setBackground(Color.WHITE);
 		chartPanel.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240)));
+		chartPanel.setAlignmentX(0.5f);
+		chartPanel.setAlignmentY(0.5f);
+
+		loadingOverlay = buildLoadingOverlay();
+		loadingOverlay.setAlignmentX(0.5f);
+		loadingOverlay.setAlignmentY(0.5f);
+
+		JPanel chartWrapper = new JPanel();
+		chartWrapper.setOpaque(false);
+		chartWrapper.setLayout(new OverlayLayout(chartWrapper));
+		chartWrapper.add(chartPanel);
+		chartWrapper.add(loadingOverlay);
 
 		JPanel summaryPanel = new JPanel(new GridLayout(2, 4, 12, 8));
 		summaryPanel.setOpaque(false);
@@ -196,9 +217,35 @@ public class ThongKeDiemPanel extends JPanel {
 		summaryPanel.add(buildMetric("Min", lblMin));
 		summaryPanel.add(buildMetric("Max", lblMax));
 
-		rightPanel.add(chartPanel, BorderLayout.CENTER);
+		rightPanel.add(chartWrapper, BorderLayout.CENTER);
 		rightPanel.add(summaryPanel, BorderLayout.SOUTH);
 		return rightPanel;
+	}
+
+	private JPanel buildLoadingOverlay() {
+		JPanel overlay = new JPanel(new GridBagLayout());
+		overlay.setOpaque(true);
+		overlay.setBackground(new Color(15, 23, 42, 120));
+		overlay.setVisible(false);
+
+		lblLoading.setForeground(Color.WHITE);
+		lblLoading.setFont(Style.PANEL_TITLE_FONT);
+
+		loadingSpinner.setIndeterminate(true);
+		loadingSpinner.setBorderPainted(false);
+		loadingSpinner.setPreferredSize(new Dimension(200, 8));
+
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		gbc.insets = new Insets(0, 0, 8, 0);
+		overlay.add(lblLoading, gbc);
+
+		gbc.gridy = 1;
+		gbc.insets = new Insets(0, 0, 0, 0);
+		overlay.add(loadingSpinner, gbc);
+
+		return overlay;
 	}
 
 	private JPanel buildMetric(String label, JLabel valueLabel) {
@@ -277,34 +324,93 @@ public class ThongKeDiemPanel extends JPanel {
 		}
 
 		currentSubject = selected.get(0);
-		currentScores = collectScores(currentType, currentSubject);
-		currentChart = buildChart(currentType, currentSubject, currentScores);
-		chartPanel.setChart(currentChart);
-		updateSummary(currentScores);
+		startStatisticsLoad(currentType, currentSubject);
+	}
+
+	private void startStatisticsLoad(String type, String subject) {
+		if (statsWorker != null && !statsWorker.isDone()) {
+			statsWorker.cancel(true);
+		}
+		setLoadingState(true, "Đang tải dữ liệu thống kê...");
+
+		statsWorker = new SwingWorker<>() {
+			@Override
+			protected StatsResult doInBackground() {
+				List<Double> scores = collectScores(type, subject);
+				if (isCancelled()) {
+					return null;
+				}
+				JFreeChart chart = buildChart(type, subject, scores);
+				ThongKeDiemService.ScoreSummary summary = thongKeService.summarize(toBigDecimals(scores));
+				return new StatsResult(scores, chart, summary);
+			}
+
+			@Override
+			protected void done() {
+				setLoadingState(false, " ");
+				if (isCancelled()) {
+					return;
+				}
+				try {
+					StatsResult result = get();
+					if (result == null) {
+						return;
+					}
+					currentScores = result.scores();
+					currentChart = result.chart();
+					chartPanel.setChart(currentChart);
+					applySummary(result.summary());
+				} catch (Exception ex) {
+					Toast.showToast(ThongKeDiemPanel.this, "Không thể tải thống kê: " + ex.getMessage(), true);
+				}
+			}
+		};
+
+		statsWorker.execute();
 	}
 
 	private List<Double> collectScores(String type, String subject) {
+		List<java.math.BigDecimal> rawScores = TYPE_VSAT.equals(type)
+				? vsatService.fetchScoresForStatistics(subject)
+				: thptService.fetchScoresForStatistics(type, subject);
+
 		List<Double> scores = new ArrayList<>();
-		if (TYPE_VSAT.equals(type)) {
-			List<QuanLiDiemVSATService.VsatRecord> records = vsatService.query("");
-			for (QuanLiDiemVSATService.VsatRecord record : records) {
-				Double score = extractVsatScore(record, subject);
-				if (score != null) {
-					scores.add(score);
-				}
-			}
+		if (rawScores == null || rawScores.isEmpty()) {
 			return scores;
 		}
-
-		String filter = TYPE_DGNL.equals(type) ? TYPE_DGNL : TYPE_THPT;
-		List<QuanLiDiemService.DiemRecord> records = thptService.query("", filter);
-		for (QuanLiDiemService.DiemRecord record : records) {
-			Double score = extractThptScore(record, subject);
-			if (score != null) {
-				scores.add(score);
+		for (java.math.BigDecimal value : rawScores) {
+			if (value != null) {
+				scores.add(value.doubleValue());
 			}
 		}
 		return scores;
+	}
+
+	private void setLoadingState(boolean loading, String message) {
+		if (isExporting) {
+			return;
+		}
+		if (loading) {
+			if (loadingOverlay != null) {
+				loadingOverlay.setVisible(true);
+			}
+			lblLoading.setText(message);
+			progressBar.setIndeterminate(true);
+			progressBar.setVisible(true);
+			lblStatus.setText(message);
+		} else {
+			if (loadingOverlay != null) {
+				loadingOverlay.setVisible(false);
+			}
+			progressBar.setVisible(false);
+			progressBar.setIndeterminate(false);
+			lblStatus.setText(message);
+		}
+		btnExportBatch.setEnabled(!loading);
+		btnExportCurrent.setEnabled(!loading);
+	}
+
+	private record StatsResult(List<Double> scores, JFreeChart chart, ThongKeDiemService.ScoreSummary summary) {
 	}
 
 	private Double extractThptScore(QuanLiDiemService.DiemRecord record, String subject) {
@@ -440,6 +546,10 @@ public class ThongKeDiemPanel extends JPanel {
 
 	private void updateSummary(List<Double> scores) {
 		ThongKeDiemService.ScoreSummary summary = thongKeService.summarize(toBigDecimals(scores));
+		applySummary(summary);
+	}
+
+	private void applySummary(ThongKeDiemService.ScoreSummary summary) {
 		lblCount.setText(String.valueOf(summary.count()));
 		lblMean.setText(formatNumber(summary.mean()));
 		lblStd.setText(formatNumber(summary.stdDev()));
@@ -525,9 +635,11 @@ public class ThongKeDiemPanel extends JPanel {
 	}
 
 	private void runBatchExport(Path out, List<String> subjects, boolean exportPdf) {
+		isExporting = true;
 		btnExportBatch.setEnabled(false);
 		btnExportCurrent.setEnabled(false);
 		progressBar.setVisible(true);
+		progressBar.setIndeterminate(false);
 		progressBar.setMinimum(0);
 		progressBar.setMaximum(subjects.size());
 		progressBar.setValue(0);
@@ -576,6 +688,7 @@ public class ThongKeDiemPanel extends JPanel {
 				btnExportCurrent.setEnabled(true);
 				lblStatus.setText("Hoàn tất xuất biểu đồ.");
 				Toast.showToast(ThongKeDiemPanel.this, "Xuất biểu đồ hoàn tất.", false);
+				isExporting = false;
 			}
 		};
 

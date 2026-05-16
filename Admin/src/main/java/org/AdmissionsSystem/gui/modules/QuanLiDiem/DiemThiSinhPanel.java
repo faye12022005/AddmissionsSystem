@@ -7,12 +7,14 @@ import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 
 public class DiemThiSinhPanel extends JPanel {
     private final JTabbedPane mainTabs = new JTabbedPane();
     private final QuanLyDiemTabPanel quanLyDiemTab;
-    private final ThongKeDiemPanel thongKeTab;
+    private ThongKeDiemPanel thongKeTab;
+    private final JPanel thongKePlaceholder = new JPanel(new BorderLayout());
 
     public DiemThiSinhPanel() {
         setLayout(new BorderLayout(8, 8));
@@ -26,10 +28,21 @@ public class DiemThiSinhPanel extends JPanel {
 
         QuanLiDiemController controller = new QuanLiDiemController();
         quanLyDiemTab = new QuanLyDiemTabPanel(controller);
-        thongKeTab = new ThongKeDiemPanel();
+
+        JLabel placeholderText = new JLabel("Mở tab 'Thống kê điểm' để tải dữ liệu thống kê.", SwingConstants.CENTER);
+        placeholderText.setFont(Style.BUTTON_FONT);
+        thongKePlaceholder.setOpaque(false);
+        thongKePlaceholder.add(placeholderText, BorderLayout.CENTER);
 
         mainTabs.addTab("Quản lí điểm", quanLyDiemTab);
-        mainTabs.addTab("Thống kê điểm", thongKeTab);
+        mainTabs.addTab("Thống kê điểm", thongKePlaceholder);
+
+        mainTabs.addChangeListener(e -> {
+            if (mainTabs.getSelectedIndex() == 1 && thongKeTab == null) {
+                thongKeTab = new ThongKeDiemPanel();
+                mainTabs.setComponentAt(1, thongKeTab);
+            }
+        });
 
         add(mainTabs, BorderLayout.CENTER);
     }
