@@ -32,6 +32,10 @@ public class XtNguyenvongxettuyenService {
         return dao.layTatCaNguyenVong();
     }
 
+    public List<XtNguyenvongxettuyen> layTheoTrang(int page, int pageSize) {
+        return dao.layNguyenVongTheoTrang(page, pageSize);
+    }
+
     /**
      * Tìm kiếm nguyện vọng theo từ khóa
      * @param keyword Từ khóa tìm kiếm (CCCD, mã ngành, kết quả, v.v.)

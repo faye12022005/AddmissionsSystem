@@ -11,6 +11,7 @@ import org.AdmissionsSystem.models.XtNganhTohop;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class NganhToHopPanel extends JPanel {
@@ -29,6 +30,7 @@ public class NganhToHopPanel extends JPanel {
 
     private final NganhToHopService service = new NganhToHopService();
     private final DefaultTableModel tableModel;
+    private final NganhToHopPaginationPanel paginationPanel;
 
     // Form fields
     private final JTextField tfId      = new JTextField(8);
@@ -56,6 +58,9 @@ public class NganhToHopPanel extends JPanel {
     private final JCheckBox cbKTPL = new JCheckBox("KTPL");
 
     private JTable table;
+    private List<XtNganhTohop> filteredRows = new ArrayList<>();
+    private int currentPage = 1;
+    private int pageSize = 20;
 
     public NganhToHopPanel() {
         setLayout(new BorderLayout());
@@ -84,6 +89,7 @@ public class NganhToHopPanel extends JPanel {
             if (!e.getValueIsAdjusting())
                 onRowSelected();
         });
+        paginationPanel = new NganhToHopPaginationPanel(pageSize);
 
         // ── Điều chỉnh độ rộng cột ───────────────────────────────────────────
         // col: 0=ID, 1=Mã ngành, 2=Mã tổ hợp, 3=Môn1, 4=HS1, 5=Môn2, 6=HS2,
@@ -118,9 +124,11 @@ public class NganhToHopPanel extends JPanel {
         table.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
 
         body.add(ct, BorderLayout.CENTER);
+        body.add(paginationPanel, BorderLayout.SOUTH);
         add(body, BorderLayout.CENTER);
 
-        loadData("");
+        bindPaginationEvents();
+        applyFilter("");
     }
 
     // =========================================================================
@@ -194,10 +202,30 @@ public class NganhToHopPanel extends JPanel {
 
         g.gridx = 3; g.gridwidth = 1; g.fill = GridBagConstraints.NONE;
         JButton btnSearch = makeBtn("Tìm", BTN_PRIMARY);
-        btnSearch.addActionListener(e -> loadData(tfSearch.getText().trim()));
+        btnSearch.addActionListener(e -> applyFilter(tfSearch.getText().trim()));
         p.add(btnSearch, g);
 
         return p;
+    }
+
+    private void bindPaginationEvents() {
+        paginationPanel.setOnPageSizeChange(selected -> {
+            pageSize = selected;
+            currentPage = 1;
+            loadPage();
+        });
+        paginationPanel.setOnPrev(() -> {
+            if (currentPage > 1) {
+                currentPage--;
+                loadPage();
+            }
+        });
+        paginationPanel.setOnNext(() -> {
+            if (currentPage < getTotalPages()) {
+                currentPage++;
+                loadPage();
+            }
+        });
     }
 
     // ── Widget "Hiển thị chi tiết" ────────────────────────────────────────────
@@ -285,10 +313,30 @@ public class NganhToHopPanel extends JPanel {
     // =========================================================================
     // Data / form helpers — giữ nguyên 100% của bạn
     // =========================================================================
-    private void loadData(String keyword) {
-        List<XtNganhTohop> rows = service.search(keyword);
+    private void applyFilter(String keyword) {
+        filteredRows = service.search(keyword);
+        currentPage = 1;
+        loadPage();
+    }
+
+    private void loadPage() {
         tableModel.setRowCount(0);
-        for (XtNganhTohop r : rows) {
+        if (filteredRows.isEmpty()) {
+            paginationPanel.setPageInfo(1, 1, 0);
+            paginationPanel.setNavigationEnabled(false, false);
+            return;
+        }
+
+        int totalPages = getTotalPages();
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+
+        int from = (currentPage - 1) * pageSize;
+        int to = Math.min(from + pageSize, filteredRows.size());
+
+        for (int i = from; i < to; i++) {
+            XtNganhTohop r = filteredRows.get(i);
             tableModel.addRow(new Object[]{
                     r.getId(), r.getManganh(), r.getMatohop(),
                     r.getThMon1(), r.getHsmon1(),
@@ -300,6 +348,16 @@ public class NganhToHopPanel extends JPanel {
                     r.getDolech()
             });
         }
+
+        paginationPanel.setPageInfo(currentPage, totalPages, filteredRows.size());
+        paginationPanel.setNavigationEnabled(currentPage > 1, currentPage < totalPages);
+    }
+
+    private int getTotalPages() {
+        if (filteredRows.isEmpty()) {
+            return 1;
+        }
+        return (int) Math.ceil(filteredRows.size() * 1.0 / pageSize);
     }
 
     private String toYN(Boolean b) {
@@ -336,7 +394,7 @@ public class NganhToHopPanel extends JPanel {
     private void onAdd() {
         try {
             service.add(collectForm());
-            loadData(tfSearch.getText().trim());
+            applyFilter(tfSearch.getText().trim());
             clearForm();
             JOptionPane.showMessageDialog(this, "Thêm thành công.");
         } catch (Exception ex) {
@@ -353,7 +411,7 @@ public class NganhToHopPanel extends JPanel {
             XtNganhTohop entity = collectForm();
             entity.setId(Integer.parseInt(tfId.getText().trim()));
             service.update(entity);
-            loadData(tfSearch.getText().trim());
+            applyFilter(tfSearch.getText().trim());
             JOptionPane.showMessageDialog(this, "Cập nhật thành công.");
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -369,7 +427,7 @@ public class NganhToHopPanel extends JPanel {
                 JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
         try {
             service.delete(Integer.parseInt(tfId.getText().trim()));
-            loadData(tfSearch.getText().trim());
+            applyFilter(tfSearch.getText().trim());
             clearForm();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);

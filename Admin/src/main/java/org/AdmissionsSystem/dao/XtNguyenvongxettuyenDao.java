@@ -26,6 +26,19 @@ public class XtNguyenvongxettuyenDao extends AbstractCrudDao<XtNguyenvongxettuye
         return findAll();
     }
 
+    public List<XtNguyenvongxettuyen> layNguyenVongTheoTrang(int page, int pageSize) {
+        int safePage = Math.max(1, page);
+        int safePageSize = Math.max(1, pageSize);
+        try (var session = getSessionFactory().openSession()) {
+            return session.createQuery("FROM XtNguyenvongxettuyen ORDER BY idnv", XtNguyenvongxettuyen.class)
+                    .setFirstResult((safePage - 1) * safePageSize)
+                    .setMaxResults(safePageSize)
+                    .setFetchSize(safePageSize)
+                    .setReadOnly(true)
+                    .list();
+        }
+    }
+
     /**
      * READ: Tìm nguyện vọng theo ID
      * @param idnv ID của nguyện vọng

@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import org.AdmissionsSystem.bus.controller.XtNguyenvongxettuyenController;
 import org.AdmissionsSystem.bus.service.XtNguyenvongxettuyenService;
 import org.AdmissionsSystem.bus.service.NganhHocService;
@@ -58,14 +59,17 @@ public class NguyenVongPanel extends JPanel {
     
     private static final int RECORDS_PER_PAGE = 8;
     private int currentPage = 1;
+    private long totalRecords = 0;
     private DefaultTableModel tableModel;
     private JLabel paginationInfo;
     private JPanel paginationBtnGroup;
+    private SwingWorker<PageLoadResult, Void> pageWorker;
     private final XtNguyenvongxettuyenController controller = new XtNguyenvongxettuyenController();
     private final ThiSinhService thiSinhService = new ThiSinhService();
     private final NganhHocService nganhHocService = new NganhHocService();
-    private final List<NguyenVong> allRows = new ArrayList<>();
     private final List<NguyenVong> pageRows = new ArrayList<>();
+    private final Map<String, XtThisinhxettuyen25> thiSinhCache = new HashMap<>();
+    private final Map<String, XtNganh> nganhCache = new HashMap<>();
     private static final DecimalFormat SCORE_FMT = new DecimalFormat("0.00");
 
     // ════════════════════════════════════════════════════════
@@ -75,13 +79,13 @@ public class NguyenVongPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(BG_LIGHT);
 
-        loadData();
-
         JScrollPane scroll = new JScrollPane(buildInnerPanel());
         scroll.setBorder(null);
         scroll.getViewport().setBackground(BG_LIGHT);
         scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         add(scroll, BorderLayout.CENTER);
+
+        loadPageAsync(1);
     }
 
     // ── Inner panel (chứa tất cả nội dung) ──────────────────
@@ -214,7 +218,7 @@ public class NguyenVongPanel extends JPanel {
         tableModel = new DefaultTableModel(COL_NAMES, COL_NAMES.length) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
-        refreshTableData(1);
+        tableModel.setRowCount(0);
 
         JTable table = new JTable(tableModel);
         table.setRowHeight(52);
@@ -429,7 +433,7 @@ public class NguyenVongPanel extends JPanel {
 
     private void updateTableHeight(JTable table, JScrollPane scroll) {
 
-        int rowCount = table.getRowCount();
+        int rowCount = Math.max(table.getRowCount(), RECORDS_PER_PAGE);
 
         int rowHeight = table.getRowHeight();
         int headerHeight = table.getTableHeader().getPreferredSize().height;
@@ -445,7 +449,7 @@ public class NguyenVongPanel extends JPanel {
     
     private void updatePaginationButtons() {
         paginationBtnGroup.removeAll();
-        int totalPages = (allRows.size() + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
+        int totalPages = getTotalPages();
         
         // Previous button
         JButton prevBtn = new JButton("‹") {
@@ -564,23 +568,22 @@ public class NguyenVongPanel extends JPanel {
     }
     
     private void goToPage(int pageNum) {
-        int totalPages = (allRows.size() + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
+        int totalPages = getTotalPages();
         if (pageNum < 1 || pageNum > totalPages) return;
         
-        currentPage = pageNum;
-        refreshTableData(pageNum);
-        updatePaginationButtons();
-        paginationInfo.setText(getPaginationText());
+        loadPageAsync(pageNum);
     }
     
-    private void refreshTableData(int pageNum) {
+    private int getTotalPages() {
+        if (totalRecords <= 0) {
+            return 1;
+        }
+        return (int) Math.ceil(totalRecords * 1.0 / RECORDS_PER_PAGE);
+    }
+
+    private void refreshTableData() {
         tableModel.setRowCount(0);
-        pageRows.clear();
-        int startIdx = (pageNum - 1) * RECORDS_PER_PAGE;
-        int endIdx = Math.min(startIdx + RECORDS_PER_PAGE, allRows.size());
-        for (int i = startIdx; i < endIdx; i++) {
-            NguyenVong row = allRows.get(i);
-            pageRows.add(row);
+        for (NguyenVong row : pageRows) {
             tableModel.addRow(new Object[] {
                 row.getThuTu(),
                 row.getTenThiSinh() + "\nSBD: " + row.getSbd(),
@@ -596,13 +599,136 @@ public class NguyenVongPanel extends JPanel {
     }
     
     private String getPaginationText() {
-        int total = allRows.size();
+        long total = totalRecords;
         if (total == 0) {
             return "Hiển thị 0-0 trong số 0 bản ghi";
         }
         int startRecord = (currentPage - 1) * RECORDS_PER_PAGE + 1;
-        int endRecord = Math.min(currentPage * RECORDS_PER_PAGE, total);
+        int endRecord = startRecord + pageRows.size() - 1;
+        if (endRecord < startRecord) {
+            endRecord = startRecord;
+        }
+        endRecord = (int) Math.min(endRecord, total);
         return "Hiển thị " + startRecord + "-" + endRecord + " trong số " + total + " bản ghi";
+    }
+
+    private void loadPageAsync(int pageNum) {
+        int targetPage = Math.max(1, pageNum);
+        if (pageWorker != null && !pageWorker.isDone()) {
+            pageWorker.cancel(true);
+        }
+
+        setLoadingState(true);
+        pageWorker = new SwingWorker<>() {
+            @Override
+            protected PageLoadResult doInBackground() {
+                preloadLookupCaches();
+                long total = controller.demTatCa();
+                int totalPages = total <= 0 ? 1 : (int) Math.ceil(total * 1.0 / RECORDS_PER_PAGE);
+                int safePage = Math.min(targetPage, totalPages);
+                List<XtNguyenvongxettuyen> models = controller.taiDuLieuTheoTrang(safePage, RECORDS_PER_PAGE);
+                List<NguyenVong> mappedRows = mapToRows(models);
+                return new PageLoadResult(safePage, total, mappedRows);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    if (this != pageWorker) {
+                        return;
+                    }
+                    if (isCancelled()) {
+                        return;
+                    }
+                    PageLoadResult result = get();
+                    currentPage = result.currentPage();
+                    totalRecords = result.totalRecords();
+                    pageRows.clear();
+                    pageRows.addAll(result.rows());
+                    refreshTableData();
+                    updatePaginationButtons();
+                    paginationInfo.setText(getPaginationText());
+                } catch (CancellationException ignored) {
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(NguyenVongPanel.this,
+                            "Không thể tải dữ liệu nguyện vọng.\n" + ex.getMessage(),
+                            "Lỗi dữ liệu", JOptionPane.ERROR_MESSAGE);
+                } finally {
+                    if (this == pageWorker) {
+                        setLoadingState(false);
+                    }
+                }
+            }
+        };
+        pageWorker.execute();
+    }
+
+    private void setLoadingState(boolean loading) {
+        Cursor cursor = loading
+                ? Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR)
+                : Cursor.getDefaultCursor();
+        setCursor(cursor);
+    }
+
+    private synchronized void preloadLookupCaches() {
+        if (nganhCache.isEmpty()) {
+            for (XtNganh nganh : nganhHocService.getAll()) {
+                String maNganh = safeText(nganh.getManganh());
+                if (!maNganh.isEmpty()) {
+                    nganhCache.put(maNganh.toLowerCase(Locale.ROOT), nganh);
+                }
+            }
+        }
+
+        if (thiSinhCache.isEmpty()) {
+            for (XtThisinhxettuyen25 thiSinh : thiSinhService.getAll()) {
+                String cccd = safeText(thiSinh.getCccd());
+                if (!cccd.isEmpty()) {
+                    thiSinhCache.put(cccd.toLowerCase(Locale.ROOT), thiSinh);
+                }
+            }
+        }
+    }
+
+    private List<NguyenVong> mapToRows(List<XtNguyenvongxettuyen> data) {
+        List<NguyenVong> rows = new ArrayList<>();
+        for (XtNguyenvongxettuyen nv : data) {
+            String cccd = safeText(nv.getNnCccd());
+            XtThisinhxettuyen25 ts = thiSinhCache.get(cccd.toLowerCase(Locale.ROOT));
+            String tenThiSinh = buildTenThiSinh(ts, cccd);
+            String sbd = ts != null ? safeText(ts.getSobaodanh()) : "";
+            String ngaySinh = ts != null ? safeText(ts.getNgaySinh()) : "";
+            XtNganh nganh = nganhCache.get(safeText(nv.getNvManganh()).toLowerCase(Locale.ROOT));
+            String tenNganh = nganh != null ? safeText(nganh.getTennganh()) : "";
+            String toHop = safeText(nv.getTtThm());
+            String phuongThuc = safeText(nv.getTtPhuongthuc());
+
+            BigDecimal diemThxt = nv.getDiemThxt();
+            BigDecimal diemCong = nv.getDiemCong();
+            BigDecimal diemUtqd = nv.getDiemUtqd();
+            BigDecimal diemXettuyen = nv.getDiemXettuyen();
+            String tongDiem = formatScore(diemXettuyen != null ? diemXettuyen : diemThxt);
+            String trangThai = mapTrangThai(nv.getNvKetqua());
+
+            rows.add(new NguyenVong(
+                formatThuTu(nv.getNvTt()),
+                tenThiSinh,
+                sbd,
+                cccd,
+                safeText(nv.getNvManganh()),
+                tenNganh,
+                toHop,
+                phuongThuc,
+                tongDiem,
+                trangThai,
+                ngaySinh,
+                diemThxt,
+                diemCong,
+                diemUtqd,
+                diemXettuyen
+            ));
+        }
+        return rows;
     }
 
     // ════════════════════════════════════════════════════════
@@ -703,19 +829,31 @@ public class NguyenVongPanel extends JPanel {
 
     private void openDanhSachTrungTuyenTheoNganh() {
         Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
-        List<XtNganh> nganhList = nganhHocService.getAll();
-        List<NguyenVong> rows = new ArrayList<>(allRows);
-        DanhSachTrungTuyenTheoNganhDialog dialog =
-            new DanhSachTrungTuyenTheoNganhDialog(parentFrame, rows, nganhList);
-        dialog.setVisible(true);
+        try {
+            List<XtNganh> nganhList = nganhHocService.getAll();
+            List<NguyenVong> rows = loadAllRowsForReports();
+            DanhSachTrungTuyenTheoNganhDialog dialog =
+                new DanhSachTrungTuyenTheoNganhDialog(parentFrame, rows, nganhList);
+            dialog.setVisible(true);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                "Không thể mở báo cáo danh sách trúng tuyển theo ngành.\n" + ex.getMessage(),
+                "Lỗi dữ liệu", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void openSoLuongTrungTuyenTheoPhuongThuc() {
         Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
-        List<NguyenVong> rows = new ArrayList<>(allRows);
-        DanhSachSoLuongTrungTuyenTheoPhuongThucDialog dialog =
-            new DanhSachSoLuongTrungTuyenTheoPhuongThucDialog(parentFrame, rows);
-        dialog.setVisible(true);
+        try {
+            List<NguyenVong> rows = loadAllRowsForReports();
+            DanhSachSoLuongTrungTuyenTheoPhuongThucDialog dialog =
+                new DanhSachSoLuongTrungTuyenTheoPhuongThucDialog(parentFrame, rows);
+            dialog.setVisible(true);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                "Không thể mở báo cáo số lượng trúng tuyển theo phương thức.\n" + ex.getMessage(),
+                "Lỗi dữ liệu", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void handleRunXetTuyen() {
@@ -731,11 +869,7 @@ public class NguyenVongPanel extends JPanel {
 
         try {
             XtNguyenvongxettuyenService.XetTuyenResult result = controller.chayXetTuyenHeThong();
-            loadData();
-            currentPage = 1;
-            refreshTableData(currentPage);
-            updatePaginationButtons();
-            paginationInfo.setText(getPaginationText());
+            loadPageAsync(1);
 
             JOptionPane.showMessageDialog(this,
                 buildXetTuyenSummary(result),
@@ -761,11 +895,7 @@ public class NguyenVongPanel extends JPanel {
 
         try {
             int updated = controller.tinhDiemXetTuyenAll();
-            loadData();
-            currentPage = 1;
-            refreshTableData(currentPage);
-            updatePaginationButtons();
-            paginationInfo.setText(getPaginationText());
+            loadPageAsync(1);
 
             JOptionPane.showMessageDialog(this,
                 "Đã cập nhật ĐXT cho " + updated + " nguyện vọng.",
@@ -895,58 +1025,9 @@ public class NguyenVongPanel extends JPanel {
         public BigDecimal getDiemXettuyen() { return diemXettuyen; }
     }
 
-    private void loadData() {
-        allRows.clear();
-        try {
-            List<XtNguyenvongxettuyen> data = controller.taiDuLieu();
-            Map<String, XtNganh> nganhMap = new HashMap<>();
-            for (XtNganh nganh : nganhHocService.getAll()) {
-                if (nganh.getManganh() != null) {
-                    nganhMap.put(nganh.getManganh().trim().toLowerCase(Locale.ROOT), nganh);
-                }
-            }
-
-            for (XtNguyenvongxettuyen nv : data) {
-                String cccd = safeText(nv.getNnCccd());
-                XtThisinhxettuyen25 ts = thiSinhService.findByCccd(cccd);
-                String tenThiSinh = buildTenThiSinh(ts, cccd);
-                String sbd = ts != null ? safeText(ts.getSobaodanh()) : "";
-                String ngaySinh = ts != null ? safeText(ts.getNgaySinh()) : "";
-                XtNganh nganh = nganhMap.get(safeText(nv.getNvManganh()).toLowerCase(Locale.ROOT));
-                String tenNganh = nganh != null ? safeText(nganh.getTennganh()) : "";
-                String toHop = safeText(nv.getTtThm());
-                String phuongThuc = safeText(nv.getTtPhuongthuc());
-
-                BigDecimal diemThxt = nv.getDiemThxt();
-                BigDecimal diemCong = nv.getDiemCong();
-                BigDecimal diemUtqd = nv.getDiemUtqd();
-                BigDecimal diemXettuyen = nv.getDiemXettuyen();
-                String tongDiem = formatScore(diemXettuyen != null ? diemXettuyen : diemThxt);
-                String trangThai = mapTrangThai(nv.getNvKetqua());
-
-                allRows.add(new NguyenVong(
-                    formatThuTu(nv.getNvTt()),
-                    tenThiSinh,
-                    sbd,
-                    cccd,
-                    safeText(nv.getNvManganh()),
-                    tenNganh,
-                    toHop,
-                    phuongThuc,
-                    tongDiem,
-                    trangThai,
-                    ngaySinh,
-                    diemThxt,
-                    diemCong,
-                    diemUtqd,
-                    diemXettuyen
-                ));
-            }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                "Không thể tải dữ liệu nguyện vọng.\n" + ex.getMessage(),
-                "Lỗi dữ liệu", JOptionPane.ERROR_MESSAGE);
-        }
+    private List<NguyenVong> loadAllRowsForReports() {
+        preloadLookupCaches();
+        return mapToRows(controller.taiDuLieu());
     }
 
     private String buildTenThiSinh(XtThisinhxettuyen25 ts, String cccd) {
@@ -982,19 +1063,7 @@ public class NguyenVongPanel extends JPanel {
         return raw.trim();
     }
 
-    private int demTheoTrangThai(String trangThai) {
-        int count = 0;
-        for (NguyenVong row : allRows) {
-            if (trangThai.equals(row.getTrangThai())) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    private String formatCount(int value) {
-        return String.format("%,d", value);
-    }
+    private record PageLoadResult(int currentPage, long totalRecords, List<NguyenVong> rows) {}
 
     // ════════════════════════════════════════════════════════
     //  MAIN

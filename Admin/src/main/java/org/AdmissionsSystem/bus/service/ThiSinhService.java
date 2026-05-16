@@ -83,6 +83,14 @@ public class ThiSinhService {
         return dao.countByKeyword(keyword);
     }
 
+    public Map<String, Long> countByDoiTuong(String keyword) {
+        return dao.countByDoiTuong(keyword);
+    }
+
+    public Map<String, Long> countByKhuVuc(String keyword) {
+        return dao.countByKhuVuc(keyword);
+    }
+
     public void add(XtThisinhxettuyen25 entity) {
         validateRequired(entity);
         if (entity.getCccd() != null && !entity.getCccd().isEmpty()) {

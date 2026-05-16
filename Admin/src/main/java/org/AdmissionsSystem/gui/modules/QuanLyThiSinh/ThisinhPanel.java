@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class ThisinhPanel extends JPanel {
 
@@ -33,7 +34,7 @@ public class ThisinhPanel extends JPanel {
             "Thao tác"
     };
 
-    private static final int DB_PAGE_SIZE = 1000;
+    private static final int DEFAULT_PAGE_SIZE = 20;
 
     private final ThiSinhService thiSinhService = new ThiSinhService();
     private String currentKeyword = "";
@@ -41,6 +42,7 @@ public class ThisinhPanel extends JPanel {
     private int lastRequestId = 0;
     private JButton btnPrevPage;
     private JButton btnNextPage;
+    private JComboBox<Integer> cboPageSize;
 
     private final DefaultTableModel tableModel;
     private final CustomTable customTable;
@@ -48,8 +50,16 @@ public class ThisinhPanel extends JPanel {
     private final JTextField txtIdthisinh = new JTextField(6);
 
     private final JLabel lblPageInfo = new JLabel("Trang 1/1", SwingConstants.RIGHT);
+    private final JLabel lblStatsTotalValue = new JLabel("0", SwingConstants.CENTER);
+    private final JComboBox<String> cboStatsDoiTuong = new JComboBox<>();
+    private final JComboBox<String> cboStatsKhuVuc = new JComboBox<>();
+    private final JLabel lblStatsDoiTuongValue = new JLabel("0", SwingConstants.CENTER);
+    private final JLabel lblStatsKhuVucValue = new JLabel("0", SwingConstants.CENTER);
+    private Map<String, Long> statsDoiTuongCounts = java.util.Collections.emptyMap();
+    private Map<String, Long> statsKhuVucCounts = java.util.Collections.emptyMap();
 
     private int currentPage = 1;
+    private int pageSize = DEFAULT_PAGE_SIZE;
 
     private final JTextField txtCccd = new JTextField(12);
     private final JTextField txtSbd = new JTextField(10);
@@ -228,20 +238,99 @@ public class ThisinhPanel extends JPanel {
         addField(formRow, gbc, r, "Đối tượng", txtDoiTuong, 2);
         addField(formRow, gbc, r, "Khu vực", txtKhuVuc, 4);
 
-        wrapper.add(formRow, BorderLayout.CENTER);
+        JPanel middle = new JPanel(new BorderLayout(0, 8));
+        middle.setOpaque(false);
+        middle.add(buildStatsPanel(), BorderLayout.NORTH);
+        middle.add(formRow, BorderLayout.CENTER);
+
+        wrapper.add(middle, BorderLayout.CENTER);
         return wrapper;
     }
 
+    private JPanel buildStatsPanel() {
+        JPanel statsWrapper = new JPanel(new GridLayout(1, 3, 8, 0));
+        statsWrapper.setOpaque(false);
+
+        lblStatsTotalValue.setFont(Style.TITLE_FONT.deriveFont(20f));
+        lblStatsTotalValue.setForeground(new Color(22, 163, 74));
+
+        lblStatsDoiTuongValue.setFont(Style.TITLE_FONT.deriveFont(18f));
+        lblStatsDoiTuongValue.setForeground(new Color(59, 130, 246));
+        lblStatsKhuVucValue.setFont(Style.TITLE_FONT.deriveFont(18f));
+        lblStatsKhuVucValue.setForeground(new Color(59, 130, 246));
+
+        cboStatsDoiTuong.setFont(Style.TABLE_FONT);
+        cboStatsKhuVuc.setFont(Style.TABLE_FONT);
+        cboStatsDoiTuong.addActionListener(e -> updateSelectedStatsValue(cboStatsDoiTuong, statsDoiTuongCounts, lblStatsDoiTuongValue));
+        cboStatsKhuVuc.addActionListener(e -> updateSelectedStatsValue(cboStatsKhuVuc, statsKhuVucCounts, lblStatsKhuVucValue));
+
+        statsWrapper.add(createStatsCard("Tổng thí sinh", lblStatsTotalValue));
+        statsWrapper.add(createDropdownStatsCard("Theo đối tượng", cboStatsDoiTuong, lblStatsDoiTuongValue));
+        statsWrapper.add(createDropdownStatsCard("Theo khu vực", cboStatsKhuVuc, lblStatsKhuVucValue));
+        return statsWrapper;
+    }
+
+    private JPanel createStatsCard(String title, JComponent content) {
+        JPanel card = new JPanel(new BorderLayout(6, 6));
+        card.setOpaque(true);
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 225, 235)),
+                BorderFactory.createEmptyBorder(8, 10, 8, 10)));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(Style.BUTTON_FONT.deriveFont(Font.BOLD, 12f));
+        titleLabel.setForeground(new Color(60, 70, 90));
+        card.add(titleLabel, BorderLayout.NORTH);
+        card.add(content, BorderLayout.CENTER);
+        return card;
+    }
+
+    private JPanel createDropdownStatsCard(String title, JComboBox<String> combo, JLabel valueLabel) {
+        JPanel card = new JPanel(new BorderLayout(6, 6));
+        card.setOpaque(true);
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 225, 235)),
+                BorderFactory.createEmptyBorder(8, 10, 8, 10)));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(Style.BUTTON_FONT.deriveFont(Font.BOLD, 12f));
+        titleLabel.setForeground(new Color(60, 70, 90));
+        card.add(titleLabel, BorderLayout.NORTH);
+
+        JPanel body = new JPanel(new BorderLayout(6, 6));
+        body.setOpaque(false);
+        body.add(combo, BorderLayout.NORTH);
+        body.add(valueLabel, BorderLayout.CENTER);
+        card.add(body, BorderLayout.CENTER);
+        return card;
+    }
+
     private JPanel buildPaginationPanel() {
-        JPanel pager = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 6));
+        JPanel pager = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 6));
         pager.setOpaque(false);
 
-        btnPrevPage = new JButton("< Trang trước");
-        btnNextPage = new JButton("Trang sau >");
+        cboPageSize = new JComboBox<>(new Integer[] { 10, 20, 50, 100 });
+        cboPageSize.setSelectedItem(pageSize);
+        btnPrevPage = new JButton("<");
+        btnNextPage = new JButton(">");
 
+        Style.stylePaginationCombo(cboPageSize);
         Style.stylePaginationButton(btnPrevPage);
         Style.stylePaginationButton(btnNextPage);
         Style.stylePaginationInfoLabel(lblPageInfo);
+        lblPageInfo.setText("Trang 1/1 - Tổng 0 bản ghi");
+
+        cboPageSize.addActionListener(e -> {
+            Integer selected = (Integer) cboPageSize.getSelectedItem();
+            if (selected == null) {
+                return;
+            }
+            pageSize = selected;
+            currentPage = 1;
+            loadPageAsync();
+        });
 
         btnPrevPage.addActionListener(e -> {
             if (currentPage > 1) {
@@ -257,9 +346,10 @@ public class ThisinhPanel extends JPanel {
             }
         });
 
+        pager.add(cboPageSize);
         pager.add(btnPrevPage);
-        pager.add(lblPageInfo);
         pager.add(btnNextPage);
+        pager.add(lblPageInfo);
 
         return pager;
     }
@@ -428,19 +518,22 @@ public class ThisinhPanel extends JPanel {
     private void loadPageAsync() {
         final int requestId = ++lastRequestId;
         final int pageToLoad = currentPage;
+        final int pageSizeToLoad = pageSize;
         final String keyword = currentKeyword;
         setLoadingState(true);
 
         new SwingWorker<PageResult, Void>() {
             @Override
             protected PageResult doInBackground() {
-                List<XtThisinhxettuyen25> entities = thiSinhService.searchPaginated(keyword, pageToLoad, DB_PAGE_SIZE);
+                List<XtThisinhxettuyen25> entities = thiSinhService.searchPaginated(keyword, pageToLoad, pageSizeToLoad);
                 long total = thiSinhService.countByKeyword(keyword);
+                Map<String, Long> doiTuongCounts = thiSinhService.countByDoiTuong(keyword);
+                Map<String, Long> khuVucCounts = thiSinhService.countByKhuVuc(keyword);
                 List<Object[]> rows = new ArrayList<>(entities.size());
                 for (XtThisinhxettuyen25 ts : entities) {
                     rows.add(entityToRow(ts));
                 }
-                return new PageResult(rows, total);
+                return new PageResult(rows, total, doiTuongCounts, khuVucCounts);
             }
 
             @Override
@@ -460,6 +553,7 @@ public class ThisinhPanel extends JPanel {
 
                     int totalPages = getTotalPages();
                     lblPageInfo.setText("Trang " + currentPage + "/" + totalPages + " - Tổng " + totalRecords + " bản ghi");
+                    updateStatsPanel(result.totalRecords(), result.doiTuongCounts(), result.khuVucCounts());
                 } catch (Exception e) {
                     ToastThiSinh.showError(ThisinhPanel.this, "Lỗi tải dữ liệu: " + e.getMessage());
                 } finally {
@@ -473,11 +567,14 @@ public class ThisinhPanel extends JPanel {
         if (totalRecords <= 0) {
             return 1;
         }
-        return (int) Math.ceil(totalRecords * 1.0 / DB_PAGE_SIZE);
+        return (int) Math.ceil(totalRecords * 1.0 / pageSize);
     }
 
     private void setLoadingState(boolean loading) {
         setCursor(loading ? Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR) : Cursor.getDefaultCursor());
+        if (cboPageSize != null) {
+            cboPageSize.setEnabled(!loading);
+        }
         if (btnPrevPage != null) {
             btnPrevPage.setEnabled(!loading && currentPage > 1);
         }
@@ -486,7 +583,49 @@ public class ThisinhPanel extends JPanel {
         }
     }
 
-    private record PageResult(List<Object[]> rows, long totalRecords) {
+    private void updateStatsPanel(long total, Map<String, Long> doiTuongCounts, Map<String, Long> khuVucCounts) {
+        lblStatsTotalValue.setText(String.format("%,d", total));
+        statsDoiTuongCounts = doiTuongCounts == null ? java.util.Collections.emptyMap() : doiTuongCounts;
+        statsKhuVucCounts = khuVucCounts == null ? java.util.Collections.emptyMap() : khuVucCounts;
+        updateStatsDropdown(cboStatsDoiTuong, statsDoiTuongCounts);
+        updateStatsDropdown(cboStatsKhuVuc, statsKhuVucCounts);
+        updateSelectedStatsValue(cboStatsDoiTuong, statsDoiTuongCounts, lblStatsDoiTuongValue);
+        updateSelectedStatsValue(cboStatsKhuVuc, statsKhuVucCounts, lblStatsKhuVucValue);
+    }
+
+    private void updateStatsDropdown(JComboBox<String> combo, Map<String, Long> counts) {
+        String selected = combo.getSelectedItem() == null ? null : combo.getSelectedItem().toString();
+        combo.removeAllItems();
+        if (counts == null || counts.isEmpty()) {
+            combo.addItem("(Chưa có dữ liệu)");
+            combo.setSelectedIndex(0);
+            return;
+        }
+        for (String key : counts.keySet()) {
+            combo.addItem(key);
+        }
+        if (selected != null && counts.containsKey(selected)) {
+            combo.setSelectedItem(selected);
+        } else {
+            combo.setSelectedIndex(0);
+        }
+    }
+
+    private void updateSelectedStatsValue(JComboBox<String> combo, Map<String, Long> counts, JLabel valueLabel) {
+        if (counts == null || counts.isEmpty()) {
+            valueLabel.setText("0");
+            return;
+        }
+        String selected = combo.getSelectedItem() == null ? "" : combo.getSelectedItem().toString();
+        long value = counts.getOrDefault(selected, 0L);
+        valueLabel.setText(String.format("%,d", value));
+    }
+
+    private record PageResult(
+            List<Object[]> rows,
+            long totalRecords,
+            Map<String, Long> doiTuongCounts,
+            Map<String, Long> khuVucCounts) {
     }
 
     private void clearForm() {
