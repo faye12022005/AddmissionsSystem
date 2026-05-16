@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -13,8 +12,6 @@ import java.util.Objects;
 import java.util.Optional;
 import org.AdmissionsSystem.dao.QuanLiDiemVsatDao;
 import org.AdmissionsSystem.models.XtDiemVsat;
-import org.AdmissionsSystem.models.XtThisinhxettuyen25;
-import org.AdmissionsSystem.bus.service.ThiSinhService;
 
 public class QuanLiDiemVSATService {
 	private static final String[] IMPORT_COLUMNS = {
@@ -33,8 +30,6 @@ public class QuanLiDiemVSATService {
 	private static final Map<String, String> IMPORT_ALIASES = buildImportAliases();
 
 	private final QuanLiDiemVsatDao vsatDao = new QuanLiDiemVsatDao();
-	private final ThiSinhService thiSinhService = new ThiSinhService();
-	private final Map<String, String> hoTenCache = new HashMap<>();
 
 	public List<VsatRecord> query(String searchText) {
 		String normalizedSearch = normalizeText(searchText);
@@ -45,11 +40,19 @@ public class QuanLiDiemVSATService {
 				.toList();
 	}
 
+	public List<BigDecimal> fetchScoresForStatistics(String subject) {
+		String property = resolveVsatSubjectProperty(subject);
+		if (property == null) {
+			return List.of();
+		}
+		return vsatDao.fetchScores(property);
+	}
+
 	public PagedResult<VsatRecord> queryPage(String searchText, int page, int pageSize) {
 		String safeSearch = safeText(searchText);
 		int safePage = Math.max(1, page);
 		int safePageSize = Math.max(1, pageSize);
-		List<String> cccdMatches = resolveCccdMatches(safeSearch);
+		List<String> cccdMatches = List.of();
 
 		List<XtDiemVsat> entities = vsatDao.findPage(safeSearch, cccdMatches, safePage, safePageSize);
 		long total = vsatDao.countFiltered(safeSearch, cccdMatches);
@@ -276,11 +279,10 @@ public class QuanLiDiemVSATService {
 	private VsatRecord toRecord(XtDiemVsat entity) {
 		String cccd = safeText(entity.getCccd());
 		String dotThi = safeText(entity.getDotThi());
-		String hoTen = resolveHoTen(cccd);
 		return new VsatRecord(
 				entity.getIdVsat(),
 				cccd,
-				hoTen,
+				"",
 				dotThi,
 				entity.getToanVsat(),
 				entity.getVanVsat(),
@@ -292,39 +294,29 @@ public class QuanLiDiemVSATService {
 				entity.getDiaVsat());
 	}
 
-	private String resolveHoTen(String cccd) {
-		String key = safeText(cccd);
-		if (hoTenCache.containsKey(key)) {
-			return hoTenCache.get(key);
-		}
-		String hoTen = thiSinhService.resolveHoTen(cccd, "");
-		hoTenCache.put(key, hoTen);
-		return hoTen;
-	}
-
 	private boolean matchesSearch(VsatRecord record, String normalizedSearch) {
 		if (normalizedSearch.isBlank()) {
 			return true;
 		}
 		return normalizeText(record.cccd()).contains(normalizedSearch)
-				|| normalizeText(record.hoTen()).contains(normalizedSearch)
 				|| normalizeText(record.dotThi()).contains(normalizedSearch);
 	}
 
-	private List<String> resolveCccdMatches(String searchText) {
-		if (isBlank(searchText)) {
-			return List.of();
+	private String resolveVsatSubjectProperty(String subject) {
+		if (subject == null) {
+			return null;
 		}
-		List<XtThisinhxettuyen25> candidates = thiSinhService.search(searchText);
-		if (candidates == null || candidates.isEmpty()) {
-			return List.of();
-		}
-		return candidates.stream()
-				.map(XtThisinhxettuyen25::getCccd)
-				.filter(value -> !isBlank(value))
-				.map(value -> value.trim().toLowerCase(Locale.ROOT))
-				.distinct()
-				.toList();
+		return switch (subject) {
+			case "Toán" -> "toanVsat";
+			case "Văn" -> "vanVsat";
+			case "Anh" -> "anhVsat";
+			case "Lý" -> "lyVsat";
+			case "Hóa" -> "hoaVsat";
+			case "Sinh" -> "sinhVsat";
+			case "Sử" -> "suVsat";
+			case "Địa" -> "diaVsat";
+			default -> null;
+		};
 	}
 
 	private Object rowValue(Object[] row, int index) {

@@ -16,7 +16,7 @@ public class QuanLyDiemTabPanel extends JPanel {
 	private final DiemThptDgnlPanel thptPanel;
 	private final DiemVsatPanel vsatPanel;
 	private final JTabbedPane subTabs = new JTabbedPane();
-	private final SearchPanel searchPanel = new SearchPanel(360, "Tìm theo CCCD, SBD, họ tên", "Tìm");
+	private final SearchPanel searchPanel = new SearchPanel(360, "Tìm theo CCCD, SBD, phương thức/đợt thi", "Tìm");
 	private String currentSearchText = "";
 
 	public QuanLyDiemTabPanel(QuanLiDiemController controller) {

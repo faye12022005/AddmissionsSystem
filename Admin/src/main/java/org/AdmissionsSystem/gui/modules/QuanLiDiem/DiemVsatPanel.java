@@ -25,7 +25,6 @@ public class DiemVsatPanel extends JPanel implements DiemTabActions {
 	private static final String[] COLUMN_NAMES = {
 			"ID",
 			"CCCD",
-			"Họ tên",
 			"Đợt thi",
 			"Toán",
 			"Văn",
@@ -68,8 +67,7 @@ public class DiemVsatPanel extends JPanel implements DiemTabActions {
 		if (table.getColumnModel().getColumnCount() > 0) {
 			table.getColumnModel().getColumn(0).setPreferredWidth(60);
 			table.getColumnModel().getColumn(1).setPreferredWidth(120);
-			table.getColumnModel().getColumn(2).setPreferredWidth(160);
-			table.getColumnModel().getColumn(3).setPreferredWidth(120);
+			table.getColumnModel().getColumn(2).setPreferredWidth(120);
 		}
 
 		add(customTable, BorderLayout.CENTER);
@@ -336,7 +334,6 @@ public class DiemVsatPanel extends JPanel implements DiemTabActions {
 		return new Object[] {
 				row.id(),
 				row.cccd(),
-				row.hoTen(),
 				row.dotThi(),
 				formatScore(row.toan()),
 				formatScore(row.van()),
@@ -353,7 +350,6 @@ public class DiemVsatPanel extends JPanel implements DiemTabActions {
 		return new Object[] {
 				"",
 				row.cccd(),
-				"",
 				row.dotThi(),
 				formatScore(row.toan()),
 				formatScore(row.van()),
