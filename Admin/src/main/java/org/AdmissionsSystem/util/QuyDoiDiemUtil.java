@@ -2,152 +2,130 @@ package org.AdmissionsSystem.util;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.Normalizer;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import org.AdmissionsSystem.models.XtBangquydoi;
-import org.hibernate.Session;
 
-/**
- * Tiện ích quy đổi điểm V-SAT và ĐGNL dựa trên bảng quy đổi bách phân vị.
- *
- * <p>
- * Entity {@link XtBangquydoi} đang map bảng quy đổi trong database. Mỗi dòng
- * quy đổi có khoảng điểm đầu vào [d_diema, d_diemb] và khoảng điểm sau quy đổi
- * [d_diemc, d_diemd].
- * </p>
- */
 public final class QuyDoiDiemUtil {
 
-    private static final int RESULT_SCALE = 3;
-    private static final String DGNL = "dgnl";
-    private static final String VSAT = "vsat";
+    private static final int SCALE = 3;
+    private static final Map<String, List<BangQuyDoiEntry>> VSAT_CACHE = new HashMap<>();
+    private static final Map<String, List<BangQuyDoiEntry>> DGNL_CACHE = new HashMap<>();
 
-    private QuyDoiDiemUtil() {
-    }
-
-    /**
-     * Quy đổi điểm ĐGNL sang thang 30 theo tổ hợp.
-     *
-     * @param diem điểm ĐGNL gốc của thí sinh
-     * @param toHop mã tổ hợp cần tra trong bảng quy đổi, ví dụ "A01"
-     * @return điểm ĐGNL đã quy đổi sang thang 30, làm tròn 3 chữ số thập phân
-     */
-    public static float quyDoiDgnl(float diem, String toHop) {
-        BigDecimal score = toBigDecimal(diem, "Điểm ĐGNL");
-        XtBangquydoi rule = findRule(score, DGNL, requireText(toHop, "Tổ hợp"), null);
-        return interpolate(score, rule).floatValue();
-    }
+    private QuyDoiDiemUtil() {}
 
     /**
-     * Quy đổi điểm một môn V-SAT sang thang 10 theo mã môn.
-     *
-     * @param diem điểm V-SAT gốc của môn thi
-     * @param tenMon mã môn cần tra trong bảng quy đổi, ví dụ "VA"
-     * @return điểm môn V-SAT đã quy đổi sang thang 10, làm tròn 3 chữ số thập phân
+     * Khởi tạo cache từ dữ liệu bảng quy đổi. Gọi một lần khi ứng dụng khởi động.
      */
-    public static float quyDoiVsat(float diem, String tenMon) {
-        BigDecimal score = toBigDecimal(diem, "Điểm VSAT");
-        XtBangquydoi rule = findRule(score, VSAT, null, requireText(tenMon, "Tên môn"));
-        return interpolate(score, rule).floatValue();
-    }
-
-    private static XtBangquydoi findRule(BigDecimal score, String phuongThuc, String toHop, String mon) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            // Lọc trước theo khoảng điểm để giảm số dòng cần so khớp trong Java.
-            List<XtBangquydoi> candidates = session.createQuery(
-                    "FROM XtBangquydoi WHERE dDiema <= :score AND dDiemb >= :score", XtBangquydoi.class)
-                    .setParameter("score", score)
-                    .list();
-
-            // Sau đó khớp phương thức, tổ hợp hoặc môn. Phương thức/tổ hợp vẫn
-            // chuẩn hóa để tránh lệch dữ liệu kiểu "ĐGNL" với "DGNL"; riêng mã
-            // môn VSAT là mã 2 ký tự như "VA", nên chỉ cần trim và ignore-case.
-            return candidates.stream()
-                    .filter(rule -> matches(rule.getDPhuongthuc(), phuongThuc))
-                    .filter(rule -> toHop == null || matches(rule.getDTohop(), toHop))
-                    .filter(rule -> mon == null || matchesSubjectCode(rule.getDMon(), mon))
-                    .min(Comparator.comparing(QuyDoiDiemUtil::phanViAsInt)
-                            .thenComparing(rule -> rule.getIdqd() == null ? Integer.MAX_VALUE : rule.getIdqd()))
-                    .orElseThrow(() -> new IllegalArgumentException(buildNotFoundMessage(score, phuongThuc, toHop, mon)));
+    public static void init(List<XtBangquydoi> allRows) {
+        VSAT_CACHE.clear();
+        DGNL_CACHE.clear();
+        for (XtBangquydoi row : allRows) {
+            String phuongThuc = row.getDPhuongthuc();
+            if ("VSAT".equalsIgnoreCase(phuongThuc)) {
+                String mon = row.getDMon();
+                String key = mon == null ? null : mon.trim().toUpperCase(Locale.ROOT);
+                if (key == null || key.isEmpty()) {
+                    continue;
+                }
+                VSAT_CACHE.computeIfAbsent(key, k -> new ArrayList<>())
+                          .add(new BangQuyDoiEntry(row));
+            } else if ("DGNL".equalsIgnoreCase(phuongThuc)) {
+                String toHop = row.getDTohop();
+                String key = toHop == null ? null : toHop.trim().toUpperCase(Locale.ROOT);
+                if (key == null || key.isEmpty()) {
+                    continue;
+                }
+                DGNL_CACHE.computeIfAbsent(key, k -> new ArrayList<>())
+                           .add(new BangQuyDoiEntry(row));
+            }
+        }
+        // Sắp xếp theo a tăng dần để dễ tìm kiếm
+        for (List<BangQuyDoiEntry> list : VSAT_CACHE.values()) {
+            list.sort(Comparator.comparing(e -> e.a));
+        }
+        for (List<BangQuyDoiEntry> list : DGNL_CACHE.values()) {
+            list.sort(Comparator.comparing(e -> e.a));
         }
     }
 
-    private static BigDecimal interpolate(BigDecimal score, XtBangquydoi rule) {
-        BigDecimal a = requireNumber(rule.getDDiema(), "d_diema");
-        BigDecimal b = requireNumber(rule.getDDiemb(), "d_diemb");
-        BigDecimal c = requireNumber(rule.getDDiemc(), "d_diemc");
-        BigDecimal d = requireNumber(rule.getDDiemd(), "d_diemd");
-
-        BigDecimal inputRange = b.subtract(a);
-        if (inputRange.compareTo(BigDecimal.ZERO) == 0) {
-            throw new IllegalArgumentException("Khoảng điểm quy đổi không hợp lệ: d_diema bằng d_diemb.");
+    /**
+     * Quy đổi điểm V-SAT (thang 450) sang thang 10.
+     * @param diem  điểm gốc (float)
+     * @param mon   mã môn (TO, VA, LI, HO, SI, SU, DI, N1)
+     * @return điểm thang 10 (BigDecimal)
+     */
+    public static BigDecimal quyDoiVsat(float diem, String mon) {
+        String key = mon.toUpperCase();
+        List<BangQuyDoiEntry> entries = VSAT_CACHE.get(key);
+        if (entries == null || entries.isEmpty()) {
+            throw new IllegalArgumentException("Không có dữ liệu quy đổi cho môn " + mon);
         }
+        BigDecimal x = BigDecimal.valueOf(diem);
+        BangQuyDoiEntry rule = findEntry(entries, x);
+        return interpolate(x, rule);
+    }
 
-        BigDecimal outputRange = d.subtract(c);
-        // Công thức quy đổi trong file:
+    /**
+     * Quy đổi điểm ĐGNL (thang 1200) sang thang 30.
+     * @param diem   điểm gốc
+     * @param toHop  mã tổ hợp (A00, A01, B00, C00, C01, D01...)
+     * @return điểm thang 30
+     */
+    public static BigDecimal quyDoiDgnl(float diem, String toHop) {
+        String key = toHop.toUpperCase();
+        List<BangQuyDoiEntry> entries = DGNL_CACHE.get(key);
+        if (entries == null || entries.isEmpty()) {
+            throw new IllegalArgumentException("Không có dữ liệu quy đổi cho tổ hợp " + toHop);
+        }
+        BigDecimal x = BigDecimal.valueOf(diem);
+        BangQuyDoiEntry rule = findEntry(entries, x);
+        return interpolate(x, rule);
+    }
+
+    // Tìm khoảng chứa x, nếu nằm ngoài thì lấy khoảng đầu hoặc cuối
+    private static BangQuyDoiEntry findEntry(List<BangQuyDoiEntry> entries, BigDecimal x) {
+        // Nếu x < a của khoảng đầu tiên
+        BangQuyDoiEntry first = entries.get(0);
+        if (x.compareTo(first.a) <= 0) {
+            return first;
+        }
+        // Nếu x > b của khoảng cuối cùng
+        BangQuyDoiEntry last = entries.get(entries.size() - 1);
+        if (x.compareTo(last.b) >= 0) {
+            return last;
+        }
+        // Tìm khoảng phù hợp
+        for (BangQuyDoiEntry e : entries) {
+            if (x.compareTo(e.a) > 0 && x.compareTo(e.b) <= 0) {
+                return e;
+            }
+        }
+        // Fallback: khoảng gần nhất (theo a)
+        return entries.stream()
+                .min(Comparator.comparing(e -> e.a.subtract(x).abs()))
+                .orElse(first);
+    }
+
+    private static BigDecimal interpolate(BigDecimal x, BangQuyDoiEntry rule) {
         // y = c + (x - a) * (d - c) / (b - a)
-        // Với x là điểm gốc, y là điểm sau quy đổi.
-        return score.subtract(a)
-                .multiply(outputRange)
-                .divide(inputRange, RESULT_SCALE + 4, RoundingMode.HALF_UP)
-                .add(c)
-                .setScale(RESULT_SCALE, RoundingMode.HALF_UP);
-    }
-
-    private static BigDecimal toBigDecimal(float value, String label) {
-        if (!Float.isFinite(value)) {
-            throw new IllegalArgumentException(label + " không hợp lệ.");
+        BigDecimal range = rule.b.subtract(rule.a);
+        if (range.compareTo(BigDecimal.ZERO) == 0) {
+            return rule.c;
         }
-        return new BigDecimal(Float.toString(value));
+        BigDecimal ratio = x.subtract(rule.a)
+                .multiply(rule.d.subtract(rule.c))
+                .divide(range, SCALE + 4, RoundingMode.HALF_UP);
+        return rule.c.add(ratio).setScale(SCALE, RoundingMode.HALF_UP);
     }
 
-    private static String requireText(String value, String label) {
-        if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException(label + " không được để trống.");
+    // Lớp nội bộ lưu thông tin khoảng quy đổi
+    private static class BangQuyDoiEntry {
+        final BigDecimal a, b, c, d;
+        BangQuyDoiEntry(XtBangquydoi row) {
+            this.a = row.getDDiema();
+            this.b = row.getDDiemb();
+            this.c = row.getDDiemc();
+            this.d = row.getDDiemd();
         }
-        return value.trim();
-    }
-
-    private static BigDecimal requireNumber(BigDecimal value, String column) {
-        if (value == null) {
-            throw new IllegalArgumentException("Thiếu dữ liệu cột " + column + " trong bảng quy đổi.");
-        }
-        return value;
-    }
-
-    private static boolean matches(String actual, String expected) {
-        return normalize(actual).equals(normalize(expected));
-    }
-
-    private static boolean matchesSubjectCode(String actual, String expected) {
-        return actual != null && expected != null && actual.trim().equalsIgnoreCase(expected.trim());
-    }
-
-    private static String normalize(String value) {
-        if (value == null) {
-            return "";
-        }
-        // Chuẩn hóa text để so khớp ổn định giữa dữ liệu có dấu/không dấu.
-        String normalized = Normalizer.normalize(value.trim().toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
-                .replace("đ", "d")
-                .replace("Đ", "d")
-                .replaceAll("\\p{M}", "");
-        return normalized.replaceAll("[^a-z0-9]", "");
-    }
-
-    private static int phanViAsInt(XtBangquydoi rule) {
-        try {
-            return rule.getDPhanvi() == null ? Integer.MAX_VALUE : Integer.parseInt(rule.getDPhanvi().trim());
-        } catch (NumberFormatException e) {
-            return Integer.MAX_VALUE;
-        }
-    }
-
-    private static String buildNotFoundMessage(BigDecimal score, String phuongThuc, String toHop, String mon) {
-        String target = toHop != null ? "tổ hợp " + toHop : "môn " + mon;
-        return "Không tìm thấy dòng quy đổi " + phuongThuc.toUpperCase(Locale.ROOT)
-                + " cho " + target + " với điểm " + score + ".";
     }
 }

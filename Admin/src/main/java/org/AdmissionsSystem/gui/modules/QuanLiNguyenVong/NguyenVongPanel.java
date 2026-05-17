@@ -54,7 +54,7 @@ public class NguyenVongPanel extends JPanel {
 
     // ── Data Model ───────────────────────────────────────────
     private static final String[] COL_NAMES = {
-        "THỨ TỰ", "THÍ SINH", "CCCD", "MÃ NGÀNH", "TỔ HỢP", "PHƯƠNG THỨC", "ĐIỂM XT", "TRẠNG THÁI", "HÀNH ĐỘNG"
+        "THỨ TỰ NGUYỆN VỌNG", "THÍ SINH", "CCCD", "MÃ NGÀNH", "TỔ HỢP", "PHƯƠNG THỨC", "ĐIỂM XT", "TRẠNG THÁI", "HÀNH ĐỘNG"
     };
     
     private static final int RECORDS_PER_PAGE = 8;
@@ -340,31 +340,6 @@ public class NguyenVongPanel extends JPanel {
                 badge.setBackground(trung ? SUCCESS_BG : WARN_BG);
                 badge.setBorder(new EmptyBorder(4, 10, 4, 10));
                 p.add(badge);
-                return p;
-            }
-        });
-
-        // Hành động
-        table.getColumnModel().getColumn(8).setCellRenderer(new DefaultTableCellRenderer() {
-            @Override public Component getTableCellRendererComponent(
-                    JTable t, Object val, boolean sel, boolean foc, int row, int col) {
-                JPanel p = new JPanel(new GridBagLayout());
-                p.setBackground(sel ? t.getSelectionBackground() : WHITE);
-                JLabel edit = new JLabel("✏");
-                JLabel del  = new JLabel("🗑");
-                edit.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
-                del.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
-                edit.setForeground(TEXT_MUTED);
-                del.setForeground(TEXT_MUTED);
-                edit.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                del.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                JPanel actions = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-                actions.setOpaque(false);
-
-                actions.add(edit);
-                actions.add(del);
-                                        
-                p.add(actions);
                 return p;
             }
         });
