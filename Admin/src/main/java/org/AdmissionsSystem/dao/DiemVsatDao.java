@@ -36,4 +36,30 @@ public class DiemVsatDao extends AbstractCrudDao<XtDiemVsat, Integer> {
                     .list();
         }
     }
+
+    // --- Bổ sung các phương thức cần thiết cho Service ---
+
+    /**
+     * Tìm bản ghi theo CCCD và đợt thi (duy nhất)
+     */
+    public XtDiemVsat findByCccdAndDotThi(String cccd, String dotThi) {
+        try (Session session = getSessionFactory().openSession()) {
+            List<XtDiemVsat> list = session.createQuery(
+                    "FROM XtDiemVsat WHERE cccd = :c AND dotThi = :d",
+                    XtDiemVsat.class)
+                    .setParameter("c", cccd == null ? "" : cccd.trim())
+                    .setParameter("d", dotThi == null ? "" : dotThi.trim())
+                    .list();
+            return list.isEmpty() ? null : list.get(0);
+        }
+    }
+
+    /**
+     * Đếm tổng số bản ghi
+     */
+    public long count() {
+        try (Session session = getSessionFactory().openSession()) {
+            return session.createQuery("SELECT COUNT(*) FROM XtDiemVsat", Long.class).uniqueResult();
+        }
+    }
 }

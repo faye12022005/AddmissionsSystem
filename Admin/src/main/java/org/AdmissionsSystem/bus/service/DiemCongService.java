@@ -1,8 +1,12 @@
 package org.AdmissionsSystem.bus.service;
 
-import java.util.List;
-import org.AdmissionsSystem.dao.DiemCongDao;
-import org.AdmissionsSystem.models.XtDiemcongxetuyen;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import org.AdmissionsSystem.dao.*;
+import org.AdmissionsSystem.models.*;
 
 public class DiemCongService {
 
@@ -53,4 +57,23 @@ public class DiemCongService {
     }
 
     public long count() { return dao.count(); }
+
+        /**
+     * Lấy tổng điểm cộng đã được tính sẵn trong bảng xt_diemcongxetuyen.
+     * @param cccd      CCCD thí sinh
+     * @param maNganh   Mã ngành
+     * @param maToHop   Mã tổ hợp
+     * @param phuongThuc Phương thức xét tuyển (THPT/VSAT/DGNL)
+     * @return điểm cộng (thang 30, tối đa 3)
+     */
+    public BigDecimal layDiemCongDaCo(String cccd, String maNganh, String maToHop, String phuongThuc) {
+        // Tạo khóa theo đúng format trong DB (ví dụ: TS_xxx_7140231_A01)
+        String key = cccd + "_" + maNganh + "_" + maToHop;
+        XtDiemcongxetuyen record = dao.findByKeys(key);
+        if (record == null) {
+            // Nếu chưa có, có thể trả về 0 hoặc log warning
+            return BigDecimal.ZERO;
+        }
+        return record.getDiemtong() != null ? record.getDiemtong() : BigDecimal.ZERO;
+    }
 }
