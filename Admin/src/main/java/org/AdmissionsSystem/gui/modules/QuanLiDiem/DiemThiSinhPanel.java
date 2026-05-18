@@ -14,7 +14,9 @@ public class DiemThiSinhPanel extends JPanel {
     private final JTabbedPane mainTabs = new JTabbedPane();
     private final QuanLyDiemTabPanel quanLyDiemTab;
     private ThongKeDiemPanel thongKeTab;
+    private DanhSachDiemXetTuyenPanel danhSachTab;
     private final JPanel thongKePlaceholder = new JPanel(new BorderLayout());
+    private final JPanel danhSachPlaceholder = new JPanel(new BorderLayout());
 
     public DiemThiSinhPanel() {
         setLayout(new BorderLayout(8, 8));
@@ -34,13 +36,24 @@ public class DiemThiSinhPanel extends JPanel {
         thongKePlaceholder.setOpaque(false);
         thongKePlaceholder.add(placeholderText, BorderLayout.CENTER);
 
+        JLabel danhSachText = new JLabel("Mở tab 'Danh sách điểm xét tuyển theo nguyện vọng' để tải dữ liệu.",
+                SwingConstants.CENTER);
+        danhSachText.setFont(Style.BUTTON_FONT);
+        danhSachPlaceholder.setOpaque(false);
+        danhSachPlaceholder.add(danhSachText, BorderLayout.CENTER);
+
         mainTabs.addTab("Quản lí điểm", quanLyDiemTab);
         mainTabs.addTab("Thống kê điểm", thongKePlaceholder);
+        mainTabs.addTab("Danh sách điểm xét tuyển theo nguyện vọng", danhSachPlaceholder);
 
         mainTabs.addChangeListener(e -> {
             if (mainTabs.getSelectedIndex() == 1 && thongKeTab == null) {
                 thongKeTab = new ThongKeDiemPanel();
                 mainTabs.setComponentAt(1, thongKeTab);
+            }
+            if (mainTabs.getSelectedIndex() == 2 && danhSachTab == null) {
+                danhSachTab = new DanhSachDiemXetTuyenPanel(controller);
+                mainTabs.setComponentAt(2, danhSachTab);
             }
         });
 
