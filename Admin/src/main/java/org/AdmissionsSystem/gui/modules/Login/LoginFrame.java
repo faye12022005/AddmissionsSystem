@@ -106,7 +106,7 @@ public class LoginFrame extends JFrame {
         gbc.insets = new Insets(0, 0, 26, 0);
         branding.add(logo, gbc);
 
-        JLabel appName = new JLabel("WELLCOME", SwingConstants.CENTER);
+        JLabel appName = new JLabel("WELCOME", SwingConstants.CENTER);
         appName.setForeground(new Color(30, 41, 59));
         appName.setFont(new Font("Segoe UI", Font.BOLD, 30));
         gbc.gridy = 1;

@@ -17,6 +17,7 @@ import org.AdmissionsSystem.dao.DiemVsatDao;
 import org.AdmissionsSystem.dao.NganhHocDao;
 import org.AdmissionsSystem.dao.NganhToHopDao;
 import org.AdmissionsSystem.dao.ThiSinhDao;
+import org.AdmissionsSystem.dao.UutienDao;
 import org.AdmissionsSystem.dao.XtNguyenvongxettuyenDao;
 import org.AdmissionsSystem.models.XtBangquydoi;
 import org.AdmissionsSystem.models.XtDiemVsat;
@@ -26,6 +27,7 @@ import org.AdmissionsSystem.models.XtNganh;
 import org.AdmissionsSystem.models.XtNganhTohop;
 import org.AdmissionsSystem.models.XtNguyenvongxettuyen;
 import org.AdmissionsSystem.models.XtThisinhxettuyen25;
+import org.AdmissionsSystem.models.XtUutien;
 import org.AdmissionsSystem.util.QuyDoiDiemUtil;
 
 public class XtNguyenvongxettuyenService {
@@ -37,9 +39,11 @@ public class XtNguyenvongxettuyenService {
     private final DiemThiDao diemThiDao = new DiemThiDao();
     private final DiemVsatDao diemVsatDao = new DiemVsatDao();
     private final DiemCongDao diemCongDao = new DiemCongDao();
+    private final UutienDao uutienDao = new UutienDao();
     private final BangQuyDoiService bangQuyDoiService = new BangQuyDoiService();
 
     private static final BigDecimal DIEM_TOI_DA = new BigDecimal("30");
+    private static final BigDecimal DIEM_MON_TOI_DA = new BigDecimal("10");
     private static final BigDecimal DIEM_UT_MOC = new BigDecimal("22.5");
     private static final BigDecimal DIEM_UT_MAU = new BigDecimal("7.5");
     private static final int SCALE = 3;
@@ -264,6 +268,7 @@ public class XtNguyenvongxettuyenService {
         Map<String, XtDiemthixettuyen> diemDgnlByCccd = buildDiemThiByPhuongThuc("DGNL");
         Map<String, XtDiemVsat> diemVsatByCccd = buildBestVsatByCccd();
         Map<String, List<XtDiemcongxetuyen>> diemCongByCccd = buildDiemCongByCccd();
+        Map<String, List<XtUutien>> uutienByCccd = buildUutienByCccd();
         Map<String, XtThisinhxettuyen25> thiSinhByCccd = thiSinhDao.findAll().stream()
                 .filter(ts -> ts != null && !normalizeKey(ts.getCccd()).isEmpty())
                 .collect(Collectors.toMap(
@@ -281,6 +286,7 @@ public class XtNguyenvongxettuyenService {
                     diemDgnlByCccd,
                     diemVsatByCccd,
                     diemCongByCccd,
+                    uutienByCccd,
                     thiSinhByCccd);
 
             nv.setDiemThxt(best.diemThxt());
@@ -289,10 +295,9 @@ public class XtNguyenvongxettuyenService {
             nv.setDiemXettuyen(best.diemXettuyen());
             nv.setTtPhuongthuc(best.phuongThuc());
             nv.setTtThm(best.toHop());
-
-            dao.capNhatNguyenVong(nv);
             updated++;
         }
+        dao.capNhatNguyenVongHangLoat(all);
         return updated;
     }
 
@@ -311,12 +316,8 @@ public class XtNguyenvongxettuyenService {
             }
         }
 
-        Map<String, XtThisinhxettuyen25> thiSinhByCccd = thiSinhDao.findAll().stream()
-                .filter(ts -> ts != null && !normalizeKey(ts.getCccd()).isEmpty())
-                .collect(Collectors.toMap(
-                        ts -> normalizeKey(ts.getCccd()),
-                        ts -> ts,
-                        (a, b) -> a));
+        Map<String, List<XtUutien>> uutienByCccd = buildUutienByCccd();
+        Set<String> uuTienCccdSet = uutienByCccd.keySet();
 
         int total = allNguyenVong.size();
         int rejectedByDiemSan = 0;
@@ -355,50 +356,17 @@ public class XtNguyenvongxettuyenService {
             chiTieuConLai.put(entry.getKey(), nvlInt(entry.getValue().getNChitieu()));
         }
 
-            // 3) Sắp xếp tất cả nguyện vọng đủ điều kiện theo điểm xét tuyển giảm dần, nv_tt tăng dần.
-            // Sắp xếp eligible: ưu tiên thí sinh có đối tượng (doi_tuong != null)
-            eligible.sort((a, b) -> {
-                String cccdA = safeText(a.getNnCccd());
-                String cccdB = safeText(b.getNnCccd());
-                XtThisinhxettuyen25 tsA = thiSinhByCccd.get(normalizeKey(cccdA));
-                XtThisinhxettuyen25 tsB = thiSinhByCccd.get(normalizeKey(cccdB));
-                
-                boolean uuTienA = tsA != null && tsA.getDoiTuong() != null && !tsA.getDoiTuong().trim().isEmpty();
-                boolean uuTienB = tsB != null && tsB.getDoiTuong() != null && !tsB.getDoiTuong().trim().isEmpty();
-                
-                // Nhóm ưu tiên lên trước
-                if (uuTienA != uuTienB) {
-                    return uuTienA ? -1 : 1;
-                }
-                
-                // Cùng nhóm: so sánh điểm giảm dần
-                int cmp = resolveDiemXetTuyen(b).compareTo(resolveDiemXetTuyen(a));
-                if (cmp != 0) return cmp;
-                
-                // Cùng điểm: ưu tiên nguyện vọng có thứ tự nhỏ hơn
-                return Integer.compare(nvThuTuSafe(a), nvThuTuSafe(b));
-            });
+        // 3) Chia theo thí sinh để đảm bảo mỗi thí sinh được xét tuần tự các nguyện vọng.
+        Map<String, List<XtNguyenvongxettuyen>> eligibleByThiSinh = eligible.stream()
+                .collect(Collectors.groupingBy(this::resolveThiSinhKey));
 
-            // 4) Duyệt tất cả nguyện vọng theo thứ tự điểm cao nhất.
-            // Mỗi thí sinh chỉ trúng 1 nguyện vọng; ngành chi từng chỉ tiêu một.
-            Set<String> daTrungTuyen = new HashSet<>();
-            for (XtNguyenvongxettuyen nv : eligible) {
-                String cccd = safeText(nv.getNnCccd());
-                // Nếu thí sinh này đã trúng nguyện vọng khác, bỏ qua NV này.
-                if (daTrungTuyen.contains(cccd)) {
-                    continue;
-                }
-                String key = normalizeKey(nv.getNvManganh());
-                int conLai = chiTieuConLai.getOrDefault(key, 0);
-                // Nếu ngành hết chỉ tiêu, bỏ qua NV này.
-                if (conLai <= 0) {
-                    continue;
-                }
-                // Ngành còn chỉ tiêu và thí sinh chưa trúng → trúng tuyển.
-                nv.setNvKetqua("Trúng tuyển");
-                chiTieuConLai.put(key, conLai - 1);
-                daTrungTuyen.add(cccd);
-            }
+        // 4) Xét nhóm có trong xt_uutien trước, rồi mới tới nhóm còn lại.
+        List<String> uuTienOrder = sapXepThuTuThiSinh(eligibleByThiSinh, uuTienCccdSet, true);
+        List<String> thuongOrder = sapXepThuTuThiSinh(eligibleByThiSinh, uuTienCccdSet, false);
+
+        Set<String> daTrungTuyen = new HashSet<>();
+        xetTheoThuTuThiSinh(uuTienOrder, eligibleByThiSinh, chiTieuConLai, daTrungTuyen);
+        xetTheoThuTuThiSinh(thuongOrder, eligibleByThiSinh, chiTieuConLai, daTrungTuyen);
 
         // 6) Gán kết quả "Rớt" cho các nguyện vọng còn lại và ghi DB.
         int passed = 0;
@@ -412,10 +380,11 @@ public class XtNguyenvongxettuyenService {
             } else {
                 failed++;
             }
-            dao.capNhatNguyenVong(nv);
         }
+        dao.capNhatNguyenVongHangLoat(allNguyenVong);
 
         // 7) Cập nhật điểm chuẩn ngành (min điểm trúng tuyển hoặc điểm sàn).
+        List<XtNganh> nganhCanCapNhat = new ArrayList<>();
         for (XtNganh nganh : nganhByKey.values()) {
             BigDecimal diemChuan = null;
             String key = normalizeKey(nganh.getManganh());
@@ -435,10 +404,84 @@ public class XtNguyenvongxettuyenService {
                 diemChuan = nvlBigDecimal(nganh.getNDiemsan());
             }
             nganh.setNDiemtrungtuyen(diemChuan);
-            nganhDao.update(nganh);
+            nganhCanCapNhat.add(nganh);
         }
+        nganhDao.capNhatNganhHangLoat(nganhCanCapNhat);
 
         return new XetTuyenResult(total, passed, failed, rejectedByDiemSan, rejectedByMissingNganh);
+    }
+
+    private List<String> sapXepThuTuThiSinh(
+            Map<String, List<XtNguyenvongxettuyen>> eligibleByThiSinh,
+            Set<String> uuTienCccdSet,
+            boolean onlyUuTien) {
+        return eligibleByThiSinh.keySet().stream()
+                .filter(key -> uuTienCccdSet.contains(key) == onlyUuTien)
+                .sorted((a, b) -> {
+                    BigDecimal diemA = diemTotNhatCuaThiSinh(eligibleByThiSinh.getOrDefault(a, List.of()));
+                    BigDecimal diemB = diemTotNhatCuaThiSinh(eligibleByThiSinh.getOrDefault(b, List.of()));
+                    int cmp = diemB.compareTo(diemA);
+                    if (cmp != 0) {
+                        return cmp;
+                    }
+                    return a.compareTo(b);
+                })
+                .collect(Collectors.toList());
+    }
+
+    private BigDecimal diemTotNhatCuaThiSinh(List<XtNguyenvongxettuyen> dsNv) {
+        BigDecimal best = BigDecimal.ZERO;
+        for (XtNguyenvongxettuyen nv : dsNv) {
+            BigDecimal score = resolveDiemXetTuyen(nv);
+            if (score.compareTo(best) > 0) {
+                best = score;
+            }
+        }
+        return best;
+    }
+
+    private void xetTheoThuTuThiSinh(
+            List<String> thuTuThiSinh,
+            Map<String, List<XtNguyenvongxettuyen>> eligibleByThiSinh,
+            Map<String, Integer> chiTieuConLai,
+            Set<String> daTrungTuyen) {
+        for (String thiSinhKey : thuTuThiSinh) {
+            if (daTrungTuyen.contains(thiSinhKey)) {
+                continue;
+            }
+            List<XtNguyenvongxettuyen> dsNv = new ArrayList<>(eligibleByThiSinh.getOrDefault(thiSinhKey, List.of()));
+            dsNv.sort((a, b) -> {
+                int cmpNv = Integer.compare(nvThuTuSafe(a), nvThuTuSafe(b));
+                if (cmpNv != 0) {
+                    return cmpNv;
+                }
+                return resolveDiemXetTuyen(b).compareTo(resolveDiemXetTuyen(a));
+            });
+
+            for (XtNguyenvongxettuyen nv : dsNv) {
+                String keyNganh = normalizeKey(nv.getNvManganh());
+                int conLai = chiTieuConLai.getOrDefault(keyNganh, 0);
+                if (conLai <= 0) {
+                    continue;
+                }
+                nv.setNvKetqua("Trúng tuyển");
+                chiTieuConLai.put(keyNganh, conLai - 1);
+                daTrungTuyen.add(thiSinhKey);
+                break;
+            }
+        }
+    }
+
+    private String resolveThiSinhKey(XtNguyenvongxettuyen nv) {
+        if (nv == null) {
+            return "";
+        }
+        String cccd = normalizeKey(nv.getNnCccd());
+        if (!cccd.isEmpty()) {
+            return cccd;
+        }
+        Integer idnv = nv.getIdnv();
+        return idnv == null ? "" : "__idnv_" + idnv;
     }
 
     private int nvThuTuSafe(XtNguyenvongxettuyen nv) {
@@ -469,6 +512,7 @@ public class XtNguyenvongxettuyenService {
             Map<String, XtDiemthixettuyen> diemDgnlByCccd,
             Map<String, XtDiemVsat> diemVsatByCccd,
             Map<String, List<XtDiemcongxetuyen>> diemCongByCccd,
+            Map<String, List<XtUutien>> uutienByCccd,
             Map<String, XtThisinhxettuyen25> thiSinhByCccd) {
         if (nv == null) {
             return ScoreResult.empty();
@@ -483,6 +527,7 @@ public class XtNguyenvongxettuyenService {
 
         List<XtNganhTohop> toHops = toHopByNganh.getOrDefault(maNganhKey, List.of());
         XtThisinhxettuyen25 thiSinh = thiSinhByCccd.get(cccdKey);
+        XtUutien uuTien = resolveUutien(nv, uutienByCccd);
         boolean isTeacherTraining = laNganhSuPham(maNganhKey);
 
         ScoreResult best = ScoreResult.empty();
@@ -493,7 +538,8 @@ public class XtNguyenvongxettuyenService {
         boolean allowThpt = "Y".equalsIgnoreCase(safeText(nganh.getNThpt()));
         if (allowThpt && diemThpt != null) {
             for (XtNganhTohop th : toHops) {
-                ScoreResult candidate = tinhTheoToHop(nv, th, "THPT", diemThpt, null, diemCongByCccd, thiSinh, false);
+                ScoreResult candidate = tinhTheoToHop(
+                        nv, th, "THPT", diemThpt, null, diemCongByCccd, thiSinh, uuTien, false);
                 if (candidate.diemXettuyen().compareTo(bestScore) > 0) {
                     bestScore = candidate.diemXettuyen();
                     best = candidate;
@@ -506,7 +552,8 @@ public class XtNguyenvongxettuyenService {
         boolean allowVsat = "Y".equalsIgnoreCase(safeText(nganh.getNVsat()));
         if (!isTeacherTraining && allowVsat && diemVsat != null) {
             for (XtNganhTohop th : toHops) {
-                ScoreResult candidate = tinhTheoToHop(nv, th, "VSAT", null, diemVsat, diemCongByCccd, thiSinh, true);
+                ScoreResult candidate = tinhTheoToHop(
+                        nv, th, "VSAT", null, diemVsat, diemCongByCccd, thiSinh, uuTien, true);
                 if (candidate.diemXettuyen().compareTo(bestScore) > 0) {
                     bestScore = candidate.diemXettuyen();
                     best = candidate;
@@ -526,12 +573,14 @@ public class XtNguyenvongxettuyenService {
                     // Nếu thiếu bản phân vị cho tổ hợp, bỏ qua DGNL và xét các phương thức còn lại.
                     BigDecimal dthxt = quyDoiDgnlAnToan(raw.floatValue(), toHopDgnl);
                     if (dthxt != null) {
+                        dthxt = applyDiemUuTienThxtOnly(dthxt, uuTien);
                         BigDecimal dolech = BigDecimal.ZERO;
-                        BigDecimal dc = resolveDiemCong(cccdKey, nv.getNvManganh(), toHopDgnl, "DGNL", diemCongByCccd);
+                        BigDecimal dcXet = resolveDiemCong(cccdKey, nv.getNvManganh(), toHopDgnl, "DGNL", diemCongByCccd);
                         BigDecimal dthgxt = dthxt.subtract(dolech);
-                        BigDecimal duut = tinhDiemUuTien(dthgxt, dc, thiSinh);
-                        BigDecimal dxt = capDiem(dthxt.add(dc).add(duut));
-                        ScoreResult candidate = new ScoreResult(dthxt, dc, duut, dxt, "DGNL", toHopDgnl);
+                        BigDecimal duut = tinhDiemUuTien(dthgxt, dcXet, thiSinh);
+                        BigDecimal dxt = capDiem(dthxt.add(dcXet).add(duut));
+                        BigDecimal diemCongLuu = tongChuaHeSoCongUuTien(dthxt, duut);
+                        ScoreResult candidate = new ScoreResult(dthxt, diemCongLuu, duut, dxt, "DGNL", toHopDgnl);
                         if (candidate.diemXettuyen().compareTo(bestScore) > 0) {
                             bestScore = candidate.diemXettuyen();
                             best = candidate;
@@ -552,6 +601,7 @@ public class XtNguyenvongxettuyenService {
         XtDiemVsat diemVsat,
         Map<String, List<XtDiemcongxetuyen>> diemCongByCccd,
         XtThisinhxettuyen25 thiSinh,
+        XtUutien uuTien,
         boolean laVsat) {
         if (th == null) return ScoreResult.empty();
 
@@ -574,7 +624,12 @@ public class XtNguyenvongxettuyenService {
             BigDecimal d3 = laVsat ? getMonDiemVsat(mon3, diemVsat) : getMonDiemThpt(mon3, diemThpt);
             
             if (d1 == null || d2 == null || d3 == null) continue;
-            
+
+            MonCongResult monCong = applyUuTienTheoMon(mon1, mon2, mon3, d1, d2, d3, uuTien);
+            d1 = monCong.d1();
+            d2 = monCong.d2();
+            d3 = monCong.d3();
+             
             // Tính điểm như cũ...
             int hs1 = normalizeHeSo(th.getHsmon1());
             int hs2 = normalizeHeSo(th.getHsmon2());
@@ -585,16 +640,21 @@ public class XtNguyenvongxettuyenService {
                     .add(d3.multiply(BigDecimal.valueOf(hs3)));
             BigDecimal dthxt = tong.divide(BigDecimal.valueOf(w), SCALE+4, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(3)).setScale(SCALE, RoundingMode.HALF_UP);
+            if (!monCong.appliedDcGiai()) {
+                dthxt = applyDiemUuTienThxtOnly(dthxt, uuTien);
+            }
             BigDecimal dolech = nvlBigDecimal(th.getDolech());
             BigDecimal dthgxt = dthxt.subtract(dolech);
             String toHop = safeText(th.getMatohop());
-            BigDecimal dc = resolveDiemCong(normalizeKey(nv.getNnCccd()), nv.getNvManganh(), toHop, phuongThuc, diemCongByCccd);
-            BigDecimal duut = tinhDiemUuTien(dthgxt, dc, thiSinh);
-            BigDecimal dxt = capDiem(dthxt.add(dc).add(duut));
+            BigDecimal dcXet = resolveDiemCong(normalizeKey(nv.getNnCccd()), nv.getNvManganh(), toHop, phuongThuc, diemCongByCccd);
+            BigDecimal duut = tinhDiemUuTien(dthgxt, dcXet, thiSinh);
+            BigDecimal dxt = capDiem(dthxt.add(dcXet).add(duut));
+            BigDecimal tong3MonChuaHeSo = d1.add(d2).add(d3).setScale(SCALE, RoundingMode.HALF_UP);
+            BigDecimal diemCongLuu = tongChuaHeSoCongUuTien(tong3MonChuaHeSo, duut);
             
             if (dxt.compareTo(bestScore) > 0) {
                 bestScore = dxt;
-                best = new ScoreResult(dthxt, dc, duut, dxt, phuongThuc, toHop);
+                best = new ScoreResult(dthxt, diemCongLuu, duut, dxt, phuongThuc, toHop);
             }
         }
         return best;
@@ -635,6 +695,115 @@ public class XtNguyenvongxettuyenService {
 
     private boolean isKhac(String mon) {
         return mon == null || mon.trim().isEmpty() || "KHAC".equalsIgnoreCase(mon.trim());
+    }
+
+    private MonCongResult applyUuTienTheoMon(
+            String mon1,
+            String mon2,
+            String mon3,
+            BigDecimal d1,
+            BigDecimal d2,
+            BigDecimal d3,
+            XtUutien uuTien) {
+        if (uuTien == null) {
+            return new MonCongResult(d1, d2, d3, false);
+        }
+
+        String maMonUuTien = normalizeSubject(uuTien.getMaMon());
+        BigDecimal dcGiai = nvlBigDecimal(uuTien.getDcGiai());
+
+        boolean applied = false;
+        if (!maMonUuTien.isEmpty()) {
+            String mon1Key = normalizeSubject(mon1);
+            String mon2Key = normalizeSubject(mon2);
+            String mon3Key = normalizeSubject(mon3);
+            if (maMonUuTien.equals(mon1Key)) {
+                d1 = capDiemMon(d1.add(dcGiai));
+                applied = true;
+            } else if (maMonUuTien.equals(mon2Key)) {
+                d2 = capDiemMon(d2.add(dcGiai));
+                applied = true;
+            } else if (maMonUuTien.equals(mon3Key)) {
+                d3 = capDiemMon(d3.add(dcGiai));
+                applied = true;
+            }
+        }
+
+        return new MonCongResult(d1, d2, d3, applied);
+    }
+
+    private BigDecimal applyDiemUuTienThxtOnly(BigDecimal dthxt, XtUutien uuTien) {
+        if (uuTien == null || dthxt == null) {
+            return dthxt;
+        }
+        BigDecimal dcThxt = nvlBigDecimal(uuTien.getDcThxt());
+        return dthxt.add(dcThxt).setScale(SCALE, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal capDiemMon(BigDecimal diemMon) {
+        if (diemMon == null) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal result = diemMon;
+        if (result.compareTo(DIEM_MON_TOI_DA) > 0) {
+            result = DIEM_MON_TOI_DA;
+        }
+        if (result.compareTo(BigDecimal.ZERO) < 0) {
+            result = BigDecimal.ZERO;
+        }
+        return result.setScale(SCALE, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal tongChuaHeSoCongUuTien(BigDecimal tongChuaHeSo, BigDecimal diemUuTien) {
+        BigDecimal tong = nvlBigDecimal(tongChuaHeSo).add(nvlBigDecimal(diemUuTien));
+        if (tong.compareTo(BigDecimal.ZERO) < 0) {
+            tong = BigDecimal.ZERO;
+        }
+        return tong.setScale(SCALE, RoundingMode.HALF_UP);
+    }
+
+    private XtUutien resolveUutien(
+            XtNguyenvongxettuyen nv,
+            Map<String, List<XtUutien>> uutienByCccd) {
+        if (nv == null || uutienByCccd == null) {
+            return null;
+        }
+        String cccdKey = normalizeKey(nv.getNnCccd());
+        if (cccdKey.isEmpty()) {
+            return null;
+        }
+        List<XtUutien> rows = uutienByCccd.getOrDefault(cccdKey, List.of());
+        if (rows.isEmpty()) {
+            return null;
+        }
+
+        XtUutien exact = null;
+        XtUutien fallback = null;
+        int nvTt = nvThuTuSafe(nv);
+        for (XtUutien row : rows) {
+            if (row == null) {
+                continue;
+            }
+            if (!matchUutienNganh(row, nv.getNvManganh())) {
+                continue;
+            }
+            int rowTt = row.getTtNv() == null ? 1 : row.getTtNv();
+            if (rowTt == nvTt && exact == null) {
+                exact = row;
+            }
+            if (fallback == null) {
+                fallback = row;
+            }
+        }
+        return exact != null ? exact : fallback;
+    }
+
+    private boolean matchUutienNganh(XtUutien row, String maNganhNv) {
+        String maNganhUuTien = normalizeKey(row.getMaNganh());
+        if (maNganhUuTien.isEmpty()) {
+            return true;
+        }
+        return maNganhUuTien.equals(normalizeKey(maNganhNv));
     }
 
     private BigDecimal tinhDiemUuTien(BigDecimal dthgxt, BigDecimal diemCong, XtThisinhxettuyen25 thiSinh) {
@@ -886,6 +1055,12 @@ public class XtNguyenvongxettuyenService {
                 .collect(Collectors.groupingBy(row -> normalizeKey(row.getTsCccd())));
     }
 
+    private Map<String, List<XtUutien>> buildUutienByCccd() {
+        return uutienDao.findAll().stream()
+                .filter(row -> row != null && !normalizeKey(row.getCccd()).isEmpty())
+                .collect(Collectors.groupingBy(row -> normalizeKey(row.getCccd())));
+    }
+
     private BigDecimal tongDiemVsat(XtDiemVsat row) {
         if (row == null) {
             return BigDecimal.ZERO;
@@ -1067,6 +1242,13 @@ public class XtNguyenvongxettuyenService {
             int failed,
             int rejectedByDiemSan,
             int rejectedByMissingNganh) {
+    }
+
+    private record MonCongResult(
+            BigDecimal d1,
+            BigDecimal d2,
+            BigDecimal d3,
+            boolean appliedDcGiai) {
     }
 
     private record ScoreResult(

@@ -2,6 +2,8 @@ package org.AdmissionsSystem.dao;
 
 import java.util.List;
 import org.AdmissionsSystem.models.XtNguyenvongxettuyen;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 
 public class XtNguyenvongxettuyenDao extends AbstractCrudDao<XtNguyenvongxettuyen, Integer> {
 
@@ -93,6 +95,47 @@ public class XtNguyenvongxettuyenDao extends AbstractCrudDao<XtNguyenvongxettuye
      */
     public void capNhatNguyenVong(XtNguyenvongxettuyen nguyenvong) {
         update(nguyenvong);
+    }
+
+    /**
+     * UPDATE batch: Cập nhật hàng loạt nguyện vọng trong một transaction để tránh N+1 query.
+     * Dùng Session.update thay vì merge để tránh SELECT lại từng bản ghi trước UPDATE.
+     *
+     * @param danhSach danh sách nguyện vọng cần cập nhật
+     * @return số lượng bản ghi đã xử lý
+     */
+    public int capNhatNguyenVongHangLoat(List<XtNguyenvongxettuyen> danhSach) {
+        if (danhSach == null || danhSach.isEmpty()) {
+            return 0;
+        }
+
+        Transaction tx = null;
+        try (Session session = getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            int processed = 0;
+            int batchSize = 200;
+
+            for (XtNguyenvongxettuyen nv : danhSach) {
+                if (nv == null || nv.getIdnv() == null) {
+                    continue;
+                }
+                session.update(nv);
+                processed++;
+
+                if (processed % batchSize == 0) {
+                    session.flush();
+                    session.clear();
+                }
+            }
+
+            tx.commit();
+            return processed;
+        } catch (Exception ex) {
+            if (tx != null && tx.getStatus().canRollback()) {
+                tx.rollback();
+            }
+            throw new RuntimeException("Lỗi cập nhật hàng loạt nguyện vọng: " + ex.getMessage(), ex);
+        }
     }
 
     /**
