@@ -26,6 +26,17 @@ public class QuanLiDiemVsatDao extends AbstractCrudDao<XtDiemVsat, Integer> {
 		}
 	}
 
+	public List<XtDiemVsat> findByCccd(String cccd) {
+		if (isBlank(cccd)) {
+			return List.of();
+		}
+		try (Session session = getSessionFactory().openSession()) {
+			return session.createQuery("FROM XtDiemVsat WHERE lower(cccd) = :cccd", XtDiemVsat.class)
+					.setParameter("cccd", cccd.toLowerCase())
+					.list();
+		}
+	}
+
 	public List<BigDecimal> fetchScores(String property) {
 		if (isBlank(property)) {
 			return List.of();

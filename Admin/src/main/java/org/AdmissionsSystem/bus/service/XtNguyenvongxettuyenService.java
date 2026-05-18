@@ -47,6 +47,9 @@ public class XtNguyenvongxettuyenService {
     private static final BigDecimal DIEM_UT_MOC = new BigDecimal("22.5");
     private static final BigDecimal DIEM_UT_MAU = new BigDecimal("7.5");
     private static final int SCALE = 3;
+    private static final String KQ_TRUNG_TUYEN = "Trúng Tuyển";
+    private static final String KQ_ROT = "Rớt";
+    private static final String KQ_DUOI_SAN = "Dưới Sàn";
 
     /**
      * Lấy tất cả nguyện vọng xét tuyển
@@ -302,6 +305,9 @@ public class XtNguyenvongxettuyenService {
     }
 
     public XetTuyenResult chayXetTuyenHeThong() {
+        // Luôn tính lại ĐXT trước khi xét tuyển để đảm bảo dữ liệu mới nhất được ghi DB.
+        tinhDiemXetTuyenAll();
+
         // 1) Tải toàn bộ nguyện vọng và chuẩn bị dữ liệu nền (ngành, thí sinh).
         List<XtNguyenvongxettuyen> allNguyenVong = dao.layTatCaNguyenVong();
         if (allNguyenVong.isEmpty()) {
@@ -335,7 +341,7 @@ public class XtNguyenvongxettuyenService {
             XtNganh nganh = nganhByKey.get(key);
 
             if (nganh == null) {
-                nv.setNvKetqua("Rớt - không tìm thấy ngành");
+                nv.setNvKetqua(KQ_ROT);
                 rejectedByMissingNganh++;
                 continue;
             }
@@ -343,7 +349,7 @@ public class XtNguyenvongxettuyenService {
             BigDecimal diemSan = nvlBigDecimal(nganh.getNDiemsan());
             BigDecimal diemXet = resolveDiemXetTuyen(nv);
             if (diemXet.compareTo(diemSan) < 0) {
-                nv.setNvKetqua("Rớt - không đạt điểm sàn");
+                nv.setNvKetqua(KQ_DUOI_SAN);
                 rejectedByDiemSan++;
                 continue;
             }
@@ -368,20 +374,32 @@ public class XtNguyenvongxettuyenService {
         xetTheoThuTuThiSinh(uuTienOrder, eligibleByThiSinh, chiTieuConLai, daTrungTuyen);
         xetTheoThuTuThiSinh(thuongOrder, eligibleByThiSinh, chiTieuConLai, daTrungTuyen);
 
+        // 5) Safety check: mỗi CCCD chỉ được trúng tối đa 1 nguyện vọng.
+        // Nếu phát sinh >1 bản ghi trúng cho cùng CCCD, giữ lại NV thứ tự nhỏ nhất.
+        damBaoMotThiSinhMotKetQuaTrung(allNguyenVong);
+
         // 6) Gán kết quả "Rớt" cho các nguyện vọng còn lại và ghi DB.
         int passed = 0;
         int failed = 0;
         for (XtNguyenvongxettuyen nv : allNguyenVong) {
             if (nv.getNvKetqua() == null || nv.getNvKetqua().isBlank()) {
-                nv.setNvKetqua("Rớt");
+                nv.setNvKetqua(KQ_ROT);
             }
-            if (nv.getNvKetqua().toLowerCase(Locale.ROOT).contains("trúng")) {
+            nv.setNvKetqua(chuanHoaGiaTriKetQua(nv.getNvKetqua()));
+            if (laKetQuaTrungTuyen(nv.getNvKetqua())) {
                 passed++;
             } else {
                 failed++;
             }
         }
-        dao.capNhatNguyenVongHangLoat(allNguyenVong);
+        int expectedNvUpdates = (int) allNguyenVong.stream()
+                .filter(nv -> nv != null && nv.getIdnv() != null)
+                .count();
+        int updatedNv = dao.capNhatKetQuaHangLoat(allNguyenVong);
+        if (updatedNv < expectedNvUpdates) {
+            throw new IllegalStateException(
+                    "Không cập nhật đủ nv_ketqua. Dự kiến: " + expectedNvUpdates + ", thực tế: " + updatedNv);
+        }
 
         // 7) Cập nhật điểm chuẩn ngành (min điểm trúng tuyển hoặc điểm sàn).
         List<XtNganh> nganhCanCapNhat = new ArrayList<>();
@@ -392,7 +410,7 @@ public class XtNguyenvongxettuyenService {
                 if (!key.equals(normalizeKey(nv.getNvManganh()))) {
                     continue;
                 }
-                if (!safeText(nv.getNvKetqua()).toLowerCase(Locale.ROOT).contains("trúng")) {
+                if (!laKetQuaTrungTuyen(nv.getNvKetqua())) {
                     continue;
                 }
                 BigDecimal score = resolveDiemXetTuyen(nv);
@@ -464,10 +482,42 @@ public class XtNguyenvongxettuyenService {
                 if (conLai <= 0) {
                     continue;
                 }
-                nv.setNvKetqua("Trúng tuyển");
+                nv.setNvKetqua(KQ_TRUNG_TUYEN);
                 chiTieuConLai.put(keyNganh, conLai - 1);
                 daTrungTuyen.add(thiSinhKey);
                 break;
+            }
+        }
+    }
+
+    private void damBaoMotThiSinhMotKetQuaTrung(List<XtNguyenvongxettuyen> allNguyenVong) {
+        if (allNguyenVong == null || allNguyenVong.isEmpty()) {
+            return;
+        }
+
+        Map<String, List<XtNguyenvongxettuyen>> byCccd = allNguyenVong.stream()
+                .filter(nv -> nv != null)
+                .filter(nv -> !normalizeKey(nv.getNnCccd()).isEmpty())
+                .collect(Collectors.groupingBy(nv -> normalizeKey(nv.getNnCccd())));
+
+        for (List<XtNguyenvongxettuyen> dsNv : byCccd.values()) {
+            List<XtNguyenvongxettuyen> dsTrung = dsNv.stream()
+                    .filter(nv -> laKetQuaTrungTuyen(nv.getNvKetqua()))
+                    .sorted((a, b) -> {
+                        int cmpNv = Integer.compare(nvThuTuSafe(a), nvThuTuSafe(b));
+                        if (cmpNv != 0) {
+                            return cmpNv;
+                        }
+                        return resolveDiemXetTuyen(b).compareTo(resolveDiemXetTuyen(a));
+                    })
+                    .collect(Collectors.toList());
+
+            if (dsTrung.size() <= 1) {
+                continue;
+            }
+
+            for (int i = 1; i < dsTrung.size(); i++) {
+                dsTrung.get(i).setNvKetqua(KQ_ROT);
             }
         }
     }
@@ -1226,6 +1276,24 @@ public class XtNguyenvongxettuyenService {
 
     private String normalizeKey(String value) {
         return safeText(value).toLowerCase(Locale.ROOT);
+    }
+
+    private boolean laKetQuaTrungTuyen(String ketQua) {
+        String normalized = normalizeText(ketQua);
+        return normalized.equals("trungtuyen")
+                || normalized.equals("trung")
+                || normalized.equals("dat");
+    }
+
+    private String chuanHoaGiaTriKetQua(String ketQua) {
+        String normalized = normalizeText(ketQua);
+        if (normalized.equals("trungtuyen") || normalized.equals("trung") || normalized.equals("dat")) {
+            return KQ_TRUNG_TUYEN;
+        }
+        if (normalized.equals("duoisan") || normalized.contains("diemsan")) {
+            return KQ_DUOI_SAN;
+        }
+        return KQ_ROT;
     }
 
     private BigDecimal nvlBigDecimal(BigDecimal value) {

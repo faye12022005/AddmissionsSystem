@@ -8,6 +8,7 @@ import java.awt.event.*;
 import java.awt.geom.*;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -330,7 +331,7 @@ public class NguyenVongPanel extends JPanel {
             @Override public Component getTableCellRendererComponent(
                     JTable t, Object val, boolean sel, boolean foc, int row, int col) {
                 String status = val.toString();
-                boolean trung = status.equals("Trúng tuyển");
+                boolean trung = laTrangThaiTrung(status);
                 JPanel p = new JPanel(new GridBagLayout());
                 p.setBackground(sel ? t.getSelectionBackground() : WHITE);
                 JLabel badge = new JLabel("● " + status);
@@ -876,6 +877,20 @@ public class NguyenVongPanel extends JPanel {
                 "Đã cập nhật ĐXT cho " + updated + " nguyện vọng.",
                 "Tính ĐXT hoàn tất",
                 JOptionPane.INFORMATION_MESSAGE);
+
+            int runNow = JOptionPane.showConfirmDialog(this,
+                "Bạn có muốn chạy xét tuyển ngay để cập nhật nv_ketqua không?",
+                "Chạy xét tuyển ngay",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+            if (runNow == JOptionPane.YES_OPTION) {
+                XtNguyenvongxettuyenService.XetTuyenResult result = controller.chayXetTuyenHeThong();
+                loadPageAsync(1);
+                JOptionPane.showMessageDialog(this,
+                    buildXetTuyenSummary(result),
+                    "Xét tuyển hoàn tất",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                 "Không thể tính ĐXT: " + ex.getMessage(),
@@ -888,7 +903,7 @@ public class NguyenVongPanel extends JPanel {
             return "Không có dữ liệu để xét tuyển.";
         }
         return "Tổng nguyện vọng: " + result.total()
-            + "\nTrúng tuyển: " + result.passed()
+            + "\nTrúng Tuyển: " + result.passed()
             + "\nRớt: " + result.failed()
             + "\nKhông đạt điểm sàn: " + result.rejectedByDiemSan()
             + "\nThiếu ngành: " + result.rejectedByMissingNganh();
@@ -1006,13 +1021,33 @@ public class NguyenVongPanel extends JPanel {
     }
 
     private String buildTenThiSinh(XtThisinhxettuyen25 ts, String cccd) {
+        String cccdSafe = safeText(cccd);
+        String fallback = cccdSafe.isEmpty() ? "(Chưa có thông tin)" : cccdSafe;
+
         if (ts == null) {
-            return cccd.isEmpty() ? "(Chưa có thông tin)" : "Thí sinh " + cccd;
+            return fallback;
         }
+
         String ho = safeText(ts.getHo());
         String ten = safeText(ts.getTen());
         String full = (ho + " " + ten).trim();
-        return full.isEmpty() ? ("Thí sinh " + cccd) : full;
+        if (full.isEmpty()) {
+            return fallback;
+        }
+
+        return boTienToThiSinh(full);
+    }
+
+    private String boTienToThiSinh(String tenThiSinh) {
+        String value = safeText(tenThiSinh);
+        String lower = value.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("thí sinh ")) {
+            return value.substring(9).trim();
+        }
+        if (lower.startsWith("thi sinh ")) {
+            return value.substring(9).trim();
+        }
+        return value;
     }
 
     private String formatThuTu(Integer thuTu) {
@@ -1030,12 +1065,30 @@ public class NguyenVongPanel extends JPanel {
     }
 
     private String mapTrangThai(String raw) {
-        String v = safeText(raw).toLowerCase(Locale.ROOT);
+        String v = normalizeTrangThaiKey(raw);
         if (v.isEmpty()) return "Đang chờ";
-        if (v.contains("trung")) return "Trúng tuyển";
-        if (v.contains("dat")) return "Trúng tuyển";
-        if (v.contains("khong") || v.contains("truot")) return "Đã trượt";
+        if (v.equals("trungtuyen") || v.equals("trung") || v.equals("dat")) return "Trúng Tuyển";
+        if (v.equals("duoisan") || v.contains("diemsan")) return "Dưới Sàn";
+        if (v.contains("rot") || v.contains("truot") || v.contains("khong")) return "Rớt";
         return raw.trim();
+    }
+
+    private boolean laTrangThaiTrung(String trangThai) {
+        String v = normalizeTrangThaiKey(trangThai);
+        return v.equals("trungtuyen") || v.equals("trung") || v.equals("dat");
+    }
+
+    private String normalizeTrangThaiKey(String raw) {
+        String value = safeText(raw).toLowerCase(Locale.ROOT);
+        if (value.isEmpty()) {
+            return "";
+        }
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replace("đ", "d")
+                .replace("Đ", "d")
+                .replaceAll("\\p{M}", "")
+                .replaceAll("\\s+", "");
+        return normalized;
     }
 
     private record PageLoadResult(int currentPage, long totalRecords, List<NguyenVong> rows) {}

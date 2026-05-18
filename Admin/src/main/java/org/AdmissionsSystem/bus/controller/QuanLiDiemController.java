@@ -7,11 +7,13 @@ import java.util.Optional;
 import org.AdmissionsSystem.gui.components.ImportExcel;
 import org.AdmissionsSystem.bus.service.QuanLiDiem.QuanLiDiemService;
 import org.AdmissionsSystem.bus.service.QuanLiDiem.QuanLiDiemVSATService;
+import org.AdmissionsSystem.bus.service.QuanLiDiem.DanhSachDiemXetTuyenService;
 import org.AdmissionsSystem.bus.service.QuanLiDiem.PagedResult;
 
 public class QuanLiDiemController {
 	private final QuanLiDiemService thptDgnlService = new QuanLiDiemService();
 	private final QuanLiDiemVSATService vsatService = new QuanLiDiemVSATService();
+	private final DanhSachDiemXetTuyenService danhSachXetTuyenService = new DanhSachDiemXetTuyenService();
 	private final ImportExcel importExcel = new ImportExcel();
 
 	public List<QuanLiDiemService.DiemRecord> getDanhSach(String searchText, String loaiDiem) {
@@ -88,6 +90,15 @@ public class QuanLiDiemController {
 			return 0;
 		}
 		return vsatService.importRows(preview.validRows());
+	}
+
+	public PagedResult<DanhSachDiemXetTuyenService.SummaryRecord> getDanhSachXetTuyenPage(String cccdKeyword, int page,
+			int pageSize) {
+		return danhSachXetTuyenService.queryPage(cccdKeyword, page, pageSize);
+	}
+
+	public DanhSachDiemXetTuyenService.ChiTietRecord getChiTietXetTuyen(int idnv) {
+		return danhSachXetTuyenService.getChiTiet(idnv);
 	}
 
 }
