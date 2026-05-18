@@ -53,7 +53,7 @@ public class NguyenVongPanel extends JPanel {
 
     // ── Data Model ───────────────────────────────────────────
     private static final String[] COL_NAMES = {
-        "THỨ TỰ NGUYỆN VỌNG", "THÍ SINH", "CCCD", "MÃ NGÀNH", "TỔ HỢP", "PHƯƠNG THỨC", "ĐIỂM XT", "TRẠNG THÁI", "HÀNH ĐỘNG"
+        "THỨ TỰ NGUYỆN VỌNG", "THÍ SINH", "CCCD", "MÃ NGÀNH", "TỔ HỢP", "PHƯƠNG THỨC", "ĐIỂM XT", "TRẠNG THÁI"
     };
     
     private static final int RECORDS_PER_PAGE = 8;
@@ -130,7 +130,6 @@ public class NguyenVongPanel extends JPanel {
         btnGroup.setOpaque(false);
 
         JButton importBtn = makeOutlineButton("⤓ Import Excel");
-        JButton addBtn    = makeOutlineButton("＋ Thêm");
         JButton calcBtn   = makeOutlineButton("Tính ĐXT");
         JButton reportBtn = makeOutlineButton("DS trúng tuyển theo ngành");
         JButton countBtn  = makeOutlineButton("SL trúng tuyển theo PT");
@@ -140,10 +139,6 @@ public class NguyenVongPanel extends JPanel {
             "Chức năng Import Excel chưa được triển khai.", "Import Excel",
             JOptionPane.INFORMATION_MESSAGE));
 
-        addBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
-            "Chức năng Thêm chưa được triển khai.", "Thêm Nguyện vọng",
-            JOptionPane.INFORMATION_MESSAGE));
-
         calcBtn.addActionListener(e -> handleTinhDiemXetTuyen());
         reportBtn.addActionListener(e -> openDanhSachTrungTuyenTheoNganh());
         countBtn.addActionListener(e -> openSoLuongTrungTuyenTheoPhuongThuc());
@@ -151,7 +146,6 @@ public class NguyenVongPanel extends JPanel {
         runBtn.addActionListener(e -> handleRunXetTuyen());
 
         btnGroup.add(importBtn);
-        btnGroup.add(addBtn);
         btnGroup.add(calcBtn);
         btnGroup.add(reportBtn);
         btnGroup.add(countBtn);
@@ -237,7 +231,7 @@ public class NguyenVongPanel extends JPanel {
         header.setPreferredSize(new Dimension(0, 42));
 
         // Column widths
-        int[] widths = {70, 190, 110, 90, 80, 110, 90, 120, 100};
+        int[] widths = {70, 190, 110, 90, 80, 110, 90, 120};
         for (int i = 0; i < widths.length; i++)
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
 
@@ -249,15 +243,13 @@ public class NguyenVongPanel extends JPanel {
                 JPanel p = new JPanel(new GridBagLayout());
                 p.setBackground(sel ? t.getSelectionBackground() : WHITE);
 
-                boolean first = row == 0;
-
                 JLabel badge = new JLabel(val.toString(), SwingConstants.CENTER);
                 badge.setFont(FONT_BOLD_11);
                 badge.setPreferredSize(new Dimension(30, 30));
                 badge.setOpaque(true);
-                badge.setBackground(first ? PRIMARY : SURFACE);
-                badge.setForeground(first ? WHITE : TEXT_SLATE);
-                badge.setBorder(new RoundedBorder(15, first ? PRIMARY : SURFACE));
+                badge.setBackground(SURFACE);
+                badge.setForeground(PRIMARY);
+                badge.setBorder(new RoundedBorder(15, SURFACE));
 
                 p.add(badge);
                 return p;
@@ -340,26 +332,14 @@ public class NguyenVongPanel extends JPanel {
             }
         });
 
-        // Sự kiện cho nút chỉnh sửa và double-click
+        // Sự kiện cho double-click
         table.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 int row = table.rowAtPoint(e.getPoint());
-                int col = table.columnAtPoint(e.getPoint());
                 
                 if (row >= 0) {
-                    // Single click: kiểm tra nếu nhấn vào cột HÀNH ĐỘNG (cột 8)
-                    if (e.getClickCount() == 1 && col == 8) {
-                        // Lấy vị trí x của click
-                        Rectangle cellRect = table.getCellRect(row, col, false);
-                        int clickX = e.getX() - cellRect.x;
-                        
-                        // Nếu click vào khu vực edit button (phía trái, khoảng 20-40px)
-                        if (clickX > 10 && clickX < 40) {
-                            openChiTietNguyenVong(row);
-                        }
-                    }
                     // Double-click: mở chi tiết
-                    else if (e.getClickCount() == 2) {
+                    if (e.getClickCount() == 2) {
                         openChiTietNguyenVong(row);
                     }
                 }
