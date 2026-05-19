@@ -49,6 +49,8 @@ public class XtNguyenvongxettuyenService {
     private static final int SCALE = 3;
     private static final String KQ_TRUNG_TUYEN = "Trúng Tuyển";
     private static final String KQ_ROT = "Rớt";
+    private static final String KQ_ROT_DU_CHI_TIEU = "Rớt - Ngành đã đủ chỉ tiêu";
+    private static final String KQ_ROT_DAU_NV_KHAC = "Rớt - Đã đậu nguyện vọng khác";
     private static final String KQ_DUOI_SAN = "Dưới Sàn";
 
     /**
@@ -378,7 +380,10 @@ public class XtNguyenvongxettuyenService {
         // Nếu phát sinh >1 bản ghi trúng cho cùng CCCD, giữ lại NV thứ tự nhỏ nhất.
         damBaoMotThiSinhMotKetQuaTrung(allNguyenVong);
 
-        // 6) Gán kết quả "Rớt" cho các nguyện vọng còn lại và ghi DB.
+        // 6) Phân loại lý do rớt cho các nguyện vọng đủ điều kiện nhưng không đậu.
+        phanLoaiLyDoRotSauXetTuyen(allNguyenVong);
+
+        // 7) Chuẩn hóa kết quả và ghi DB.
         int passed = 0;
         int failed = 0;
         for (XtNguyenvongxettuyen nv : allNguyenVong) {
@@ -401,7 +406,7 @@ public class XtNguyenvongxettuyenService {
                     "Không cập nhật đủ nv_ketqua. Dự kiến: " + expectedNvUpdates + ", thực tế: " + updatedNv);
         }
 
-        // 7) Cập nhật điểm chuẩn ngành (min điểm trúng tuyển hoặc điểm sàn).
+        // 8) Cập nhật điểm chuẩn ngành (min điểm trúng tuyển hoặc điểm sàn).
         List<XtNganh> nganhCanCapNhat = new ArrayList<>();
         for (XtNganh nganh : nganhByKey.values()) {
             BigDecimal diemChuan = null;
@@ -518,6 +523,29 @@ public class XtNguyenvongxettuyenService {
 
             for (int i = 1; i < dsTrung.size(); i++) {
                 dsTrung.get(i).setNvKetqua(KQ_ROT);
+            }
+        }
+    }
+
+    private void phanLoaiLyDoRotSauXetTuyen(List<XtNguyenvongxettuyen> allNguyenVong) {
+        if (allNguyenVong == null || allNguyenVong.isEmpty()) {
+            return;
+        }
+
+        Map<String, List<XtNguyenvongxettuyen>> byThiSinh = allNguyenVong.stream()
+                .filter(nv -> nv != null)
+                .collect(Collectors.groupingBy(this::resolveThiSinhKey));
+
+        for (List<XtNguyenvongxettuyen> dsNv : byThiSinh.values()) {
+            boolean hasPassed = dsNv.stream()
+                    .anyMatch(nv -> laKetQuaTrungTuyen(nv.getNvKetqua()));
+
+            for (XtNguyenvongxettuyen nv : dsNv) {
+                String ketQua = safeText(nv.getNvKetqua());
+                if (!ketQua.isEmpty()) {
+                    continue;
+                }
+                nv.setNvKetqua(hasPassed ? KQ_ROT_DAU_NV_KHAC : KQ_ROT_DU_CHI_TIEU);
             }
         }
     }
@@ -1292,6 +1320,12 @@ public class XtNguyenvongxettuyenService {
         }
         if (normalized.equals("duoisan") || normalized.contains("diemsan")) {
             return KQ_DUOI_SAN;
+        }
+        if (normalized.contains("chitieu") || normalized.contains("duchitieu")) {
+            return KQ_ROT_DU_CHI_TIEU;
+        }
+        if (normalized.contains("daunguyenvongkhac") || normalized.contains("nguyenvongkhac")) {
+            return KQ_ROT_DAU_NV_KHAC;
         }
         return KQ_ROT;
     }

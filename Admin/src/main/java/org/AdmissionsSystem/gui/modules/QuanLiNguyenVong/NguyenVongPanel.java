@@ -415,7 +415,8 @@ public class NguyenVongPanel extends JPanel {
     
     private void updatePaginationButtons() {
         paginationBtnGroup.removeAll();
-        int totalPages = (filteredRows.size() + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
+        int totalRows = hasActiveFilters() ? filteredRows.size() : (int) totalRecords;
+        int totalPages = Math.max(1, (totalRows + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE);
         
         // Previous button
         JButton prevBtn = new JButton("‹") {
@@ -534,9 +535,18 @@ public class NguyenVongPanel extends JPanel {
     }
     
     private void goToPage(int pageNum) {
-        int totalPages = (filteredRows.size() + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
+        int totalRows = hasActiveFilters() ? filteredRows.size() : (int) totalRecords;
+        int totalPages = Math.max(1, (totalRows + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE);
         if (pageNum < 1 || pageNum > totalPages) return;
-        
+
+        if (hasActiveFilters()) {
+            currentPage = pageNum;
+            refreshTableData(pageNum);
+            updatePaginationButtons();
+            paginationInfo.setText(getPaginationText());
+            return;
+        }
+
         loadPageAsync(pageNum);
     }
     
@@ -548,6 +558,22 @@ public class NguyenVongPanel extends JPanel {
     }
 
     private void refreshTableData() {
+        tableModel.setRowCount(0);
+        for (NguyenVong row : pageRows) {
+            tableModel.addRow(new Object[] {
+                row.getThuTu(),
+                row.getTenThiSinh() + "\nSBD: " + row.getSbd(),
+                row.getCccd(),
+                row.getMaNganh(),
+                row.getToHop(),
+                row.getPhuongThuc(),
+                row.getTongDiem(),
+                row.getTrangThai()
+            });
+        }
+    }
+
+    private void refreshTableData(int pageNum) {
         tableModel.setRowCount(0);
         pageRows.clear();
         int startIdx = (pageNum - 1) * RECORDS_PER_PAGE;
@@ -569,7 +595,7 @@ public class NguyenVongPanel extends JPanel {
     }
     
     private String getPaginationText() {
-        int total = filteredRows.size();
+        int total = hasActiveFilters() ? filteredRows.size() : (int) totalRecords;
 
         if (total == 0) {
             return "Hiển thị 0-0 trong số 0 bản ghi";
@@ -581,6 +607,13 @@ public class NguyenVongPanel extends JPanel {
         }
         endRecord = (int) Math.min(endRecord, total);
         return "Hiển thị " + startRecord + "-" + endRecord + " trong số " + total + " bản ghi";
+    }
+
+    private boolean hasActiveFilters() {
+        return nganhFilter != null && diemFilter != null && sortFilter != null
+                && (nganhFilter.getSelectedIndex() > 0
+                    || diemFilter.getSelectedIndex() > 0
+                    || sortFilter.getSelectedIndex() > 0);
     }
 
     private void loadPageAsync(int pageNum) {
@@ -1066,6 +1099,8 @@ public class NguyenVongPanel extends JPanel {
                 "Không thể tải dữ liệu nguyện vọng.\n" + ex.getMessage(),
                 "Lỗi dữ liệu", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
     private List<NguyenVong> loadAllRowsForReports() {
         preloadLookupCaches();
         return mapToRows(controller.taiDuLieu());
@@ -1075,6 +1110,13 @@ public class NguyenVongPanel extends JPanel {
         if (nganhFilter == null || diemFilter == null || sortFilter == null) {
             return;
         }
+
+        if (!hasActiveFilters()) {
+            loadPageAsync(1);
+            return;
+        }
+
+        loadData();
 
         String nganhValue = String.valueOf(nganhFilter.getSelectedItem());
         String diemValue = String.valueOf(diemFilter.getSelectedItem());
@@ -1254,6 +1296,8 @@ public class NguyenVongPanel extends JPanel {
         if (v.isEmpty()) return "Đang chờ";
         if (v.equals("trungtuyen") || v.equals("trung") || v.equals("dat")) return "Trúng Tuyển";
         if (v.equals("duoisan") || v.contains("diemsan")) return "Dưới Sàn";
+        if (v.contains("chitieu") || v.contains("duchitieu")) return "Rớt - Ngành đã đủ chỉ tiêu";
+        if (v.contains("nguyenvongkhac") || v.contains("daunguyenvongkhac")) return "Rớt - Đã đậu nguyện vọng khác";
         if (v.contains("rot") || v.contains("truot") || v.contains("khong")) return "Rớt";
         return raw.trim();
     }
