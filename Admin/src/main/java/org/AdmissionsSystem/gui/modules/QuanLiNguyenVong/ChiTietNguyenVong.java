@@ -98,7 +98,6 @@ public class ChiTietNguyenVong extends JDialog {
         root.setBackground(WHITE);
         root.add(createHeader(), BorderLayout.NORTH);
         root.add(createBody(),   BorderLayout.CENTER);
-        root.add(createFooter(), BorderLayout.SOUTH);
         setContentPane(root);
     }
 
@@ -113,46 +112,16 @@ public class ChiTietNguyenVong extends JDialog {
             new EmptyBorder(SPACE_MD, SPACE_LG, SPACE_MD, SPACE_LG)
         ));
 
-        // Phần trái: chỉ còn tiêu đề (đã bỏ icon)
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        left.setOpaque(false);
+        // Tiêu đề căn giữa
+        JPanel center = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        center.setOpaque(false);
         JLabel title = new JLabel("Chi tiết Nguyện vọng");
         title.setFont(FONT_TITLE);
         title.setForeground(TEXT_DARK);
-        left.add(title);
+        center.add(title);
 
-        // Nút đóng màu đỏ
-        JButton closeBtn = createCloseButton();
-        header.add(left, BorderLayout.WEST);
-        header.add(closeBtn, BorderLayout.EAST);
+        header.add(center, BorderLayout.CENTER);
         return header;
-    }
-
-    private JButton createCloseButton() {
-        JButton btn = new JButton("X") {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getModel().isRollover() ? new Color(0xff, 0xcc, 0xcc) : WHITE);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        btn.setMargin(new Insets(0, 0, 0, 0));
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        btn.setForeground(ERROR_RED);   // màu đỏ
-        btn.setPreferredSize(new Dimension(36, 36));
-        btn.setContentAreaFilled(false);
-        btn.setBorderPainted(false);
-        btn.setFocusPainted(false);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.addMouseListener(new MouseAdapter() {
-            @Override public void mouseEntered(MouseEvent e) { btn.setForeground(new Color(0xcc, 0x00, 0x00)); btn.repaint(); }
-            @Override public void mouseExited(MouseEvent e)  { btn.setForeground(ERROR_RED); btn.repaint(); }
-        });
-        btn.addActionListener(e -> dispose());
-        return btn;
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -553,108 +522,6 @@ public class ChiTietNguyenVong extends JDialog {
         box.add(label, BorderLayout.WEST);
         box.add(value, BorderLayout.EAST);
         return box;
-    }
-
-    // ════════════════════════════════════════════════════════════════════
-    //  FOOTER – Các nút hành động
-    // ════════════════════════════════════════════════════════════════════
-    private JPanel createFooter() {
-        JPanel footer = new JPanel(new BorderLayout());
-        footer.setBackground(SURFACE_L);
-        footer.setBorder(new CompoundBorder(
-            BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER_LIGHT),
-            new EmptyBorder(SPACE_MD, SPACE_LG, SPACE_MD, SPACE_LG)
-        ));
-
-        JButton deleteBtn = createDeleteButton();
-        JPanel rightGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, SPACE_MD, 0));
-        rightGroup.setOpaque(false);
-        rightGroup.add(createOutlineButton("Chỉnh sửa"));
-        rightGroup.add(createPrimaryButton("Duyệt hồ sơ"));
-
-        footer.add(deleteBtn, BorderLayout.WEST);
-        footer.add(rightGroup, BorderLayout.EAST);
-        return footer;
-    }
-
-    private JButton createDeleteButton() {
-        JButton btn = new JButton("🗑  Xóa hồ sơ") {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getModel().isRollover() ? ERROR_BG : SURFACE_L);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        btn.setFont(FONT_BUTTON);
-        btn.setForeground(ERROR_RED);
-        btn.setContentAreaFilled(false);
-        btn.setBorderPainted(false);
-        btn.setFocusPainted(false);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setBorder(new EmptyBorder(SPACE_MD, SPACE_LG, SPACE_MD, SPACE_LG));
-        btn.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                "Bạn có chắc muốn xóa hồ sơ này?", "Xác nhận xóa",
-                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (confirm == JOptionPane.YES_OPTION) dispose();
-        });
-        return btn;
-    }
-
-    private JButton createOutlineButton(String text) {
-        JButton btn = new JButton(text) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getModel().isRollover() ? SURFACE_L : WHITE);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                g2.setColor(BORDER_LIGHT);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        btn.setFont(FONT_BUTTON);
-        btn.setForeground(TEXT_SLATE);
-        btn.setContentAreaFilled(false);
-        btn.setBorderPainted(false);
-        btn.setFocusPainted(false);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setBorder(new EmptyBorder(SPACE_MD, SPACE_LG, SPACE_MD, SPACE_LG));
-        btn.addActionListener(e -> JOptionPane.showMessageDialog(this,
-            "Chức năng Chỉnh sửa chưa triển khai.", "Chỉnh sửa",
-            JOptionPane.INFORMATION_MESSAGE));
-        return btn;
-    }
-
-    private JButton createPrimaryButton(String text) {
-        JButton btn = new JButton(text) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getModel().isRollover() ? new Color(0x0f, 0x6f, 0xd4) : PRIMARY);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        btn.setFont(FONT_BUTTON);
-        btn.setForeground(WHITE);
-        btn.setContentAreaFilled(false);
-        btn.setBorderPainted(false);
-        btn.setFocusPainted(false);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setBorder(new EmptyBorder(SPACE_MD, SPACE_LG, SPACE_MD, SPACE_LG));
-        btn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this,
-                "Đã duyệt hồ sơ thành công!", "Duyệt hồ sơ",
-                JOptionPane.INFORMATION_MESSAGE);
-            dispose();
-        });
-        return btn;
     }
 
     // ────────────────────────────── Helper ──────────────────────────────

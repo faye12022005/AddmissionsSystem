@@ -61,10 +61,14 @@ public class NguyenVongPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JLabel paginationInfo;
     private JPanel paginationBtnGroup;
+    private JComboBox<String> nganhFilter;
+    private JComboBox<String> diemFilter;
+    private JComboBox<String> sortFilter;
     private final XtNguyenvongxettuyenController controller = new XtNguyenvongxettuyenController();
     private final ThiSinhService thiSinhService = new ThiSinhService();
     private final NganhHocService nganhHocService = new NganhHocService();
     private final List<NguyenVong> allRows = new ArrayList<>();
+    private final List<NguyenVong> filteredRows = new ArrayList<>();
     private final List<NguyenVong> pageRows = new ArrayList<>();
     private static final DecimalFormat SCORE_FMT = new DecimalFormat("0.00");
 
@@ -176,18 +180,23 @@ public class NguyenVongPanel extends JPanel {
         gbc.insets = new Insets(0, 0, 0, 10);
         gbc.weighty = 1;
 
-        JComboBox<String> nganh = makeCombo("Tất cả các ngành", "Khoa học máy tính", "Kỹ thuật phần mềm");
-        JComboBox<String> diem  = makeCombo("Mọi mức điểm", "Dưới 20 điểm", "20 - 25 điểm", "Trên 25 điểm");
-        JComboBox<String> sort  = makeCombo("Thứ tự ưu tiên", "Điểm từ cao xuống thấp", "Mới nhất trước");
+        nganhFilter = makeCombo(buildNganhFilterItems());
+        diemFilter  = makeCombo("Mọi mức điểm", "Dưới 20 điểm", "20 - 25 điểm", "Trên 25 điểm");
+        sortFilter  = makeCombo("Thứ tự ưu tiên", "Điểm từ cao xuống thấp", "Mới nhất trước");
 
-        gbc.weightx = 1; gbc.gridx = 0; row.add(nganh, gbc);
-        gbc.gridx = 1; row.add(diem, gbc);
-        gbc.gridx = 2; row.add(sort, gbc);
+        gbc.weightx = 1; gbc.gridx = 0; row.add(nganhFilter, gbc);
+        gbc.gridx = 1; row.add(diemFilter, gbc);
+        gbc.gridx = 2; row.add(sortFilter, gbc);
 
         gbc.weightx = 0; gbc.insets = new Insets(0, 0, 0, 6);
-        gbc.gridx = 3; row.add(makeFilterBtn("Lọc kết quả", PRIMARY, WHITE), gbc);
+        JButton filterBtn = makeFilterBtn("Lọc kết quả", PRIMARY, WHITE);
+        filterBtn.addActionListener(e -> applyFilters());
+        gbc.gridx = 3; row.add(filterBtn, gbc);
+
         gbc.insets = new Insets(0, 0, 0, 0);
-        gbc.gridx = 4; row.add(makeResetBtn("Đặt lại"), gbc);
+        JButton resetBtn = makeResetBtn("Đặt lại");
+        resetBtn.addActionListener(e -> resetFilters());
+        gbc.gridx = 4; row.add(resetBtn, gbc);
 
         card.add(row);
         return card;
@@ -400,7 +409,7 @@ public class NguyenVongPanel extends JPanel {
     
     private void updatePaginationButtons() {
         paginationBtnGroup.removeAll();
-        int totalPages = (allRows.size() + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
+        int totalPages = (filteredRows.size() + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
         
         // Previous button
         JButton prevBtn = new JButton("‹") {
@@ -519,7 +528,7 @@ public class NguyenVongPanel extends JPanel {
     }
     
     private void goToPage(int pageNum) {
-        int totalPages = (allRows.size() + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
+        int totalPages = (filteredRows.size() + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE;
         if (pageNum < 1 || pageNum > totalPages) return;
         
         currentPage = pageNum;
@@ -532,9 +541,9 @@ public class NguyenVongPanel extends JPanel {
         tableModel.setRowCount(0);
         pageRows.clear();
         int startIdx = (pageNum - 1) * RECORDS_PER_PAGE;
-        int endIdx = Math.min(startIdx + RECORDS_PER_PAGE, allRows.size());
+        int endIdx = Math.min(startIdx + RECORDS_PER_PAGE, filteredRows.size());
         for (int i = startIdx; i < endIdx; i++) {
-            NguyenVong row = allRows.get(i);
+            NguyenVong row = filteredRows.get(i);
             pageRows.add(row);
             tableModel.addRow(new Object[] {
                 row.getThuTu(),
@@ -544,14 +553,13 @@ public class NguyenVongPanel extends JPanel {
                 row.getToHop(),
                 row.getPhuongThuc(),
                 row.getTongDiem(),
-                row.getTrangThai(),
-                ""
+                row.getTrangThai()
             });
         }
     }
     
     private String getPaginationText() {
-        int total = allRows.size();
+        int total = filteredRows.size();
         if (total == 0) {
             return "Hiển thị 0-0 trong số 0 bản ghi";
         }
@@ -687,10 +695,7 @@ public class NguyenVongPanel extends JPanel {
         try {
             XtNguyenvongxettuyenService.XetTuyenResult result = controller.chayXetTuyenHeThong();
             loadData();
-            currentPage = 1;
-            refreshTableData(currentPage);
-            updatePaginationButtons();
-            paginationInfo.setText(getPaginationText());
+            applyFilters();
 
             JOptionPane.showMessageDialog(this,
                 buildXetTuyenSummary(result),
@@ -717,10 +722,7 @@ public class NguyenVongPanel extends JPanel {
         try {
             int updated = controller.tinhDiemXetTuyenAll();
             loadData();
-            currentPage = 1;
-            refreshTableData(currentPage);
-            updatePaginationButtons();
-            paginationInfo.setText(getPaginationText());
+            applyFilters();
 
             JOptionPane.showMessageDialog(this,
                 "Đã cập nhật ĐXT cho " + updated + " nguyện vọng.",
@@ -897,10 +899,146 @@ public class NguyenVongPanel extends JPanel {
                     diemXettuyen
                 ));
             }
+            filteredRows.clear();
+            filteredRows.addAll(allRows);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                 "Không thể tải dữ liệu nguyện vọng.\n" + ex.getMessage(),
                 "Lỗi dữ liệu", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void applyFilters() {
+        if (nganhFilter == null || diemFilter == null || sortFilter == null) {
+            return;
+        }
+
+        String nganhValue = String.valueOf(nganhFilter.getSelectedItem());
+        String diemValue = String.valueOf(diemFilter.getSelectedItem());
+        String sortValue = String.valueOf(sortFilter.getSelectedItem());
+
+        filteredRows.clear();
+        for (NguyenVong row : allRows) {
+            if (!matchesNganh(row, nganhValue)) {
+                continue;
+            }
+            if (!matchesDiem(row, diemValue)) {
+                continue;
+            }
+            filteredRows.add(row);
+        }
+
+        applySort(filteredRows, sortValue);
+        currentPage = 1;
+        refreshTableData(currentPage);
+        updatePaginationButtons();
+        paginationInfo.setText(getPaginationText());
+    }
+
+    private void resetFilters() {
+        if (nganhFilter != null) nganhFilter.setSelectedIndex(0);
+        if (diemFilter != null) diemFilter.setSelectedIndex(0);
+        if (sortFilter != null) sortFilter.setSelectedIndex(0);
+        applyFilters();
+    }
+
+    private boolean matchesNganh(NguyenVong row, String selected) {
+        if (selected == null || selected.equals("Tất cả các ngành")) {
+            return true;
+        }
+        String selectedLower = selected.toLowerCase(Locale.ROOT);
+        String maNganh = safeText(row.getMaNganh()).toLowerCase(Locale.ROOT);
+        String tenNganh = safeText(row.getTenNganh()).toLowerCase(Locale.ROOT);
+        return selectedLower.contains(maNganh)
+            || selectedLower.contains(tenNganh)
+            || maNganh.contains(selectedLower)
+            || tenNganh.contains(selectedLower);
+    }
+
+    private String[] buildNganhFilterItems() {
+        List<String> items = new ArrayList<>();
+        items.add("Tất cả các ngành");
+        try {
+            for (XtNganh nganh : nganhHocService.getAll()) {
+                String ma = safeText(nganh.getManganh());
+                String ten = safeText(nganh.getTennganh());
+                if (!ma.isEmpty() && !ten.isEmpty()) {
+                    items.add(ma + " - " + ten);
+                } else if (!ma.isEmpty()) {
+                    items.add(ma);
+                } else if (!ten.isEmpty()) {
+                    items.add(ten);
+                }
+            }
+        } catch (Exception ex) {
+            // Ignore and keep default list
+        }
+        return items.toArray(new String[0]);
+    }
+
+    private boolean matchesDiem(NguyenVong row, String selected) {
+        if (selected == null || selected.equals("Mọi mức điểm")) {
+            return true;
+        }
+        BigDecimal score = parseScore(row.getTongDiem());
+        if (score == null) {
+            return false;
+        }
+        if (selected.equals("Dưới 20 điểm")) {
+            return score.compareTo(new BigDecimal("20")) < 0;
+        }
+        if (selected.equals("20 - 25 điểm")) {
+            return score.compareTo(new BigDecimal("20")) >= 0
+                && score.compareTo(new BigDecimal("25")) <= 0;
+        }
+        if (selected.equals("Trên 25 điểm")) {
+            return score.compareTo(new BigDecimal("25")) > 0;
+        }
+        return true;
+    }
+
+    private void applySort(List<NguyenVong> rows, String selected) {
+        if (selected == null || selected.equals("Thứ tự ưu tiên")) {
+            rows.sort((a, b) -> compareThuTu(a.getThuTu(), b.getThuTu()));
+            return;
+        }
+        if (selected.equals("Điểm từ cao xuống thấp")) {
+            rows.sort((a, b) -> compareScoreDesc(a.getTongDiem(), b.getTongDiem()));
+            return;
+        }
+        if (selected.equals("Mới nhất trước")) {
+            rows.sort((a, b) -> compareThuTu(b.getThuTu(), a.getThuTu()));
+        }
+    }
+
+    private int compareThuTu(String a, String b) {
+        try {
+            int va = Integer.parseInt(safeText(a));
+            int vb = Integer.parseInt(safeText(b));
+            return Integer.compare(va, vb);
+        } catch (NumberFormatException ex) {
+            return safeText(a).compareTo(safeText(b));
+        }
+    }
+
+    private int compareScoreDesc(String a, String b) {
+        BigDecimal sa = parseScore(a);
+        BigDecimal sb = parseScore(b);
+        if (sa == null && sb == null) return 0;
+        if (sa == null) return 1;
+        if (sb == null) return -1;
+        return sb.compareTo(sa);
+    }
+
+    private BigDecimal parseScore(String value) {
+        String v = safeText(value).replace(",", "");
+        if (v.isEmpty() || v.equals("--")) {
+            return null;
+        }
+        try {
+            return new BigDecimal(v);
+        } catch (NumberFormatException ex) {
+            return null;
         }
     }
 
