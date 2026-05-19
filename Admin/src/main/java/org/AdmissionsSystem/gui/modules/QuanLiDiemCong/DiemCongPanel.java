@@ -5,26 +5,38 @@ import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 
 import org.AdmissionsSystem.bus.controller.DiemCongController;
+import org.AdmissionsSystem.bus.service.NganhHocService;
+import org.AdmissionsSystem.bus.service.NguyenVongService;
 import org.AdmissionsSystem.gui.common.Style;
 import org.AdmissionsSystem.gui.components.CustomTable;
 import org.AdmissionsSystem.gui.components.Toast;
 import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongPaginationPanel;
 import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongSearchPanel;
 import org.AdmissionsSystem.models.XtDiemcongxetuyen;
+import org.AdmissionsSystem.models.XtNganh;
+import org.AdmissionsSystem.models.XtNguyenvongxettuyen;
 
 import java.awt.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class DiemCongPanel extends JPanel {
 
+    private static final String KHONG_CO = "không có";
+
     private static final String[] COLS = {
         "ID Điểm Cộng", "TS CCCD", "Mã ngành", "Mã tổ hợp",
-        "Phương thức", "Điểm CC", "Điểm UTXT", "Điểm tổng", "Ghi chú", "DC Keys"
+        "Phương thức", "Điểm CC", "Điểm UTXT", "Điểm tổng", "Nguyện vọng", "Thứ tự NV"
     };
 
     private final DiemCongController controller = new DiemCongController();
+    private final NganhHocService nganhHocService = new NganhHocService();
+    private final NguyenVongService nguyenVongService = new NguyenVongService();
     private final DefaultTableModel tableModel;
     private JTable table;
     private final DiemCongSearchPanel searchPanel;
@@ -32,6 +44,8 @@ public class DiemCongPanel extends JPanel {
     private int pageSize = 20;
     private int currentPage = 1;
     private List<XtDiemcongxetuyen> filteredRows = new ArrayList<>();
+    private final Map<String, List<XtNguyenvongxettuyen>> nguyenVongCacheByCccd = new HashMap<>();
+    private final Map<String, String> tenNganhByMaNganh = new HashMap<>();
 
     // Form fields
     private final JTextField idField = new JTextField();
@@ -42,8 +56,10 @@ public class DiemCongPanel extends JPanel {
     private final JTextField diemCCField = new JTextField();
     private final JTextField diemUtxtField = new JTextField();
     private final JTextField diemTongField = new JTextField();
-    private final JTextArea ghichuArea = new JTextArea(2, 30);
-    private final JTextField dcKeysField = new JTextField();
+    private final JTextField nguyenVongField = new JTextField();
+    private final JTextField thuTuNvField = new JTextField();
+    private String currentGhichu = "";
+    private String currentDcKeys = "";
 
     public DiemCongPanel() {
         setLayout(new BorderLayout());
@@ -154,6 +170,11 @@ public class DiemCongPanel extends JPanel {
 
     private void applyFilterByCccd(String cccdKeyword) {
         filteredRows = controller.searchByCccd(cccdKeyword);
+        filteredRows.sort(Comparator
+                .comparing((XtDiemcongxetuyen row) -> safe(row.getTsCccd()), String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(row -> safe(row.getManganh()), String.CASE_INSENSITIVE_ORDER));
+        nguyenVongCacheByCccd.clear();
+        tenNganhByMaNganh.clear();
         currentPage = 1;
         loadPage();
     }
@@ -176,10 +197,11 @@ public class DiemCongPanel extends JPanel {
 
         for (int i = from; i < to; i++) {
             XtDiemcongxetuyen r = filteredRows.get(i);
+            NguyenVongInfo nvInfo = resolveNguyenVongInfo(r);
             tableModel.addRow(new Object[]{
                 r.getIddiemcong(), r.getTsCccd(), r.getManganh(), r.getMatohop(),
                 r.getPhuongthuc(), bd(r.getDiemcc()), bd(r.getDiemutxt()),
-                bd(r.getDiemtong()), r.getGhichu(), r.getDcKeys()
+                bd(r.getDiemtong()), nvInfo.nguyenVong, nvInfo.thuTuNv
             });
         }
 
@@ -195,19 +217,23 @@ public class DiemCongPanel extends JPanel {
     }
 
     private void onRowSelected() {
-        int row = table.getSelectedRow();
-        if (row < 0) return;
-        int mr = table.convertRowIndexToModel(row);
-        idField.setText(str(tableModel.getValueAt(mr, 0)));
-        cccdField.setText(str(tableModel.getValueAt(mr, 1)));
-        nganhField.setText(str(tableModel.getValueAt(mr, 2)));
-        tohopField.setText(str(tableModel.getValueAt(mr, 3)));
-        phuongthucField.setText(str(tableModel.getValueAt(mr, 4)));
-        diemCCField.setText(str(tableModel.getValueAt(mr, 5)));
-        diemUtxtField.setText(str(tableModel.getValueAt(mr, 6)));
-        diemTongField.setText(str(tableModel.getValueAt(mr, 7)));
-        ghichuArea.setText(str(tableModel.getValueAt(mr, 8)));
-        dcKeysField.setText(str(tableModel.getValueAt(mr, 9)));
+        XtDiemcongxetuyen selected = findSelectedEntity();
+        if (selected == null) return;
+
+        idField.setText(str(selected.getIddiemcong()));
+        cccdField.setText(str(selected.getTsCccd()));
+        nganhField.setText(str(selected.getManganh()));
+        tohopField.setText(str(selected.getMatohop()));
+        phuongthucField.setText(str(selected.getPhuongthuc()));
+        diemCCField.setText(bd(selected.getDiemcc()));
+        diemUtxtField.setText(bd(selected.getDiemutxt()));
+        diemTongField.setText(bd(selected.getDiemtong()));
+
+        currentGhichu = str(selected.getGhichu());
+        currentDcKeys = str(selected.getDcKeys());
+        NguyenVongInfo nvInfo = resolveNguyenVongInfo(selected);
+        nguyenVongField.setText(nvInfo.nguyenVong);
+        thuTuNvField.setText(nvInfo.thuTuNv);
     }
 
     private void onAdd() {
@@ -299,8 +325,8 @@ public class DiemCongPanel extends JPanel {
         e.setDiemcc(parseBD(diemCCField.getText()));
         e.setDiemutxt(parseBD(diemUtxtField.getText()));
         e.setDiemtong(parseBD(diemTongField.getText()));
-        e.setGhichu(ghichuArea.getText().trim());
-        e.setDcKeys(dcKeysField.getText().trim());
+        e.setGhichu(currentGhichu);
+        e.setDcKeys(currentDcKeys);
         return e;
     }
 
@@ -308,15 +334,100 @@ public class DiemCongPanel extends JPanel {
         idField.setText(""); cccdField.setText(""); nganhField.setText("");
         tohopField.setText(""); phuongthucField.setText("");
         diemCCField.setText(""); diemUtxtField.setText(""); diemTongField.setText("");
-        ghichuArea.setText(""); dcKeysField.setText("");
+        nguyenVongField.setText(""); thuTuNvField.setText("");
+        currentGhichu = ""; currentDcKeys = "";
         table.clearSelection();
     }
 
     private String str(Object v) { return v == null ? "" : v.toString(); }
     private String bd(BigDecimal v) { return v == null ? "" : v.toPlainString(); }
+    private String safe(String v) { return v == null ? "" : v.trim(); }
     private BigDecimal parseBD(String s) {
         try { return s == null || s.isBlank() ? null : new BigDecimal(s.trim()); }
         catch (NumberFormatException e) { return null; }
+    }
+
+    private XtDiemcongxetuyen findSelectedEntity() {
+        int row = table.getSelectedRow();
+        if (row < 0) return null;
+
+        int modelRow = table.convertRowIndexToModel(row);
+        Integer selectedId = parseInteger(str(tableModel.getValueAt(modelRow, 0)));
+        if (selectedId != null) {
+            for (XtDiemcongxetuyen entity : filteredRows) {
+                if (entity != null && selectedId.equals(entity.getIddiemcong())) {
+                    return entity;
+                }
+            }
+        }
+
+        int absoluteIndex = (currentPage - 1) * pageSize + modelRow;
+        if (absoluteIndex >= 0 && absoluteIndex < filteredRows.size()) {
+            return filteredRows.get(absoluteIndex);
+        }
+        return null;
+    }
+
+    private Integer parseInteger(String value) {
+        try { return Integer.parseInt(value); }
+        catch (Exception ex) { return null; }
+    }
+
+    private NguyenVongInfo resolveNguyenVongInfo(XtDiemcongxetuyen diemCong) {
+        if (diemCong == null) return new NguyenVongInfo(KHONG_CO, KHONG_CO);
+        String cccd = safe(diemCong.getTsCccd());
+        if (cccd.isEmpty()) return new NguyenVongInfo(KHONG_CO, KHONG_CO);
+
+        String cacheKey = cccd.toLowerCase(Locale.ROOT);
+        List<XtNguyenvongxettuyen> wishes = nguyenVongCacheByCccd.computeIfAbsent(cacheKey,
+                k -> nguyenVongService.findByCccd(cccd));
+        if (wishes == null || wishes.isEmpty()) return new NguyenVongInfo(KHONG_CO, KHONG_CO);
+
+        String maNganh = normalizeKey(diemCong.getManganh());
+        XtNguyenvongxettuyen matchedNv = null;
+        int bestOrder = Integer.MAX_VALUE;
+        for (XtNguyenvongxettuyen nv : wishes) {
+            if (nv == null) continue;
+            if (!maNganh.equals(normalizeKey(nv.getNvManganh()))) continue;
+            int order = uuTienThuTu(nv.getNvTt());
+            if (matchedNv == null || order < bestOrder) {
+                matchedNv = nv;
+                bestOrder = order;
+            }
+        }
+        if (matchedNv == null) return new NguyenVongInfo(KHONG_CO, KHONG_CO);
+        return toNguyenVongInfo(matchedNv);
+    }
+
+    private int uuTienThuTu(Integer nvTt) {
+        return nvTt == null ? Integer.MAX_VALUE : nvTt;
+    }
+
+    private NguyenVongInfo toNguyenVongInfo(XtNguyenvongxettuyen nv) {
+        String maNganh = safe(nv.getNvManganh());
+        String tenNganh = resolveTenNganh(maNganh);
+        String nguyenVong = tenNganh.isEmpty() ? KHONG_CO : tenNganh;
+        String thuTuNv = nv.getNvTt() == null ? KHONG_CO : String.valueOf(nv.getNvTt());
+        return new NguyenVongInfo(nguyenVong, thuTuNv);
+    }
+
+    private String normalizeKey(String value) {
+        return safe(value).toLowerCase(Locale.ROOT);
+    }
+
+    private String resolveTenNganh(String maNganh) {
+        String key = normalizeKey(maNganh);
+        if (key.isEmpty()) return "";
+        if (tenNganhByMaNganh.isEmpty()) {
+            for (XtNganh nganh : nganhHocService.getAll()) {
+                if (nganh == null) continue;
+                String ma = normalizeKey(nganh.getManganh());
+                if (!ma.isEmpty()) {
+                    tenNganhByMaNganh.put(ma, safe(nganh.getTennganh()));
+                }
+            }
+        }
+        return safe(tenNganhByMaNganh.get(key));
     }
 
     // ── Styling helpers (preserved from original) ──
@@ -362,9 +473,9 @@ public class DiemCongPanel extends JPanel {
                 )
         ));
 
-        ghichuArea.setLineWrap(true);
-        ghichuArea.setWrapStyleWord(true);
         idField.setEditable(false);
+        nguyenVongField.setEditable(false);
+        thuTuNvField.setEditable(false);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6, 8, 6, 8);
@@ -413,16 +524,26 @@ public class DiemCongPanel extends JPanel {
 
         // Row 4
         gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0; gbc.gridwidth = 1;
-        formPanel.add(new JLabel("Ghi chú"), gbc);
+        formPanel.add(new JLabel("Nguyện vọng"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 3; gbc.weightx = 1;
-        formPanel.add(new JScrollPane(ghichuArea), gbc);
+        formPanel.add(nguyenVongField, gbc);
 
         // Row 5
         gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1; gbc.weightx = 0;
-        formPanel.add(new JLabel("DC Keys"), gbc);
+        formPanel.add(new JLabel("Thứ tự NV"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 3; gbc.weightx = 1;
-        formPanel.add(dcKeysField, gbc);
+        formPanel.add(thuTuNvField, gbc);
 
         return formPanel;
+    }
+
+    private static class NguyenVongInfo {
+        private final String nguyenVong;
+        private final String thuTuNv;
+
+        private NguyenVongInfo(String nguyenVong, String thuTuNv) {
+            this.nguyenVong = nguyenVong;
+            this.thuTuNv = thuTuNv;
+        }
     }
 }

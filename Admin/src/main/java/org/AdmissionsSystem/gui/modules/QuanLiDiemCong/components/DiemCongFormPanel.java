@@ -14,8 +14,8 @@ public class DiemCongFormPanel extends JPanel {
     private final JTextField diemCCField;
     private final JTextField diemUtxtField;
     private final JTextField diemTongField;
-    private final JTextArea ghichuArea;
-    private final JTextField dcKeysField;
+    private final JTextField nguyenVongField;
+    private final JTextField thuTuNvField;
 
     public DiemCongFormPanel() {
         setLayout(new GridBagLayout());
@@ -40,10 +40,10 @@ public class DiemCongFormPanel extends JPanel {
         diemCCField = new JTextField();
         diemUtxtField = new JTextField();
         diemTongField = new JTextField();
-        ghichuArea = new JTextArea(2, 30);
-        ghichuArea.setLineWrap(true);
-        ghichuArea.setWrapStyleWord(true);
-        dcKeysField = new JTextField();
+        nguyenVongField = new JTextField();
+        thuTuNvField = new JTextField();
+        nguyenVongField.setEditable(false);
+        thuTuNvField.setEditable(false);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6, 8, 6, 8);
@@ -114,27 +114,26 @@ public class DiemCongFormPanel extends JPanel {
         gbc.weightx = 0.5;
         add(diemTongField, gbc);
 
-        // Row 4: Ghi chú
+        // Row 4: Nguyện vọng
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.weightx = 0;
-        add(new JLabel("Ghi chú"), gbc);
+        add(new JLabel("Nguyện vọng"), gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         gbc.weightx = 1;
-        JScrollPane scroller = new JScrollPane(ghichuArea);
-        add(scroller, gbc);
+        add(nguyenVongField, gbc);
 
-        // Row 5: DC Keys
+        // Row 5: Thứ tự NV
         gbc.gridx = 0;
         gbc.gridy = 5;
         gbc.gridwidth = 1;
         gbc.weightx = 0;
-        add(new JLabel("DC Keys"), gbc);
+        add(new JLabel("Thứ tự NV"), gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         gbc.weightx = 1;
-        add(dcKeysField, gbc);
+        add(thuTuNvField, gbc);
     }
 
     public Object[] collectFormData() {
@@ -147,14 +146,14 @@ public class DiemCongFormPanel extends JPanel {
             double diemCC = Double.parseDouble(diemCCField.getText().trim());
             double diemUtxt = Double.parseDouble(diemUtxtField.getText().trim());
             double diemTong = Double.parseDouble(diemTongField.getText().trim());
-            String ghichu = ghichuArea.getText().trim();
-            String dcKeys = dcKeysField.getText().trim();
+            String nguyenVong = nguyenVongField.getText().trim();
+            String thuTuNv = thuTuNvField.getText().trim();
 
             if (cccd.isEmpty() || nganh.isEmpty() || tohop.isEmpty() || phuongthuc.isEmpty()) {
                 throw new IllegalArgumentException("Vui lòng điền đầy đủ thông tin bắt buộc.");
             }
 
-            return new Object[]{id, cccd, nganh, tohop, phuongthuc, diemCC, diemUtxt, diemTong, ghichu, dcKeys};
+            return new Object[]{id, cccd, nganh, tohop, phuongthuc, diemCC, diemUtxt, diemTong, nguyenVong, thuTuNv};
         } catch (NumberFormatException ex) {
             throw new IllegalArgumentException("Vui lòng kiểm tra định dạng số.");
         }
@@ -171,8 +170,8 @@ public class DiemCongFormPanel extends JPanel {
         diemCCField.setText(asText(row[5]));
         diemUtxtField.setText(asText(row[6]));
         diemTongField.setText(asText(row[7]));
-        ghichuArea.setText(asText(row[8]));
-        dcKeysField.setText(asText(row[9]));
+        nguyenVongField.setText(asText(row[8]));
+        thuTuNvField.setText(asText(row[9]));
     }
 
     public void clearForm() {
@@ -184,8 +183,8 @@ public class DiemCongFormPanel extends JPanel {
         diemCCField.setText("");
         diemUtxtField.setText("");
         diemTongField.setText("");
-        ghichuArea.setText("");
-        dcKeysField.setText("");
+        nguyenVongField.setText("");
+        thuTuNvField.setText("");
     }
 
     public int getId() {
