@@ -66,6 +66,7 @@ public class NguyenVongPanel extends JPanel {
     private JPanel paginationBtnGroup;
     private JComboBox<String> nganhFilter;
     private JComboBox<String> diemFilter;
+    private JComboBox<String> trangThaiFilter;
     private JComboBox<String> sortFilter;
     private final XtNguyenvongxettuyenController controller = new XtNguyenvongxettuyenController();
     private final ThiSinhService thiSinhService = new ThiSinhService();
@@ -188,21 +189,23 @@ public class NguyenVongPanel extends JPanel {
 
         nganhFilter = makeCombo(buildNganhFilterItems());
         diemFilter  = makeCombo("Mọi mức điểm", "Dưới 20 điểm", "20 - 25 điểm", "Trên 25 điểm");
+        trangThaiFilter = makeCombo("Tất cả các kết quả", "Trúng Tuyển", "Dưới Sàn", "Rớt - Ngành đã đủ chỉ tiêu", "Rớt - Đã đậu nguyện vọng khác");
         sortFilter  = makeCombo("Thứ tự ưu tiên", "Điểm từ cao xuống thấp", "Mới nhất trước");
 
         gbc.weightx = 1; gbc.gridx = 0; row.add(nganhFilter, gbc);
         gbc.gridx = 1; row.add(diemFilter, gbc);
-        gbc.gridx = 2; row.add(sortFilter, gbc);
+        gbc.gridx = 2; row.add(trangThaiFilter, gbc);
+        gbc.gridx = 3; row.add(sortFilter, gbc);
 
         gbc.weightx = 0; gbc.insets = new Insets(0, 0, 0, 6);
         JButton filterBtn = makeFilterBtn("Lọc kết quả", PRIMARY, WHITE);
         filterBtn.addActionListener(e -> applyFilters());
-        gbc.gridx = 3; row.add(filterBtn, gbc);
+        gbc.gridx = 4; row.add(filterBtn, gbc);
 
         gbc.insets = new Insets(0, 0, 0, 0);
         JButton resetBtn = makeResetBtn("Đặt lại");
         resetBtn.addActionListener(e -> resetFilters());
-        gbc.gridx = 4; row.add(resetBtn, gbc);
+        gbc.gridx = 5; row.add(resetBtn, gbc);
 
         card.add(row);
         return card;
@@ -610,9 +613,10 @@ public class NguyenVongPanel extends JPanel {
     }
 
     private boolean hasActiveFilters() {
-        return nganhFilter != null && diemFilter != null && sortFilter != null
+        return nganhFilter != null && diemFilter != null && trangThaiFilter != null && sortFilter != null
                 && (nganhFilter.getSelectedIndex() > 0
                     || diemFilter.getSelectedIndex() > 0
+                    || trangThaiFilter.getSelectedIndex() > 0
                     || sortFilter.getSelectedIndex() > 0);
     }
 
@@ -715,6 +719,7 @@ public class NguyenVongPanel extends JPanel {
             String trangThai = mapTrangThai(nv.getNvKetqua());
 
             rows.add(new NguyenVong(
+                nv.getIdnv(),
                 formatThuTu(nv.getNvTt()),
                 tenThiSinh,
                 sbd,
@@ -991,6 +996,7 @@ public class NguyenVongPanel extends JPanel {
     //  INNER CLASS: NguyenVong (Data Model)
     // ════════════════════════════════════════════════════════
     public static class NguyenVong {
+        private final Integer idnv;
         private final String thuTu;
         private final String tenThiSinh;
         private final String sbd;
@@ -1007,10 +1013,11 @@ public class NguyenVongPanel extends JPanel {
         private final BigDecimal diemUtqd;
         private final BigDecimal diemXettuyen;
 
-        public NguyenVong(String thuTu, String tenThiSinh, String sbd, String cccd,
+        public NguyenVong(Integer idnv, String thuTu, String tenThiSinh, String sbd, String cccd,
                           String maNganh, String tenNganh, String toHop, String phuongThuc,
                           String tongDiem, String trangThai, String ngaySinh,
                           BigDecimal diemThxt, BigDecimal diemCong, BigDecimal diemUtqd, BigDecimal diemXettuyen) {
+            this.idnv = idnv;
             this.thuTu = thuTu;
             this.tenThiSinh = tenThiSinh;
             this.sbd = sbd;
@@ -1028,6 +1035,7 @@ public class NguyenVongPanel extends JPanel {
             this.diemXettuyen = diemXettuyen;
         }
 
+        public Integer getIdnv() { return idnv; }
         public String getThuTu() { return thuTu; }
         public String getTenThiSinh() { return tenThiSinh; }
         public String getSbd() { return sbd; }
@@ -1075,6 +1083,7 @@ public class NguyenVongPanel extends JPanel {
                 String trangThai = mapTrangThai(nv.getNvKetqua());
 
                 allRows.add(new NguyenVong(
+                    nv.getIdnv(),
                     formatThuTu(nv.getNvTt()),
                     tenThiSinh,
                     sbd,
@@ -1120,6 +1129,7 @@ public class NguyenVongPanel extends JPanel {
 
         String nganhValue = String.valueOf(nganhFilter.getSelectedItem());
         String diemValue = String.valueOf(diemFilter.getSelectedItem());
+        String trangThaiValue = String.valueOf(trangThaiFilter.getSelectedItem());
         String sortValue = String.valueOf(sortFilter.getSelectedItem());
 
         filteredRows.clear();
@@ -1128,6 +1138,9 @@ public class NguyenVongPanel extends JPanel {
                 continue;
             }
             if (!matchesDiem(row, diemValue)) {
+                continue;
+            }
+            if (!matchesTrangThai(row, trangThaiValue)) {
                 continue;
             }
             filteredRows.add(row);
@@ -1143,6 +1156,7 @@ public class NguyenVongPanel extends JPanel {
     private void resetFilters() {
         if (nganhFilter != null) nganhFilter.setSelectedIndex(0);
         if (diemFilter != null) diemFilter.setSelectedIndex(0);
+        if (trangThaiFilter != null) trangThaiFilter.setSelectedIndex(0);
         if (sortFilter != null) sortFilter.setSelectedIndex(0);
         applyFilters();
     }
@@ -1200,6 +1214,14 @@ public class NguyenVongPanel extends JPanel {
             return score.compareTo(new BigDecimal("25")) > 0;
         }
         return true;
+    }
+
+    private boolean matchesTrangThai(NguyenVong row, String selected) {
+        if (selected == null || selected.equals("Tất cả các kết quả")) {
+            return true;
+        }
+        String rowStatus = safeText(row.getTrangThai());
+        return rowStatus.equals(selected);
     }
 
     private void applySort(List<NguyenVong> rows, String selected) {

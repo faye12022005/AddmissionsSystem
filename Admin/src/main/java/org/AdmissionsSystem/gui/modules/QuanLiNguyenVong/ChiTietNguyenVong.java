@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.Normalizer;
 import java.util.Locale;
+import org.AdmissionsSystem.bus.service.XtNguyenvongxettuyenService;
 
 public class ChiTietNguyenVong extends JDialog {
 
@@ -51,6 +52,7 @@ public class ChiTietNguyenVong extends JDialog {
     private static final DecimalFormat SCORE_FMT = new DecimalFormat("0.00");
 
     // ────────────────────────────── Dữ liệu ──────────────────────────────
+    private final Integer idnv;
     private final String tenThiSinh;
     private final String sbd;
     private final String cccd;
@@ -62,13 +64,19 @@ public class ChiTietNguyenVong extends JDialog {
     private final String trangThai;
     private final String toHop;
     private final String phuongThuc;
-    private final BigDecimal diemThxt;
-    private final BigDecimal diemCong;
-    private final BigDecimal diemUtqd;
+    private BigDecimal diemThxt;
+    private BigDecimal diemCong;
+    private BigDecimal diemUtqd;
+    private JLabel labelDiemThxt;
+    private JLabel labelDiemCong;
+    private JLabel labelDiemUtqd;
+    private JLabel labelTongDiem;
+    private final XtNguyenvongxettuyenService service = new XtNguyenvongxettuyenService();
 
     // ────────────────────────────── Constructor ──────────────────────────
     public ChiTietNguyenVong(Frame owner, NguyenVongPanel.NguyenVong data) {
         super(owner, "Chi tiết Nguyện vọng", true);
+        idnv       = (data != null) ? data.getIdnv()       : null;
         tenThiSinh = (data != null) ? data.getTenThiSinh() : "Nguyễn Văn An";
         sbd        = (data != null) ? data.getSbd()        : "2400015";
         cccd       = (data != null) ? data.getCccd()       : "012345678901";
@@ -266,7 +274,7 @@ public class ChiTietNguyenVong extends JDialog {
         JPanel col = new JPanel();
         col.setLayout(new BoxLayout(col, BoxLayout.Y_AXIS));
         col.setBackground(SURFACE_L);
-        col.setBorder(new EmptyBorder(SPACE_LG, SPACE_LG, SPACE_LG, SPACE_LG));
+        col.setBorder(new EmptyBorder(SPACE_MD, SPACE_MD, SPACE_LG, SPACE_MD));
 
         JLabel sectionTitle = new JLabel("THÔNG TIN ĐĂNG KÝ");
         sectionTitle.setFont(FONT_LABEL_LARGE);
@@ -405,6 +413,8 @@ public class ChiTietNguyenVong extends JDialog {
         col.add(createToHopRow());
         col.add(Box.createVerticalStrut(SPACE_LG));
         col.add(createTotalBox());
+        col.add(Box.createVerticalStrut(SPACE_MD));
+        col.add(createCalcButton());
         col.add(Box.createVerticalGlue());
         return col;
     }
@@ -463,13 +473,13 @@ public class ChiTietNguyenVong extends JDialog {
         row.setOpaque(false);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 85));
-        row.add(createScoreCard("ĐTHXT", formatScore(diemThxt)));
-        row.add(createScoreCard("ĐIỂM CỘNG", formatScore(diemCong)));
-        row.add(createScoreCard("ĐƯT", formatScore(diemUtqd)));
+        row.add(createScoreCard("ĐTHXT", formatScore(diemThxt), true));
+        row.add(createScoreCard("ĐIỂM CỘNG", formatScore(diemCong), false));
+        row.add(createScoreCard("ĐƯT", formatScore(diemUtqd), false));
         return row;
     }
 
-    private JPanel createScoreCard(String subject, String score) {
+    private JPanel createScoreCard(String subject, String score, boolean isThxt) {
         JPanel card = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -493,6 +503,14 @@ public class ChiTietNguyenVong extends JDialog {
         sco.setFont(FONT_MEDIUM_NUM);
         sco.setForeground(TEXT_DARK);
         sco.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        if ("ĐTHXT".equals(subject)) {
+            labelDiemThxt = sco;
+        } else if ("ĐIỂM CỘNG".equals(subject)) {
+            labelDiemCong = sco;
+        } else if ("ĐƯT".equals(subject)) {
+            labelDiemUtqd = sco;
+        }
 
         card.add(sub);
         card.add(Box.createVerticalStrut(SPACE_XS));
@@ -528,7 +546,7 @@ public class ChiTietNguyenVong extends JDialog {
             }
         };
         box.setOpaque(false);
-        box.setBorder(new EmptyBorder(SPACE_MD, SPACE_LG, SPACE_MD, SPACE_LG));
+        box.setBorder(new EmptyBorder(SPACE_MD, 16, SPACE_MD, 16));
         box.setMaximumSize(new Dimension(Integer.MAX_VALUE, 65));
         box.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -536,13 +554,76 @@ public class ChiTietNguyenVong extends JDialog {
         label.setFont(FONT_LABEL);
         label.setForeground(new Color(255, 255, 255, 210));
 
-        JLabel value = new JLabel(tongDiem);
-        value.setFont(FONT_LARGE_NUM);
-        value.setForeground(WHITE);
+        labelTongDiem = new JLabel(tongDiem);
+        labelTongDiem.setFont(FONT_LARGE_NUM);
+        labelTongDiem.setForeground(WHITE);
 
         box.add(label, BorderLayout.WEST);
-        box.add(value, BorderLayout.EAST);
+        box.add(labelTongDiem, BorderLayout.EAST);
         return box;
+    }
+
+    private JPanel createCalcButton() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        panel.setOpaque(false);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        panel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JButton btn = new JButton("Tính ĐXT") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getModel().isRollover() ? new Color(0x0f, 0x6f, 0xd4) : PRIMARY);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(FONT_BUTTON);
+        btn.setForeground(WHITE);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setBorder(new EmptyBorder(8, 24, 8, 24));
+        btn.setEnabled(idnv != null);
+        btn.addActionListener(e -> tinhDiemXetTuyen());
+        panel.add(btn);
+        return panel;
+    }
+
+    private void tinhDiemXetTuyen() {
+        if (idnv == null) {
+            JOptionPane.showMessageDialog(this, "Không có dữ liệu để tính", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            XtNguyenvongxettuyenService.ScoreResult result = service.tinhDiemChoMotNguyenVong(idnv);
+            
+            diemThxt = result.diemThxt();
+            diemCong = result.diemCong();
+            diemUtqd = result.diemUtqd();
+            
+            if (labelDiemThxt != null) labelDiemThxt.setText(formatScore(diemThxt));
+            if (labelDiemCong != null) labelDiemCong.setText(formatScore(diemCong));
+            if (labelDiemUtqd != null) labelDiemUtqd.setText(formatScore(diemUtqd));
+            if (labelTongDiem != null) labelTongDiem.setText(formatScore(result.diemXettuyen()));
+            
+            JOptionPane.showMessageDialog(this,
+                "Tính ĐXT thành công:\nĐTHXT: " + formatScore(diemThxt) +
+                "\nĐiểm cộng: " + formatScore(diemCong) +
+                "\nĐƯT: " + formatScore(diemUtqd) +
+                "\nTổng ĐXT: " + formatScore(result.diemXettuyen()),
+                "Kết quả", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                "Lỗi khi tính ĐXT: " + ex.getMessage(),
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            setCursor(Cursor.getDefaultCursor());
+        }
     }
 
     // ────────────────────────────── Helper ──────────────────────────────
