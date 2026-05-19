@@ -28,6 +28,10 @@ public class DiemCongController {
         return service.search(keyword);
     }
 
+    public List<XtDiemcongxetuyen> searchByCccd(String cccdKeyword) {
+        return service.searchByCccd(cccdKeyword);
+    }
+
     public void add(XtDiemcongxetuyen entity) {
         service.add(entity);
     }

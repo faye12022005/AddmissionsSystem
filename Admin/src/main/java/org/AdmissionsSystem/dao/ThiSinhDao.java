@@ -1,7 +1,9 @@
 package org.AdmissionsSystem.dao;
 
 import org.AdmissionsSystem.models.XtThisinhxettuyen25;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.hibernate.Session;
 
 public class ThiSinhDao extends AbstractCrudDao<XtThisinhxettuyen25, Integer> {
@@ -88,6 +90,64 @@ public class ThiSinhDao extends AbstractCrudDao<XtThisinhxettuyen25, Integer> {
                     .setParameter("q", q)
                     .uniqueResult();
             return total == null ? 0L : total;
+        }
+    }
+
+    public Map<String, Long> countByDoiTuong(String keyword) {
+        try (Session session = getSessionFactory().openSession()) {
+            String hql = "SELECT coalesce(doiTuong, ''), count(*) FROM XtThisinhxettuyen25";
+            boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+            if (hasKeyword) {
+                hql += " WHERE lower(cccd) LIKE :q OR lower(ho) LIKE :q OR lower(ten) LIKE :q OR lower(sobaodanh) LIKE :q";
+            }
+            hql += " GROUP BY coalesce(doiTuong, '') ORDER BY count(*) DESC";
+
+            var query = session.createQuery(hql, Object[].class);
+            if (hasKeyword) {
+                String q = "%" + keyword.trim().toLowerCase() + "%";
+                query.setParameter("q", q);
+            }
+
+            List<Object[]> rows = query.list();
+            Map<String, Long> result = new LinkedHashMap<>();
+            for (Object[] row : rows) {
+                String key = row[0] == null ? "" : row[0].toString().trim();
+                if (key.isEmpty()) {
+                    key = "(Chưa khai báo)";
+                }
+                Long value = row[1] instanceof Number ? ((Number) row[1]).longValue() : 0L;
+                result.put(key, value);
+            }
+            return result;
+        }
+    }
+
+    public Map<String, Long> countByKhuVuc(String keyword) {
+        try (Session session = getSessionFactory().openSession()) {
+            String hql = "SELECT coalesce(khuVuc, ''), count(*) FROM XtThisinhxettuyen25";
+            boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+            if (hasKeyword) {
+                hql += " WHERE lower(cccd) LIKE :q OR lower(ho) LIKE :q OR lower(ten) LIKE :q OR lower(sobaodanh) LIKE :q";
+            }
+            hql += " GROUP BY coalesce(khuVuc, '') ORDER BY count(*) DESC";
+
+            var query = session.createQuery(hql, Object[].class);
+            if (hasKeyword) {
+                String q = "%" + keyword.trim().toLowerCase() + "%";
+                query.setParameter("q", q);
+            }
+
+            List<Object[]> rows = query.list();
+            Map<String, Long> result = new LinkedHashMap<>();
+            for (Object[] row : rows) {
+                String key = row[0] == null ? "" : row[0].toString().trim();
+                if (key.isEmpty()) {
+                    key = "(Chưa khai báo)";
+                }
+                Long value = row[1] instanceof Number ? ((Number) row[1]).longValue() : 0L;
+                result.put(key, value);
+            }
+            return result;
         }
     }
 

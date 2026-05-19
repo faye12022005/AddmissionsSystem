@@ -167,11 +167,11 @@ public class MainFrame extends JFrame {
     }
 
     public static void main(String[] args) {
-        System.out.println(AppConfig.getDbHost());
-        System.out.println(AppConfig.getDbPort());
-        System.out.println(AppConfig.getDbName());
-        System.out.println(AppConfig.getDbUser());
-        System.out.println(AppConfig.getDbPassword());
+        // System.out.println(AppConfig.getDbHost());
+        // System.out.println(AppConfig.getDbPort());
+        // System.out.println(AppConfig.getDbName());
+        // System.out.println(AppConfig.getDbUser());
+        // System.out.println(AppConfig.getDbPassword());
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

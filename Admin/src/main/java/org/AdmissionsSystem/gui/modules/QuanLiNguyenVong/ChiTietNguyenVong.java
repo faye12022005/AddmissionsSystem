@@ -6,6 +6,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.text.Normalizer;
+import java.util.Locale;
 
 public class ChiTietNguyenVong extends JDialog {
 
@@ -75,7 +77,7 @@ public class ChiTietNguyenVong extends JDialog {
         tenNganh   = (data != null) ? data.getTenNganh()   : "Khoa học máy tính";
         thuTu      = (data != null) ? data.getThuTu()      : "01";
         tongDiem   = (data != null) ? data.getTongDiem()   : "28.25";
-        trangThai  = (data != null) ? data.getTrangThai()  : "Trúng tuyển";
+        trangThai  = (data != null) ? data.getTrangThai()  : "Trúng Tuyển";
         toHop      = (data != null) ? data.getToHop()      : "A00";
         phuongThuc = (data != null) ? data.getPhuongThuc() : "PT4";
         diemThxt   = (data != null) ? data.getDiemThxt()   : null;
@@ -395,7 +397,7 @@ public class ChiTietNguyenVong extends JDialog {
         col.setBackground(WHITE);
         col.setBorder(new EmptyBorder(SPACE_LG, SPACE_LG, SPACE_LG, SPACE_LG));
 
-        boolean isPass = "Trúng tuyển".equals(trangThai);
+        boolean isPass = laTrangThaiTrung(trangThai);
         col.add(createResultHeader(isPass));
         col.add(Box.createVerticalStrut(SPACE_MD));
         col.add(createScoresRow());
@@ -405,6 +407,25 @@ public class ChiTietNguyenVong extends JDialog {
         col.add(createTotalBox());
         col.add(Box.createVerticalGlue());
         return col;
+    }
+
+    private boolean laTrangThaiTrung(String status) {
+        String normalized = normalizeTrangThai(status);
+        return normalized.equals("trungtuyen")
+                || normalized.equals("trung")
+                || normalized.equals("dat");
+    }
+
+    private String normalizeTrangThai(String status) {
+        if (status == null) {
+            return "";
+        }
+        return Normalizer.normalize(status, Normalizer.Form.NFD)
+                .replace("đ", "d")
+                .replace("Đ", "d")
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("\\s+", "");
     }
 
     private JPanel createResultHeader(boolean isPass) {

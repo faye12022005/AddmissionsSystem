@@ -51,7 +51,7 @@ public class SidebarPanel extends JPanel {
 
 		JPanel nameBox = new JPanel(new GridLayout(2, 1));
 		nameBox.setOpaque(false);
-		JLabel name = new JLabel("TUYỂN SINH 247");
+		JLabel name = new JLabel("TUYỂN SINH SGU");
 		name.setFont(new Font("Segoe UI", Font.BOLD, 13));
 		name.setForeground(new Color(10, 102, 204));
 		JLabel sub = new JLabel("QUẢN TRỊ VIÊN");

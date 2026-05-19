@@ -4,9 +4,27 @@ import io.github.cdimascio.dotenv.Dotenv;
 
 public class AppConfig {
 
-    private static final Dotenv DOTENV = Dotenv.configure().ignoreIfMissing().load();
+    private static final Dotenv DOTENV = loadDotenv();
 
     private AppConfig() {
+    }
+
+    private static Dotenv loadDotenv() {
+        String[] candidates = {".", "..", "../.."};
+        for (String dir : candidates) {
+            try {
+                Dotenv dotenv = Dotenv.configure()
+                        .directory(dir)
+                        .ignoreIfMissing()
+                        .load();
+                if (!dotenv.entries().isEmpty()) {
+                    return dotenv;
+                }
+            } catch (Exception ignored) {
+                // Fallback thử directory tiếp theo.
+            }
+        }
+        return Dotenv.configure().ignoreIfMissing().load();
     }
 
     public static String getDbHost() {

@@ -1,4 +1,4 @@
-package org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components;
+package org.AdmissionsSystem.gui.modules.QuanLyDanhSachNganh;
 
 import org.AdmissionsSystem.gui.common.Style;
 
@@ -10,13 +10,13 @@ import javax.swing.SwingConstants;
 import java.awt.FlowLayout;
 import java.util.function.IntConsumer;
 
-public class DiemCongPaginationPanel extends JPanel {
+public class NganhToHopPaginationPanel extends JPanel {
     private final JButton btnPrev = new JButton("<");
     private final JButton btnNext = new JButton(">");
     private final JLabel lblPageInfo = new JLabel("Trang 1/1", SwingConstants.RIGHT);
     private final JComboBox<Integer> cboPageSize = new JComboBox<>(new Integer[]{10, 20, 50, 100});
 
-    public DiemCongPaginationPanel(int initialPageSize) {
+    public NganhToHopPaginationPanel(int initialPageSize) {
         setLayout(new FlowLayout(FlowLayout.RIGHT, 8, 6));
         setOpaque(false);
 

@@ -1,8 +1,6 @@
 package org.AdmissionsSystem.gui.modules.QuanLiDiemCong;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 
@@ -10,14 +8,13 @@ import org.AdmissionsSystem.bus.controller.DiemCongController;
 import org.AdmissionsSystem.gui.common.Style;
 import org.AdmissionsSystem.gui.components.CustomTable;
 import org.AdmissionsSystem.gui.components.Toast;
-import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongFormPanel;
 import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongPaginationPanel;
 import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongSearchPanel;
-import org.AdmissionsSystem.gui.modules.QuanLiDiemCong.components.DiemCongTable;
 import org.AdmissionsSystem.models.XtDiemcongxetuyen;
 
 import java.awt.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DiemCongPanel extends JPanel {
@@ -30,11 +27,11 @@ public class DiemCongPanel extends JPanel {
     private final DiemCongController controller = new DiemCongController();
     private final DefaultTableModel tableModel;
     private JTable table;
-    private DiemCongTable tableView;
-    private DiemCongSearchPanel searchPanel;
-    private DiemCongFormPanel formPanel;
-    private DiemCongPaginationPanel paginationPanel;
+    private final DiemCongSearchPanel searchPanel;
+    private final DiemCongPaginationPanel paginationPanel;
     private int pageSize = 20;
+    private int currentPage = 1;
+    private List<XtDiemcongxetuyen> filteredRows = new ArrayList<>();
 
     // Form fields
     private final JTextField idField = new JTextField();
@@ -61,9 +58,7 @@ public class DiemCongPanel extends JPanel {
             public boolean isCellEditable(int row, int column) { return false; }
         };
 
-        tableView = new DiemCongTable(tableModel);
         searchPanel = new DiemCongSearchPanel();
-        formPanel = new DiemCongFormPanel();
         paginationPanel = new DiemCongPaginationPanel(pageSize);
 
         // NORTH panel: title + action buttons + form
@@ -91,13 +86,17 @@ public class DiemCongPanel extends JPanel {
         // SOUTH panel: pagination
         add(paginationPanel, BorderLayout.SOUTH);
 
-        loadData();
+        bindEvents();
+        applyFilterByCccd("");
     }
 
     private JPanel createActionPanel() {
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        JPanel wrapper = new JPanel(new BorderLayout(12, 0));
+        wrapper.setOpaque(false);
+        wrapper.setBorder(BorderFactory.createEmptyBorder(0, 8, 8, 8));
+
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
         actionPanel.setOpaque(false);
-        actionPanel.setBorder(BorderFactory.createEmptyBorder(0, 8, 8, 8));
 
         JButton addBtn = new JButton("Thêm điểm cộng");
         JButton editBtn = new JButton("Sửa điểm cộng");
@@ -114,7 +113,11 @@ public class DiemCongPanel extends JPanel {
         addBtn.addActionListener(e -> onAdd());
         editBtn.addActionListener(e -> onUpdate());
         deleteBtn.addActionListener(e -> onDelete());
-        refreshBtn.addActionListener(e -> { clearForm(); loadData(); });
+        refreshBtn.addActionListener(e -> {
+            clearForm();
+            searchPanel.setSearchText("");
+            applyFilterByCccd("");
+        });
 
         actionPanel.add(addBtn);
         actionPanel.add(editBtn);
@@ -122,19 +125,73 @@ public class DiemCongPanel extends JPanel {
         actionPanel.add(exportBtn);
         actionPanel.add(refreshBtn);
 
-        return actionPanel;
+        wrapper.add(searchPanel, BorderLayout.WEST);
+        wrapper.add(actionPanel, BorderLayout.EAST);
+        return wrapper;
     }
 
-    private void loadData() {
-        List<XtDiemcongxetuyen> rows = controller.getAll();
+    private void bindEvents() {
+        searchPanel.addActionListener(e -> applyFilterByCccd(searchPanel.getSearchText()));
+
+        paginationPanel.setOnPageSizeChange(selected -> {
+            pageSize = selected;
+            currentPage = 1;
+            loadPage();
+        });
+        paginationPanel.setOnPrev(() -> {
+            if (currentPage > 1) {
+                currentPage--;
+                loadPage();
+            }
+        });
+        paginationPanel.setOnNext(() -> {
+            if (currentPage < getTotalPages()) {
+                currentPage++;
+                loadPage();
+            }
+        });
+    }
+
+    private void applyFilterByCccd(String cccdKeyword) {
+        filteredRows = controller.searchByCccd(cccdKeyword);
+        currentPage = 1;
+        loadPage();
+    }
+
+    private void loadPage() {
         tableModel.setRowCount(0);
-        for (XtDiemcongxetuyen r : rows) {
+        if (filteredRows.isEmpty()) {
+            paginationPanel.setPageInfo(1, 1, 0);
+            paginationPanel.setNavigationEnabled(false, false);
+            return;
+        }
+
+        int totalPages = getTotalPages();
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+
+        int from = (currentPage - 1) * pageSize;
+        int to = Math.min(from + pageSize, filteredRows.size());
+
+        for (int i = from; i < to; i++) {
+            XtDiemcongxetuyen r = filteredRows.get(i);
             tableModel.addRow(new Object[]{
                 r.getIddiemcong(), r.getTsCccd(), r.getManganh(), r.getMatohop(),
                 r.getPhuongthuc(), bd(r.getDiemcc()), bd(r.getDiemutxt()),
                 bd(r.getDiemtong()), r.getGhichu(), r.getDcKeys()
             });
         }
+
+        paginationPanel.setPageInfo(currentPage, totalPages, filteredRows.size());
+        paginationPanel.setNavigationEnabled(currentPage > 1, currentPage < totalPages);
+    }
+
+    private int getTotalPages() {
+        if (filteredRows.isEmpty()) {
+            return 1;
+        }
+        return (int) Math.ceil(filteredRows.size() * 1.0 / pageSize);
     }
 
     private void onRowSelected() {
@@ -175,7 +232,7 @@ public class DiemCongPanel extends JPanel {
             
             XtDiemcongxetuyen entity = collectForm();
             controller.add(entity);
-            loadData();
+            applyFilterByCccd(searchPanel.getSearchText());
             clearForm();
             Toast.showToast(this, "Đã thêm điểm cộng.", false);
         } catch (Exception ex) {
@@ -209,7 +266,7 @@ public class DiemCongPanel extends JPanel {
             XtDiemcongxetuyen entity = collectForm();
             entity.setIddiemcong(Integer.parseInt(idField.getText().trim()));
                 controller.update(entity);
-            loadData();
+            applyFilterByCccd(searchPanel.getSearchText());
             Toast.showToast(this, "Đã cập nhật điểm cộng.", false);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -225,7 +282,7 @@ public class DiemCongPanel extends JPanel {
         if (confirm != JOptionPane.YES_OPTION) return;
         try {
             controller.delete(Integer.parseInt(idField.getText().trim()));
-            loadData();
+            applyFilterByCccd(searchPanel.getSearchText());
             clearForm();
             Toast.showToast(this, "Đã xóa điểm cộng.", false);
         } catch (Exception ex) {

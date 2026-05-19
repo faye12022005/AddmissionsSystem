@@ -35,6 +35,13 @@ public class DiemCongService {
         return dao.search(keyword);
     }
 
+    public List<XtDiemcongxetuyen> searchByCccd(String cccdKeyword) {
+        if (cccdKeyword == null || cccdKeyword.trim().isEmpty()) {
+            return getAll();
+        }
+        return dao.searchByCccd(cccdKeyword);
+    }
+
     public void add(XtDiemcongxetuyen entity) {
         if (entity == null) throw new IllegalArgumentException("Dữ liệu điểm cộng không hợp lệ.");
         if (entity.getIddiemcong() == null || entity.getIddiemcong() == 0) entity.setIddiemcong(dao.getNextId());

@@ -37,6 +37,17 @@ public class DiemCongDao extends AbstractCrudDao<XtDiemcongxetuyen, Integer> {
         }
     }
 
+    public List<XtDiemcongxetuyen> searchByCccd(String cccdKeyword) {
+        try (Session session = getSessionFactory().openSession()) {
+            String q = "%" + (cccdKeyword == null ? "" : cccdKeyword.trim().toLowerCase()) + "%";
+            return session.createQuery(
+                    "FROM XtDiemcongxetuyen WHERE lower(tsCccd) LIKE :q",
+                    XtDiemcongxetuyen.class)
+                    .setParameter("q", q)
+                    .list();
+        }
+    }
+
     public int getNextId() {
         try (Session session = getSessionFactory().openSession()) {
             Integer maxId = session.createQuery("SELECT max(iddiemcong) FROM XtDiemcongxetuyen", Integer.class)

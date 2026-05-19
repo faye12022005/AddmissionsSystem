@@ -14,6 +14,7 @@ import org.AdmissionsSystem.models.XtNganhTohop;
 import org.AdmissionsSystem.models.XtNguyenvongxettuyen;
 import org.AdmissionsSystem.models.XtThisinhxettuyen25;
 import org.AdmissionsSystem.models.XtTohopMonthi;
+import org.AdmissionsSystem.models.XtUutien;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
@@ -108,6 +109,7 @@ public class HibernateUtil {
         configuration.addAnnotatedClass(XtNguyenvongxettuyen.class);
         configuration.addAnnotatedClass(XtThisinhxettuyen25.class);
         configuration.addAnnotatedClass(XtTohopMonthi.class);
+        configuration.addAnnotatedClass(XtUutien.class);
         configuration.addAnnotatedClass(XtDiemVsat.class);
     }
 
