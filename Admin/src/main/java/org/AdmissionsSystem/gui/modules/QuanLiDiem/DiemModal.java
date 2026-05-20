@@ -334,10 +334,6 @@ public class DiemModal extends JDialog {
 		}
 
 		String soBaoDanh = txtSoBaoDanh.getText() == null ? "" : txtSoBaoDanh.getText().trim();
-		if (soBaoDanh.isBlank()) {
-			setError("Số báo danh", "Số báo danh không được để trống");
-			hasError = true;
-		}
 
 		String loaiDiem = cboLoaiDiem.getSelectedItem() == null ? "" : cboLoaiDiem.getSelectedItem().toString();
 		if (loaiDiem.isBlank()) {

@@ -18,6 +18,14 @@ public class DiemThiDao extends AbstractCrudDao<XtDiemthixettuyen, Integer> {
         }
     }
 
+    public List<XtDiemthixettuyen> findAllByCccd(String cccd) {
+        try (Session session = getSessionFactory().openSession()) {
+            return session.createQuery("FROM XtDiemthixettuyen WHERE lower(cccd) = :c", XtDiemthixettuyen.class)
+                    .setParameter("c", cccd == null ? "" : cccd.trim().toLowerCase())
+                    .list();
+        }
+    }
+
     public List<XtDiemthixettuyen> findByPhuongThuc(String phuongThuc) {
         try (Session session = getSessionFactory().openSession()) {
             return session.createQuery("FROM XtDiemthixettuyen WHERE lower(dPhuongthuc) = :p",

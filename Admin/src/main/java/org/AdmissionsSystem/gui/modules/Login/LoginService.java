@@ -1,11 +1,11 @@
 package org.AdmissionsSystem.gui.modules.Login;
 
-import org.AdmissionsSystem.bus.service.UsersService;
-import org.AdmissionsSystem.models.Users;
+import org.AdmissionsSystem.bus.service.NguoiDungService;
+import org.AdmissionsSystem.models.XtNguoidung;
 
 public class LoginService {
 
-    private final UsersService usersService = new UsersService();
+    private final NguoiDungService usersService = new NguoiDungService();
 
     public AuthResult authenticate(String username, char[] rawPassword) {
         String normalizedUsername = safeTrim(username);
@@ -19,7 +19,7 @@ public class LoginService {
         }
 
         try {
-            Users user = usersService.authenticate(normalizedUsername, password);
+            XtNguoidung user = usersService.authenticate(normalizedUsername, password);
             if (user == null) {
                 return AuthResult.fail("Sai tên đăng nhập, mật khẩu hoặc tài khoản bị khóa.");
             }

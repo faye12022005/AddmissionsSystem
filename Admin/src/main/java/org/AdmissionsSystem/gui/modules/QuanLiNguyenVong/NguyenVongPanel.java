@@ -905,8 +905,8 @@ public class NguyenVongPanel extends JPanel {
         return "Tổng nguyện vọng: " + result.total()
             + "\nTrúng Tuyển: " + result.passed()
             + "\nRớt: " + result.failed()
-            + "\nKhông đạt điểm sàn: " + result.rejectedByDiemSan()
-            + "\nThiếu ngành: " + result.rejectedByMissingNganh();
+            + "\nKhông đạt điểm sàn: " + result.rejectedByDiemSan();
+            // + "\nThiếu ngành: " + result.rejectedByMissingNganh();
     }
 
     private JComboBox<String> makeCombo(String... items) {

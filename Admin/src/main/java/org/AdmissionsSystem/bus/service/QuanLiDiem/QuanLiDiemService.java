@@ -311,9 +311,6 @@ public class QuanLiDiemService {
 		if (!cccd.matches("TS_\\d{4,}")) {
 			throw new IllegalArgumentException("CCCD phải theo định dạng TS_0001.");
 		}
-		if (soBaoDanh.isBlank()) {
-			throw new IllegalArgumentException("Số báo danh không được để trống.");
-		}
 		if (loaiDiem == null) {
 			throw new IllegalArgumentException("Phương thức không hợp lệ.");
 		}

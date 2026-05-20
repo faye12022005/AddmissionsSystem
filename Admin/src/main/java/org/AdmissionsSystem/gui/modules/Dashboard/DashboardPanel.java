@@ -6,8 +6,12 @@ import javax.swing.table.DefaultTableModel;
 import org.AdmissionsSystem.bus.service.*;
 import org.AdmissionsSystem.gui.common.Style;
 import org.AdmissionsSystem.gui.components.CustomTable;
+import org.AdmissionsSystem.models.XtNguyenvongxettuyen;
 
 import java.awt.*;
+import java.text.Normalizer;
+import java.util.List;
+import java.util.Locale;
 
 public class DashboardPanel extends JPanel {
 
@@ -15,7 +19,7 @@ public class DashboardPanel extends JPanel {
     private final NganhHocService nganhHocService = new NganhHocService();
     private final NguyenVongService nguyenVongService = new NguyenVongService();
     private final DiemThiService diemThiService = new DiemThiService();
-    private final UsersService usersService = new UsersService();
+    private final NguoiDungService usersService = new NguoiDungService();
 
     public DashboardPanel() {
         setLayout(new BorderLayout());
@@ -41,11 +45,29 @@ public class DashboardPanel extends JPanel {
             long totalNguyenVong = nguyenVongService.count();
             long totalDiemThi = diemThiService.count();
             long totalUsers = usersService.count();
+            List<XtNguyenvongxettuyen> allNguyenVong = nguyenVongService.getAll();
+
+            long tongTrungTuyen = 0;
+            long tongRot = 0;
+            long tongKhongDatDiemSan = 0;
+            for (XtNguyenvongxettuyen nv : allNguyenVong) {
+                String ketQua = normalizeText(nv == null ? null : nv.getNvKetqua());
+                if (ketQua.equals("trungtuyen") || ketQua.equals("trung") || ketQua.equals("dat")) {
+                    tongTrungTuyen++;
+                } else if (ketQua.equals("duoisan") || ketQua.contains("diemsan")) {
+                    tongKhongDatDiemSan++;
+                } else {
+                    tongRot++;
+                }
+            }
 
             return new Object[][]{
                 {"Tổng số thí sinh", String.format("%,d", totalThiSinh)},
                 {"Tổng số ngành tuyển sinh", String.format("%,d", totalNganh)},
                 {"Tổng số nguyện vọng", String.format("%,d", totalNguyenVong)},
+                {"Trúng Tuyển", String.format("%,d", tongTrungTuyen)},
+                {"Rớt", String.format("%,d", tongRot)},
+                {"Không đạt điểm sàn", String.format("%,d", tongKhongDatDiemSan)},
                 {"Tổng số bài thi", String.format("%,d", totalDiemThi)},
                 {"Tổng số người dùng", String.format("%,d", totalUsers)},
             };
@@ -54,5 +76,16 @@ public class DashboardPanel extends JPanel {
                 {"Lỗi kết nối DB", e.getMessage()}
             };
         }
+    }
+
+    private String normalizeText(String value) {
+        String source = value == null ? "" : value;
+        return Normalizer.normalize(source, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace('đ', 'd')
+                .replace('Đ', 'D')
+                .toLowerCase(Locale.ROOT)
+                .trim()
+                .replace(" ", "");
     }
 }

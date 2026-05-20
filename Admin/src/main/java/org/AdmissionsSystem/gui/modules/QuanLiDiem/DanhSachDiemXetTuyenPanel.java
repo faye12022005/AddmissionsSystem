@@ -80,11 +80,15 @@ public class DanhSachDiemXetTuyenPanel extends JPanel {
 		CustomTable customTable = new CustomTable(tableModel);
 		table = customTable.getTable();
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
 		if (table.getColumnModel().getColumnCount() > 0) {
-			table.getColumnModel().getColumn(0).setPreferredWidth(120);
-			table.getColumnModel().getColumn(1).setPreferredWidth(140);
-			table.getColumnModel().getColumn(2).setPreferredWidth(220);
+			table.getColumnModel().getColumn(0).setPreferredWidth(140); // CCCD
+			table.getColumnModel().getColumn(1).setPreferredWidth(170); // Họ tên
+			table.getColumnModel().getColumn(2).setPreferredWidth(460); // Nguyện vọng
+			table.getColumnModel().getColumn(3).setPreferredWidth(180); // Điểm tổ hợp môn cao nhất
+			table.getColumnModel().getColumn(4).setPreferredWidth(130); // Điểm cộng
+			table.getColumnModel().getColumn(5).setPreferredWidth(130); // Điểm ưu tiên
+			table.getColumnModel().getColumn(6).setPreferredWidth(150); // Điểm xét tuyển
 		}
 
 		loadingOverlay = buildLoadingOverlay();

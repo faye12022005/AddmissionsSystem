@@ -1,40 +1,40 @@
 package org.AdmissionsSystem.bus.service;
 
 import java.util.List;
-import java.util.UUID;
-import org.AdmissionsSystem.dao.UsersDao;
-import org.AdmissionsSystem.models.Users;
+import org.AdmissionsSystem.dao.NguoiDungDao;
+import org.AdmissionsSystem.models.XtNguoidung;
 
-public class UsersService {
+public class NguoiDungService {
 
-    private final UsersDao dao = new UsersDao();
+    private final NguoiDungDao dao = new NguoiDungDao();
 
-    public List<Users> getAll() {
+    public List<XtNguoidung> getAll() {
         return dao.findAll();
     }
 
-    public Users findById(String id) {
+    public XtNguoidung findById(String id) {
         return dao.findById(id);
     }
 
-    public Users findByUsername(String username) {
+    public XtNguoidung findByUsername(String username) {
         return dao.findByUsername(username);
     }
 
-    public List<Users> search(String keyword) {
+    public List<XtNguoidung> search(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return getAll();
         }
         return dao.search(keyword);
     }
 
-    public void add(Users user) {
+    public void add(XtNguoidung user) {
         validateRequired(user);
         if (dao.findByUsername(user.getUsername()) != null) {
             throw new IllegalArgumentException("Tên đăng nhập đã tồn tại.");
         }
         if (user.getId() == null || user.getId().isEmpty()) {
-            user.setId(UUID.randomUUID().toString().substring(0, 8));
+            int nextId = dao.findMaxNumericId() + 1;
+            user.setId(String.valueOf(nextId));
         }
         if (user.getStatus() == null) {
             user.setStatus("Enable");
@@ -42,9 +42,9 @@ public class UsersService {
         dao.save(user);
     }
 
-    public void update(Users user) {
+    public void update(XtNguoidung user) {
         validateRequired(user);
-        Users existing = dao.findById(user.getId());
+        XtNguoidung existing = dao.findById(user.getId());
         if (existing == null) {
             throw new IllegalArgumentException("Không tìm thấy người dùng cần cập nhật.");
         }
@@ -57,7 +57,7 @@ public class UsersService {
     }
 
     public void delete(String id) {
-        Users existing = dao.findById(id);
+        XtNguoidung existing = dao.findById(id);
         if (existing == null) {
             throw new IllegalArgumentException("Không tìm thấy người dùng cần xóa.");
         }
@@ -68,7 +68,7 @@ public class UsersService {
         if (newPassword == null || newPassword.length() < 6) {
             throw new IllegalArgumentException("Mật khẩu phải có ít nhất 6 ký tự.");
         }
-        Users existing = dao.findById(userId);
+        XtNguoidung existing = dao.findById(userId);
         if (existing == null) {
             throw new IllegalArgumentException("Không tìm thấy người dùng.");
         }
@@ -77,7 +77,7 @@ public class UsersService {
     }
 
     public void toggleRole(String userId) {
-        Users existing = dao.findById(userId);
+        XtNguoidung existing = dao.findById(userId);
         if (existing == null) {
             throw new IllegalArgumentException("Không tìm thấy người dùng.");
         }
@@ -87,7 +87,7 @@ public class UsersService {
     }
 
     public void toggleStatus(String userId) {
-        Users existing = dao.findById(userId);
+        XtNguoidung existing = dao.findById(userId);
         if (existing == null) {
             throw new IllegalArgumentException("Không tìm thấy người dùng.");
         }
@@ -96,8 +96,8 @@ public class UsersService {
         dao.update(existing);
     }
 
-    public Users authenticate(String username, String password) {
-        Users user = dao.findByUsername(username);
+    public XtNguoidung authenticate(String username, String password) {
+        XtNguoidung user = dao.findByUsername(username);
         if (user == null) {
             return null;
         }
@@ -114,7 +114,7 @@ public class UsersService {
         return dao.count();
     }
 
-    private void validateRequired(Users user) {
+    private void validateRequired(XtNguoidung user) {
         if (user == null) {
             throw new IllegalArgumentException("Dữ liệu người dùng không hợp lệ.");
         }

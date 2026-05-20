@@ -109,7 +109,7 @@ public class ThisinhDetailDialog extends JDialog {
                         } else {
 
                                 infoModel.addRow(new Object[] {
-                                                "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"
+                                                null, null, null, null, null, null, null, null, null, null, null, null
                                 });
                         }
 
@@ -118,7 +118,7 @@ public class ThisinhDetailDialog extends JDialog {
                         infoModel.addRow(new Object[] {
                                         "Lỗi",
                                         ex.getMessage(),
-                                        "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"
+                                        null, null, null, null, null, null, null, null, null, null
                         });
                 }
 
@@ -382,14 +382,14 @@ public class ThisinhDetailDialog extends JDialog {
         private static String safeNum(BigDecimal num) {
 
                 return num == null
-                                ? "-"
+                                ? null
                                 : num.stripTrailingZeros().toPlainString();
         }
 
         private static String safeText(Object obj) {
 
                 return obj == null
-                                ? "-"
+                                ? null
                                 : obj.toString();
         }
 

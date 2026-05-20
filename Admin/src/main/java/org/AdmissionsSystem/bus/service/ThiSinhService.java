@@ -180,12 +180,5 @@ public class ThiSinhService {
             }
         }
 
-        // Phone Validation
-        String phone = entity.getDienThoai();
-        if (phone != null && !phone.isEmpty()) {
-            if (!phone.matches("\\d{10}")) {
-                throw new IllegalArgumentException("Số điện thoại phải có 10 chữ số.");
-            }
-        }
     }
 }

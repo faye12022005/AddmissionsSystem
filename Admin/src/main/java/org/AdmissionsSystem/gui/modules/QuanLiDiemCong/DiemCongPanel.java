@@ -5,6 +5,7 @@ import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 
 import org.AdmissionsSystem.bus.controller.DiemCongController;
+import org.AdmissionsSystem.bus.service.DiemCongService;
 import org.AdmissionsSystem.bus.service.NganhHocService;
 import org.AdmissionsSystem.bus.service.NguyenVongService;
 import org.AdmissionsSystem.gui.common.Style;
@@ -117,18 +118,22 @@ public class DiemCongPanel extends JPanel {
         JButton addBtn = new JButton("Thêm điểm cộng");
         JButton editBtn = new JButton("Sửa điểm cộng");
         JButton deleteBtn = new JButton("Xóa điểm cộng");
-        JButton exportBtn = new JButton("Export CSV");
+        JButton importDccBtn = new JButton("Import ĐCC");
+        JButton importUtxtBtn = new JButton("Import UTXT");
         JButton refreshBtn = new JButton("Làm mới");
 
         styleButtonGreen(addBtn);
         styleButtonBlue(editBtn);
         styleButtonRed(deleteBtn);
-        styleButtonBlue(exportBtn);
+        styleButtonBlue(importDccBtn);
+        styleButtonBlue(importUtxtBtn);
         styleButtonGray(refreshBtn);
 
         addBtn.addActionListener(e -> onAdd());
         editBtn.addActionListener(e -> onUpdate());
         deleteBtn.addActionListener(e -> onDelete());
+        importDccBtn.addActionListener(e -> onImportDcc());
+        importUtxtBtn.addActionListener(e -> onImportUtxt());
         refreshBtn.addActionListener(e -> {
             clearForm();
             searchPanel.setSearchText("");
@@ -138,7 +143,8 @@ public class DiemCongPanel extends JPanel {
         actionPanel.add(addBtn);
         actionPanel.add(editBtn);
         actionPanel.add(deleteBtn);
-        actionPanel.add(exportBtn);
+        actionPanel.add(importDccBtn);
+        actionPanel.add(importUtxtBtn);
         actionPanel.add(refreshBtn);
 
         wrapper.add(searchPanel, BorderLayout.WEST);
@@ -314,6 +320,53 @@ public class DiemCongPanel extends JPanel {
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void onImportDcc() {
+        try {
+            DiemCongService.ImportResult result = controller.importDcc(this);
+            if (result.totalRows() == 0) {
+                return;
+            }
+            applyFilterByCccd(searchPanel.getSearchText());
+            showImportSummary("ĐCC", result);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi import ĐCC", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void onImportUtxt() {
+        try {
+            DiemCongService.ImportResult result = controller.importUtxt(this);
+            if (result.totalRows() == 0) {
+                return;
+            }
+            applyFilterByCccd(searchPanel.getSearchText());
+            showImportSummary("UTXT", result);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi import UTXT", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void showImportSummary(String mode, DiemCongService.ImportResult result) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Import ").append(mode).append(" hoàn tất.\n")
+                .append("- Tổng dòng file: ").append(result.totalRows()).append('\n')
+                .append("- Dòng xử lý hợp lệ: ").append(result.processedRows()).append('\n')
+                .append("- Bản ghi điểm thi cập nhật: ").append(result.updatedDiemThiRows()).append('\n')
+                .append("- Bản ghi điểm cộng cập nhật: ").append(result.updatedDiemCongRows());
+
+        List<String> errors = result.errors();
+        if (errors != null && !errors.isEmpty()) {
+            sb.append("\n\nCó ").append(errors.size()).append(" dòng lỗi. 5 lỗi đầu:\n");
+            int max = Math.min(5, errors.size());
+            for (int i = 0; i < max; i++) {
+                sb.append(i + 1).append(". ").append(errors.get(i)).append('\n');
+            }
+        }
+
+        JOptionPane.showMessageDialog(this, sb.toString(), "Kết quả import " + mode,
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private XtDiemcongxetuyen collectForm() {
