@@ -107,7 +107,6 @@ public class DiemModal extends JDialog {
 		}
 		addFieldToPanel(personalInfoPanel, "CCCD", txtCccd);
 		addFieldToPanel(personalInfoPanel, "Số báo danh", txtSoBaoDanh);
-		addFieldToPanel(personalInfoPanel, "Phương thức", cboLoaiDiem);
 
 		// --- Section: Điểm thi các môn học ---
 		JPanel subjectScoresPanel = createSectionPanel("Điểm thi các môn học");
@@ -237,7 +236,6 @@ public class DiemModal extends JDialog {
 	private void setFieldsEditable(boolean editable) {
 		txtCccd.setEditable(editable);
 		txtSoBaoDanh.setEditable(editable);
-		cboLoaiDiem.setEnabled(editable);
 		txtToan.setEditable(editable);
 		txtLy.setEditable(editable);
 		txtHoa.setEditable(editable);
@@ -335,12 +333,6 @@ public class DiemModal extends JDialog {
 
 		String soBaoDanh = txtSoBaoDanh.getText() == null ? "" : txtSoBaoDanh.getText().trim();
 
-		String loaiDiem = cboLoaiDiem.getSelectedItem() == null ? "" : cboLoaiDiem.getSelectedItem().toString();
-		if (loaiDiem.isBlank()) {
-			setError("Phương thức", "Vui lòng chọn phương thức");
-			hasError = true;
-		}
-
 		BigDecimal toan = parseScore("Toán", txtToan, THPT_MAX);
 		BigDecimal ly = parseScore("Lý", txtLy, THPT_MAX);
 		BigDecimal hoa = parseScore("Hóa", txtHoa, THPT_MAX);
@@ -376,7 +368,7 @@ public class DiemModal extends JDialog {
 		result = new QuanLiDiemService.DiemInput(
 				cccd,
 				soBaoDanh,
-				loaiDiem,
+				null,
 				toan,
 				ly,
 				hoa,

@@ -473,13 +473,17 @@ public class ChiTietNguyenVong extends JDialog {
         row.setOpaque(false);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 85));
-        row.add(createScoreCard("ĐTHXT", formatScore(diemThxt), true));
-        row.add(createScoreCard("ĐIỂM CỘNG", formatScore(diemCong), false));
-        row.add(createScoreCard("ĐƯT", formatScore(diemUtqd), false));
+        row.add(createScoreCard("ĐTHXT", formatScore(diemThxt), true, "Điểm thi xét tuyển"));
+        row.add(createScoreCard("ĐIỂM CỘNG", formatScore(diemCong), false, "Điểm cộng từ bảng (diemTong)"));
+        row.add(createScoreCard("ĐƯT", formatScore(diemUtqd), false, "Ưu tiên xét tuyển"));
         return row;
     }
 
     private JPanel createScoreCard(String subject, String score, boolean isThxt) {
+        return createScoreCard(subject, score, isThxt, null);
+    }
+
+    private JPanel createScoreCard(String subject, String score, boolean isThxt, String tooltip) {
         JPanel card = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -493,16 +497,25 @@ public class ChiTietNguyenVong extends JDialog {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setOpaque(false);
         card.setBorder(new EmptyBorder(SPACE_MD, SPACE_SM, SPACE_MD, SPACE_SM));
+        if (tooltip != null) {
+            card.setToolTipText(tooltip);
+        }
 
         JLabel sub = new JLabel(subject);
         sub.setFont(FONT_LABEL);
         sub.setForeground(TEXT_MUTED);
         sub.setAlignmentX(Component.CENTER_ALIGNMENT);
+        if (tooltip != null) {
+            sub.setToolTipText(tooltip);
+        }
 
         JLabel sco = new JLabel(score);
         sco.setFont(FONT_MEDIUM_NUM);
         sco.setForeground(TEXT_DARK);
         sco.setAlignmentX(Component.CENTER_ALIGNMENT);
+        if (tooltip != null) {
+            sco.setToolTipText(tooltip);
+        }
         
         if ("ĐTHXT".equals(subject)) {
             labelDiemThxt = sco;
@@ -603,7 +616,7 @@ public class ChiTietNguyenVong extends JDialog {
             XtNguyenvongxettuyenService.ScoreResult result = service.tinhDiemChoMotNguyenVong(idnv);
             
             diemThxt = result.diemThxt();
-            diemCong = result.diemCong();
+            diemCong = result.diemCongThucTe();
             diemUtqd = result.diemUtqd();
             
             if (labelDiemThxt != null) labelDiemThxt.setText(formatScore(diemThxt));
@@ -612,10 +625,10 @@ public class ChiTietNguyenVong extends JDialog {
             if (labelTongDiem != null) labelTongDiem.setText(formatScore(result.diemXettuyen()));
             
             JOptionPane.showMessageDialog(this,
-                "Tính ĐXT thành công:\nĐTHXT: " + formatScore(diemThxt) +
-                "\nĐiểm cộng: " + formatScore(diemCong) +
-                "\nĐƯT: " + formatScore(diemUtqd) +
-                "\nTổng ĐXT: " + formatScore(result.diemXettuyen()),
+                "Tính ĐXT thành công:\n\nĐThXT (Điểm thi xét tuyển): " + formatScore(diemThxt) +
+                "\nĐiểm cộng (từ bảng): " + formatScore(diemCong) +
+                "\nĐƯT (Ưu tiên xét tuyển): " + formatScore(diemUtqd) +
+                "\n\nTổng ĐXT: " + formatScore(result.diemXettuyen()),
                 "Kết quả", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,

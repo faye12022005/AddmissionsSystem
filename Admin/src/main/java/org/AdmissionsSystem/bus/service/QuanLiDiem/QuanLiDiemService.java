@@ -165,9 +165,6 @@ public class QuanLiDiemService {
 			}
 
 			String loaiDiem = resolveLoaiDiemLabel(loaiRaw);
-			if (loaiDiem == null) {
-				errorMessages.add("Phương thức không hợp lệ");
-			}
 
 			BigDecimal to = parseScore(asText(rowValue(row, 3)), "Toán", THPT_MAX, errorMessages);
 			BigDecimal li = parseScore(asText(rowValue(row, 4)), "Lý", THPT_MAX, errorMessages);
@@ -268,9 +265,6 @@ public class QuanLiDiemService {
 
 	private void applyInput(XtDiemthixettuyen entity, DiemInput input) {
 		String phuongThucCode = resolvePhuongThucCode(input.loaiDiem());
-		if (phuongThucCode == null) {
-			throw new IllegalArgumentException("Phương thức không hợp lệ.");
-		}
 
 		entity.setCccd(input.cccd());
 		entity.setSobaodanh(input.soBaoDanh());
@@ -310,9 +304,6 @@ public class QuanLiDiemService {
 		}
 		if (!cccd.matches("TS_\\d{4,}")) {
 			throw new IllegalArgumentException("CCCD phải theo định dạng TS_0001.");
-		}
-		if (loaiDiem == null) {
-			throw new IllegalArgumentException("Phương thức không hợp lệ.");
 		}
 
 		List<String> errors = new ArrayList<>();

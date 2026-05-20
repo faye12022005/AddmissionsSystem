@@ -45,32 +45,24 @@ public class DiemThiService {
         if (entity.getIddiemthi() == null || entity.getIddiemthi() == 0) {
             entity.setIddiemthi(dao.getNextId());
         }
+        // Luôn luôn để d_phuongthuc là null, không lưu phương thức
+        entity.setDPhuongthuc(null);
         dao.save(entity);
     }
 
     public void update(XtDiemthixettuyen entity) {
-        if (entity == null) {
-            throw new IllegalArgumentException("Dữ liệu điểm thi không hợp lệ.");
-        }
-        XtDiemthixettuyen existing = dao.findById(entity.getIddiemthi());
-        if (existing == null) {
-            throw new IllegalArgumentException("Không tìm thấy bản ghi điểm thi cần cập nhật.");
-        }
+        // Luôn luôn để d_phuongthuc là null, không lưu phương thức
+        entity.setDPhuongthuc(null);
         dao.update(entity);
     }
 
     public void delete(int id) {
-        XtDiemthixettuyen existing = dao.findById(id);
-        if (existing == null) {
-            throw new IllegalArgumentException("Không tìm thấy bản ghi điểm thi cần xóa.");
-        }
-        dao.delete(existing);
+        XtDiemthixettuyen entity = new XtDiemthixettuyen();
+        entity.setIddiemthi(id);
+        dao.delete(entity);
     }
 
     public void upsertByCccd(XtDiemthixettuyen entity) {
-        if (entity == null || entity.getCccd() == null) {
-            throw new IllegalArgumentException("Dữ liệu điểm thi không hợp lệ.");
-        }
         XtDiemthixettuyen existing = dao.findByCccd(entity.getCccd());
         if (existing == null) {
             if (entity.getIddiemthi() == null || entity.getIddiemthi() == 0) {
@@ -79,6 +71,8 @@ public class DiemThiService {
             dao.save(entity);
         } else {
             entity.setIddiemthi(existing.getIddiemthi());
+            // Luôn luôn để d_phuongthuc là null, không lưu phương thức
+            entity.setDPhuongthuc(null);
             dao.update(entity);
         }
     }
