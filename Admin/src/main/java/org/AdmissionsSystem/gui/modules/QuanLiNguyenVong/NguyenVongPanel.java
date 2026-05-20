@@ -55,7 +55,7 @@ public class NguyenVongPanel extends JPanel {
 
     // ── Data Model ───────────────────────────────────────────
     private static final String[] COL_NAMES = {
-        "THỨ TỰ NGUYỆN VỌNG", "THÍ SINH", "CCCD", "MÃ NGÀNH", "TỔ HỢP", "PHƯƠNG THỨC", "ĐIỂM XT", "TRẠNG THÁI", "HÀNH ĐỘNG"
+        "THỨ TỰ NGUYỆN VỌNG", "THÍ SINH", "CCCD", "MÃ NGÀNH", "TỔ HỢP", "PHƯƠNG THỨC", "ĐIỂM XT", "TRẠNG THÁI"
     };
     
     private static final int RECORDS_PER_PAGE = 8;
@@ -64,10 +64,16 @@ public class NguyenVongPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JLabel paginationInfo;
     private JPanel paginationBtnGroup;
-    private SwingWorker<PageLoadResult, Void> pageWorker;
+    private JComboBox<String> nganhFilter;
+    private JComboBox<String> diemFilter;
+    private JComboBox<String> trangThaiFilter;
+    private JComboBox<String> sortFilter;
     private final XtNguyenvongxettuyenController controller = new XtNguyenvongxettuyenController();
     private final ThiSinhService thiSinhService = new ThiSinhService();
     private final NganhHocService nganhHocService = new NganhHocService();
+    private final List<NguyenVong> allRows = new ArrayList<>();
+    private final List<NguyenVong> filteredRows = new ArrayList<>();
+    private SwingWorker<PageLoadResult, Void> pageWorker;
     private final List<NguyenVong> pageRows = new ArrayList<>();
     private final Map<String, XtThisinhxettuyen25> thiSinhCache = new HashMap<>();
     private final Map<String, XtNganh> nganhCache = new HashMap<>();
@@ -135,7 +141,6 @@ public class NguyenVongPanel extends JPanel {
         btnGroup.setOpaque(false);
 
         JButton importBtn = makeOutlineButton("⤓ Import Excel");
-        JButton addBtn    = makeOutlineButton("＋ Thêm");
         JButton calcBtn   = makeOutlineButton("Tính ĐXT");
         JButton reportBtn = makeOutlineButton("DS trúng tuyển theo ngành");
         JButton countBtn  = makeOutlineButton("SL trúng tuyển theo PT");
@@ -145,10 +150,6 @@ public class NguyenVongPanel extends JPanel {
             "Chức năng Import Excel chưa được triển khai.", "Import Excel",
             JOptionPane.INFORMATION_MESSAGE));
 
-        addBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
-            "Chức năng Thêm chưa được triển khai.", "Thêm Nguyện vọng",
-            JOptionPane.INFORMATION_MESSAGE));
-
         calcBtn.addActionListener(e -> handleTinhDiemXetTuyen());
         reportBtn.addActionListener(e -> openDanhSachTrungTuyenTheoNganh());
         countBtn.addActionListener(e -> openSoLuongTrungTuyenTheoPhuongThuc());
@@ -156,7 +157,6 @@ public class NguyenVongPanel extends JPanel {
         runBtn.addActionListener(e -> handleRunXetTuyen());
 
         btnGroup.add(importBtn);
-        btnGroup.add(addBtn);
         btnGroup.add(calcBtn);
         btnGroup.add(reportBtn);
         btnGroup.add(countBtn);
@@ -187,18 +187,25 @@ public class NguyenVongPanel extends JPanel {
         gbc.insets = new Insets(0, 0, 0, 10);
         gbc.weighty = 1;
 
-        JComboBox<String> nganh = makeCombo("Tất cả các ngành", "Khoa học máy tính", "Kỹ thuật phần mềm");
-        JComboBox<String> diem  = makeCombo("Mọi mức điểm", "Dưới 20 điểm", "20 - 25 điểm", "Trên 25 điểm");
-        JComboBox<String> sort  = makeCombo("Thứ tự ưu tiên", "Điểm từ cao xuống thấp", "Mới nhất trước");
+        nganhFilter = makeCombo(buildNganhFilterItems());
+        diemFilter  = makeCombo("Mọi mức điểm", "Dưới 20 điểm", "20 - 25 điểm", "Trên 25 điểm");
+        trangThaiFilter = makeCombo("Tất cả các kết quả", "Trúng Tuyển", "Dưới Sàn", "Rớt - Ngành đã đủ chỉ tiêu", "Rớt - Đã đậu nguyện vọng khác");
+        sortFilter  = makeCombo("Thứ tự ưu tiên", "Điểm từ cao xuống thấp", "Mới nhất trước");
 
-        gbc.weightx = 1; gbc.gridx = 0; row.add(nganh, gbc);
-        gbc.gridx = 1; row.add(diem, gbc);
-        gbc.gridx = 2; row.add(sort, gbc);
+        gbc.weightx = 1; gbc.gridx = 0; row.add(nganhFilter, gbc);
+        gbc.gridx = 1; row.add(diemFilter, gbc);
+        gbc.gridx = 2; row.add(trangThaiFilter, gbc);
+        gbc.gridx = 3; row.add(sortFilter, gbc);
 
         gbc.weightx = 0; gbc.insets = new Insets(0, 0, 0, 6);
-        gbc.gridx = 3; row.add(makeFilterBtn("Lọc kết quả", PRIMARY, WHITE), gbc);
+        JButton filterBtn = makeFilterBtn("Lọc kết quả", PRIMARY, WHITE);
+        filterBtn.addActionListener(e -> applyFilters());
+        gbc.gridx = 4; row.add(filterBtn, gbc);
+
         gbc.insets = new Insets(0, 0, 0, 0);
-        gbc.gridx = 4; row.add(makeResetBtn("Đặt lại"), gbc);
+        JButton resetBtn = makeResetBtn("Đặt lại");
+        resetBtn.addActionListener(e -> resetFilters());
+        gbc.gridx = 5; row.add(resetBtn, gbc);
 
         card.add(row);
         return card;
@@ -242,7 +249,7 @@ public class NguyenVongPanel extends JPanel {
         header.setPreferredSize(new Dimension(0, 42));
 
         // Column widths
-        int[] widths = {70, 190, 110, 90, 80, 110, 90, 120, 100};
+        int[] widths = {70, 190, 110, 90, 80, 110, 90, 120};
         for (int i = 0; i < widths.length; i++)
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
 
@@ -254,15 +261,13 @@ public class NguyenVongPanel extends JPanel {
                 JPanel p = new JPanel(new GridBagLayout());
                 p.setBackground(sel ? t.getSelectionBackground() : WHITE);
 
-                boolean first = row == 0;
-
                 JLabel badge = new JLabel(val.toString(), SwingConstants.CENTER);
                 badge.setFont(FONT_BOLD_11);
                 badge.setPreferredSize(new Dimension(30, 30));
                 badge.setOpaque(true);
-                badge.setBackground(first ? PRIMARY : SURFACE);
-                badge.setForeground(first ? WHITE : TEXT_SLATE);
-                badge.setBorder(new RoundedBorder(15, first ? PRIMARY : SURFACE));
+                badge.setBackground(SURFACE);
+                badge.setForeground(PRIMARY);
+                badge.setBorder(new RoundedBorder(15, SURFACE));
 
                 p.add(badge);
                 return p;
@@ -345,26 +350,14 @@ public class NguyenVongPanel extends JPanel {
             }
         });
 
-        // Sự kiện cho nút chỉnh sửa và double-click
+        // Sự kiện cho double-click
         table.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 int row = table.rowAtPoint(e.getPoint());
-                int col = table.columnAtPoint(e.getPoint());
                 
                 if (row >= 0) {
-                    // Single click: kiểm tra nếu nhấn vào cột HÀNH ĐỘNG (cột 8)
-                    if (e.getClickCount() == 1 && col == 8) {
-                        // Lấy vị trí x của click
-                        Rectangle cellRect = table.getCellRect(row, col, false);
-                        int clickX = e.getX() - cellRect.x;
-                        
-                        // Nếu click vào khu vực edit button (phía trái, khoảng 20-40px)
-                        if (clickX > 10 && clickX < 40) {
-                            openChiTietNguyenVong(row);
-                        }
-                    }
                     // Double-click: mở chi tiết
-                    else if (e.getClickCount() == 2) {
+                    if (e.getClickCount() == 2) {
                         openChiTietNguyenVong(row);
                     }
                 }
@@ -425,7 +418,8 @@ public class NguyenVongPanel extends JPanel {
     
     private void updatePaginationButtons() {
         paginationBtnGroup.removeAll();
-        int totalPages = getTotalPages();
+        int totalRows = hasActiveFilters() ? filteredRows.size() : (int) totalRecords;
+        int totalPages = Math.max(1, (totalRows + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE);
         
         // Previous button
         JButton prevBtn = new JButton("‹") {
@@ -544,9 +538,18 @@ public class NguyenVongPanel extends JPanel {
     }
     
     private void goToPage(int pageNum) {
-        int totalPages = getTotalPages();
+        int totalRows = hasActiveFilters() ? filteredRows.size() : (int) totalRecords;
+        int totalPages = Math.max(1, (totalRows + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE);
         if (pageNum < 1 || pageNum > totalPages) return;
-        
+
+        if (hasActiveFilters()) {
+            currentPage = pageNum;
+            refreshTableData(pageNum);
+            updatePaginationButtons();
+            paginationInfo.setText(getPaginationText());
+            return;
+        }
+
         loadPageAsync(pageNum);
     }
     
@@ -568,14 +571,35 @@ public class NguyenVongPanel extends JPanel {
                 row.getToHop(),
                 row.getPhuongThuc(),
                 row.getTongDiem(),
-                row.getTrangThai(),
-                ""
+                row.getTrangThai()
+            });
+        }
+    }
+
+    private void refreshTableData(int pageNum) {
+        tableModel.setRowCount(0);
+        pageRows.clear();
+        int startIdx = (pageNum - 1) * RECORDS_PER_PAGE;
+        int endIdx = Math.min(startIdx + RECORDS_PER_PAGE, filteredRows.size());
+        for (int i = startIdx; i < endIdx; i++) {
+            NguyenVong row = filteredRows.get(i);
+            pageRows.add(row);
+            tableModel.addRow(new Object[] {
+                row.getThuTu(),
+                row.getTenThiSinh() + "\nSBD: " + row.getSbd(),
+                row.getCccd(),
+                row.getMaNganh(),
+                row.getToHop(),
+                row.getPhuongThuc(),
+                row.getTongDiem(),
+                row.getTrangThai()
             });
         }
     }
     
     private String getPaginationText() {
-        long total = totalRecords;
+        int total = hasActiveFilters() ? filteredRows.size() : (int) totalRecords;
+
         if (total == 0) {
             return "Hiển thị 0-0 trong số 0 bản ghi";
         }
@@ -586,6 +610,14 @@ public class NguyenVongPanel extends JPanel {
         }
         endRecord = (int) Math.min(endRecord, total);
         return "Hiển thị " + startRecord + "-" + endRecord + " trong số " + total + " bản ghi";
+    }
+
+    private boolean hasActiveFilters() {
+        return nganhFilter != null && diemFilter != null && trangThaiFilter != null && sortFilter != null
+                && (nganhFilter.getSelectedIndex() > 0
+                    || diemFilter.getSelectedIndex() > 0
+                    || trangThaiFilter.getSelectedIndex() > 0
+                    || sortFilter.getSelectedIndex() > 0);
     }
 
     private void loadPageAsync(int pageNum) {
@@ -687,6 +719,7 @@ public class NguyenVongPanel extends JPanel {
             String trangThai = mapTrangThai(nv.getNvKetqua());
 
             rows.add(new NguyenVong(
+                nv.getIdnv(),
                 formatThuTu(nv.getNvTt()),
                 tenThiSinh,
                 sbd,
@@ -845,7 +878,8 @@ public class NguyenVongPanel extends JPanel {
 
         try {
             XtNguyenvongxettuyenService.XetTuyenResult result = controller.chayXetTuyenHeThong();
-            loadPageAsync(1);
+            loadData();
+            applyFilters();
 
             JOptionPane.showMessageDialog(this,
                 buildXetTuyenSummary(result),
@@ -871,7 +905,8 @@ public class NguyenVongPanel extends JPanel {
 
         try {
             int updated = controller.tinhDiemXetTuyenAll();
-            loadPageAsync(1);
+            loadData();
+            applyFilters();
 
             JOptionPane.showMessageDialog(this,
                 "Đã cập nhật ĐXT cho " + updated + " nguyện vọng.",
@@ -961,6 +996,7 @@ public class NguyenVongPanel extends JPanel {
     //  INNER CLASS: NguyenVong (Data Model)
     // ════════════════════════════════════════════════════════
     public static class NguyenVong {
+        private final Integer idnv;
         private final String thuTu;
         private final String tenThiSinh;
         private final String sbd;
@@ -977,10 +1013,11 @@ public class NguyenVongPanel extends JPanel {
         private final BigDecimal diemUtqd;
         private final BigDecimal diemXettuyen;
 
-        public NguyenVong(String thuTu, String tenThiSinh, String sbd, String cccd,
+        public NguyenVong(Integer idnv, String thuTu, String tenThiSinh, String sbd, String cccd,
                           String maNganh, String tenNganh, String toHop, String phuongThuc,
                           String tongDiem, String trangThai, String ngaySinh,
                           BigDecimal diemThxt, BigDecimal diemCong, BigDecimal diemUtqd, BigDecimal diemXettuyen) {
+            this.idnv = idnv;
             this.thuTu = thuTu;
             this.tenThiSinh = tenThiSinh;
             this.sbd = sbd;
@@ -998,6 +1035,7 @@ public class NguyenVongPanel extends JPanel {
             this.diemXettuyen = diemXettuyen;
         }
 
+        public Integer getIdnv() { return idnv; }
         public String getThuTu() { return thuTu; }
         public String getTenThiSinh() { return tenThiSinh; }
         public String getSbd() { return sbd; }
@@ -1015,9 +1053,220 @@ public class NguyenVongPanel extends JPanel {
         public BigDecimal getDiemXettuyen() { return diemXettuyen; }
     }
 
+    private void loadData() {
+        allRows.clear();
+        try {
+            List<XtNguyenvongxettuyen> data = controller.taiDuLieu();
+            Map<String, XtNganh> nganhMap = new HashMap<>();
+            for (XtNganh nganh : nganhHocService.getAll()) {
+                if (nganh.getManganh() != null) {
+                    nganhMap.put(nganh.getManganh().trim().toLowerCase(Locale.ROOT), nganh);
+                }
+            }
+
+            for (XtNguyenvongxettuyen nv : data) {
+                String cccd = safeText(nv.getNnCccd());
+                XtThisinhxettuyen25 ts = thiSinhService.findByCccd(cccd);
+                String tenThiSinh = buildTenThiSinh(ts, cccd);
+                String sbd = ts != null ? safeText(ts.getSobaodanh()) : "";
+                String ngaySinh = ts != null ? safeText(ts.getNgaySinh()) : "";
+                XtNganh nganh = nganhMap.get(safeText(nv.getNvManganh()).toLowerCase(Locale.ROOT));
+                String tenNganh = nganh != null ? safeText(nganh.getTennganh()) : "";
+                String toHop = safeText(nv.getTtThm());
+                String phuongThuc = safeText(nv.getTtPhuongthuc());
+
+                BigDecimal diemThxt = nv.getDiemThxt();
+                BigDecimal diemCong = nv.getDiemCong();
+                BigDecimal diemUtqd = nv.getDiemUtqd();
+                BigDecimal diemXettuyen = nv.getDiemXettuyen();
+                String tongDiem = formatScore(diemXettuyen != null ? diemXettuyen : diemThxt);
+                String trangThai = mapTrangThai(nv.getNvKetqua());
+
+                allRows.add(new NguyenVong(
+                    nv.getIdnv(),
+                    formatThuTu(nv.getNvTt()),
+                    tenThiSinh,
+                    sbd,
+                    cccd,
+                    safeText(nv.getNvManganh()),
+                    tenNganh,
+                    toHop,
+                    phuongThuc,
+                    tongDiem,
+                    trangThai,
+                    ngaySinh,
+                    diemThxt,
+                    diemCong,
+                    diemUtqd,
+                    diemXettuyen
+                ));
+            }
+            filteredRows.clear();
+            filteredRows.addAll(allRows);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                "Không thể tải dữ liệu nguyện vọng.\n" + ex.getMessage(),
+                "Lỗi dữ liệu", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private List<NguyenVong> loadAllRowsForReports() {
         preloadLookupCaches();
         return mapToRows(controller.taiDuLieu());
+    }
+
+    private void applyFilters() {
+        if (nganhFilter == null || diemFilter == null || sortFilter == null) {
+            return;
+        }
+
+        if (!hasActiveFilters()) {
+            loadPageAsync(1);
+            return;
+        }
+
+        loadData();
+
+        String nganhValue = String.valueOf(nganhFilter.getSelectedItem());
+        String diemValue = String.valueOf(diemFilter.getSelectedItem());
+        String trangThaiValue = String.valueOf(trangThaiFilter.getSelectedItem());
+        String sortValue = String.valueOf(sortFilter.getSelectedItem());
+
+        filteredRows.clear();
+        for (NguyenVong row : allRows) {
+            if (!matchesNganh(row, nganhValue)) {
+                continue;
+            }
+            if (!matchesDiem(row, diemValue)) {
+                continue;
+            }
+            if (!matchesTrangThai(row, trangThaiValue)) {
+                continue;
+            }
+            filteredRows.add(row);
+        }
+
+        applySort(filteredRows, sortValue);
+        currentPage = 1;
+        refreshTableData(currentPage);
+        updatePaginationButtons();
+        paginationInfo.setText(getPaginationText());
+    }
+
+    private void resetFilters() {
+        if (nganhFilter != null) nganhFilter.setSelectedIndex(0);
+        if (diemFilter != null) diemFilter.setSelectedIndex(0);
+        if (trangThaiFilter != null) trangThaiFilter.setSelectedIndex(0);
+        if (sortFilter != null) sortFilter.setSelectedIndex(0);
+        applyFilters();
+    }
+
+    private boolean matchesNganh(NguyenVong row, String selected) {
+        if (selected == null || selected.equals("Tất cả các ngành")) {
+            return true;
+        }
+        String selectedLower = selected.toLowerCase(Locale.ROOT);
+        String maNganh = safeText(row.getMaNganh()).toLowerCase(Locale.ROOT);
+        String tenNganh = safeText(row.getTenNganh()).toLowerCase(Locale.ROOT);
+        return selectedLower.contains(maNganh)
+            || selectedLower.contains(tenNganh)
+            || maNganh.contains(selectedLower)
+            || tenNganh.contains(selectedLower);
+    }
+
+    private String[] buildNganhFilterItems() {
+        List<String> items = new ArrayList<>();
+        items.add("Tất cả các ngành");
+        try {
+            for (XtNganh nganh : nganhHocService.getAll()) {
+                String ma = safeText(nganh.getManganh());
+                String ten = safeText(nganh.getTennganh());
+                if (!ma.isEmpty() && !ten.isEmpty()) {
+                    items.add(ma + " - " + ten);
+                } else if (!ma.isEmpty()) {
+                    items.add(ma);
+                } else if (!ten.isEmpty()) {
+                    items.add(ten);
+                }
+            }
+        } catch (Exception ex) {
+            // Ignore and keep default list
+        }
+        return items.toArray(new String[0]);
+    }
+
+    private boolean matchesDiem(NguyenVong row, String selected) {
+        if (selected == null || selected.equals("Mọi mức điểm")) {
+            return true;
+        }
+        BigDecimal score = parseScore(row.getTongDiem());
+        if (score == null) {
+            return false;
+        }
+        if (selected.equals("Dưới 20 điểm")) {
+            return score.compareTo(new BigDecimal("20")) < 0;
+        }
+        if (selected.equals("20 - 25 điểm")) {
+            return score.compareTo(new BigDecimal("20")) >= 0
+                && score.compareTo(new BigDecimal("25")) <= 0;
+        }
+        if (selected.equals("Trên 25 điểm")) {
+            return score.compareTo(new BigDecimal("25")) > 0;
+        }
+        return true;
+    }
+
+    private boolean matchesTrangThai(NguyenVong row, String selected) {
+        if (selected == null || selected.equals("Tất cả các kết quả")) {
+            return true;
+        }
+        String rowStatus = safeText(row.getTrangThai());
+        return rowStatus.equals(selected);
+    }
+
+    private void applySort(List<NguyenVong> rows, String selected) {
+        if (selected == null || selected.equals("Thứ tự ưu tiên")) {
+            rows.sort((a, b) -> compareThuTu(a.getThuTu(), b.getThuTu()));
+            return;
+        }
+        if (selected.equals("Điểm từ cao xuống thấp")) {
+            rows.sort((a, b) -> compareScoreDesc(a.getTongDiem(), b.getTongDiem()));
+            return;
+        }
+        if (selected.equals("Mới nhất trước")) {
+            rows.sort((a, b) -> compareThuTu(b.getThuTu(), a.getThuTu()));
+        }
+    }
+
+    private int compareThuTu(String a, String b) {
+        try {
+            int va = Integer.parseInt(safeText(a));
+            int vb = Integer.parseInt(safeText(b));
+            return Integer.compare(va, vb);
+        } catch (NumberFormatException ex) {
+            return safeText(a).compareTo(safeText(b));
+        }
+    }
+
+    private int compareScoreDesc(String a, String b) {
+        BigDecimal sa = parseScore(a);
+        BigDecimal sb = parseScore(b);
+        if (sa == null && sb == null) return 0;
+        if (sa == null) return 1;
+        if (sb == null) return -1;
+        return sb.compareTo(sa);
+    }
+
+    private BigDecimal parseScore(String value) {
+        String v = safeText(value).replace(",", "");
+        if (v.isEmpty() || v.equals("--")) {
+            return null;
+        }
+        try {
+            return new BigDecimal(v);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private String buildTenThiSinh(XtThisinhxettuyen25 ts, String cccd) {
@@ -1069,6 +1318,8 @@ public class NguyenVongPanel extends JPanel {
         if (v.isEmpty()) return "Đang chờ";
         if (v.equals("trungtuyen") || v.equals("trung") || v.equals("dat")) return "Trúng Tuyển";
         if (v.equals("duoisan") || v.contains("diemsan")) return "Dưới Sàn";
+        if (v.contains("chitieu") || v.contains("duchitieu")) return "Rớt - Ngành đã đủ chỉ tiêu";
+        if (v.contains("nguyenvongkhac") || v.contains("daunguyenvongkhac")) return "Rớt - Đã đậu nguyện vọng khác";
         if (v.contains("rot") || v.contains("truot") || v.contains("khong")) return "Rớt";
         return raw.trim();
     }

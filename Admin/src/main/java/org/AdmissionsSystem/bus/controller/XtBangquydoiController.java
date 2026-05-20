@@ -1,12 +1,16 @@
 package org.AdmissionsSystem.bus.controller;
 
+import java.awt.Component;
+import java.io.IOException;
 import java.util.List;
 
 import org.AdmissionsSystem.models.XtBangquydoi;
 import org.AdmissionsSystem.bus.service.XtBangquydoiService;
+import org.AdmissionsSystem.gui.components.ImportExcel;
 
 public class XtBangquydoiController {
     private final XtBangquydoiService service = new XtBangquydoiService();
+    private final ImportExcel importExcel = new ImportExcel();
 
     /**
      * Tải tất cả dữ liệu bảng quy đổi
@@ -184,6 +188,22 @@ public class XtBangquydoiController {
         } catch (Exception e) {
             throw new RuntimeException("Lỗi khi đếm tổng bảng quy đổi: " + e.getMessage());
         }
+    }
+
+    public XtBangquydoiService.ImportPreview previewImport(Component parent) throws IOException {
+        List<Object[]> rows = importExcel.chooseAndRead(
+            parent,
+            "Chọn file Excel bảng quy đổi",
+            service.getImportColumns(),
+            service.getImportAliases());
+        return service.previewImport(rows);
+    }
+
+    public int commitImport(XtBangquydoiService.ImportPreview preview) {
+        if (preview == null || preview.validRows() == null || preview.validRows().isEmpty()) {
+            return 0;
+        }
+        return service.importRows(preview.validRows());
     }
 
     /**

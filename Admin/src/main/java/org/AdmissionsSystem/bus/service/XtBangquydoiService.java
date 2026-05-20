@@ -10,6 +10,20 @@ public class XtBangquydoiService {
 
     private final XtBangquydoiDao dao = new XtBangquydoiDao();
 
+    private static final String[] IMPORT_COLUMNS = {
+        "phuongthuc",
+        "tohop",
+        "mon",
+        "diema",
+        "diemb",
+        "diemc",
+        "diemd",
+        "maquydoi",
+        "phanvi"
+    };
+
+    private static final java.util.Map<String, String> IMPORT_ALIASES = buildImportAliases();
+
     /**
      * Lấy tất cả bảng quy đổi
      * @return Danh sách tất cả bảng quy đổi
@@ -231,5 +245,218 @@ public class XtBangquydoiService {
      */
     public long demTatCa() {
         return dao.demTatCa();
+    }
+
+    public ImportPreview previewImport(List<Object[]> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return new ImportPreview(List.of(), List.of());
+        }
+
+        List<QuyDoiInput> validRows = new ArrayList<>();
+        List<ImportError> errors = new ArrayList<>();
+        java.util.Set<String> seenMa = new java.util.HashSet<>();
+
+        for (int i = 0; i < rows.size(); i++) {
+            Object[] row = rows.get(i);
+            int rowNumber = i + 2;
+
+            String phuongThuc = asText(rowValue(row, 0));
+            String toHop = asText(rowValue(row, 1));
+            String mon = asText(rowValue(row, 2));
+            String maQuyDoi = asText(rowValue(row, 7));
+            String phanVi = asText(rowValue(row, 8));
+
+            String diemARaw = asText(rowValue(row, 3));
+            String diemBRaw = asText(rowValue(row, 4));
+            String diemCRaw = asText(rowValue(row, 5));
+            String diemDRaw = asText(rowValue(row, 6));
+
+            java.math.BigDecimal diemA = parseDecimal(diemARaw);
+            java.math.BigDecimal diemB = parseDecimal(diemBRaw);
+            java.math.BigDecimal diemC = parseDecimal(diemCRaw);
+            java.math.BigDecimal diemD = parseDecimal(diemDRaw);
+
+            List<String> messages = new ArrayList<>();
+            if (isBlank(phuongThuc)) {
+                messages.add("Phương thức không được để trống");
+            }
+            if (isBlank(toHop)) {
+                messages.add("Tổ hợp không được để trống");
+            }
+            if (isBlank(mon)) {
+                messages.add("Môn không được để trống");
+            }
+            if (isBlank(maQuyDoi)) {
+                messages.add("Mã quy đổi không được để trống");
+            }
+
+            if (!isBlank(diemARaw) && diemA == null) {
+                messages.add("Điểm A không hợp lệ");
+            }
+            if (!isBlank(diemBRaw) && diemB == null) {
+                messages.add("Điểm B không hợp lệ");
+            }
+            if (!isBlank(diemCRaw) && diemC == null) {
+                messages.add("Điểm C không hợp lệ");
+            }
+            if (!isBlank(diemDRaw) && diemD == null) {
+                messages.add("Điểm D không hợp lệ");
+            }
+
+            if ((diemA == null) != (diemB == null)) {
+                messages.add("Khoảng điểm trước quy đổi phải có đủ điểm A và B");
+            }
+            if ((diemC == null) != (diemD == null)) {
+                messages.add("Khoảng điểm sau quy đổi phải có đủ điểm C và D");
+            }
+
+            String normalizedMa = normalizeKey(maQuyDoi);
+            if (!isBlank(normalizedMa)) {
+                if (seenMa.contains(normalizedMa)) {
+                    messages.add("Mã quy đổi bị trùng trong file import");
+                } else {
+                    seenMa.add(normalizedMa);
+                }
+            }
+
+            if (!isBlank(maQuyDoi) && dao.timTheoMaQuydoi(maQuyDoi) != null) {
+                messages.add("Mã quy đổi đã tồn tại trong hệ thống");
+            }
+
+            if (messages.isEmpty()) {
+                validRows.add(new QuyDoiInput(
+                    safeText(phuongThuc),
+                    safeText(toHop),
+                    safeText(mon),
+                    diemA,
+                    diemB,
+                    diemC,
+                    diemD,
+                    safeText(maQuyDoi),
+                    safeText(phanVi)
+                ));
+            } else {
+                errors.add(new ImportError(rowNumber, maQuyDoi, String.join("; ", messages)));
+            }
+        }
+
+        return new ImportPreview(validRows, errors);
+    }
+
+    public int importRows(List<QuyDoiInput> inputs) {
+        if (inputs == null || inputs.isEmpty()) {
+            return 0;
+        }
+        int imported = 0;
+        for (QuyDoiInput input : inputs) {
+            XtBangquydoi entity = new XtBangquydoi();
+            entity.setDPhuongthuc(input.phuongThuc());
+            entity.setDTohop(input.toHop());
+            entity.setDMon(input.mon());
+            entity.setDDiema(input.diemA());
+            entity.setDDiemb(input.diemB());
+            entity.setDDiemc(input.diemC());
+            entity.setDDiemd(input.diemD());
+            entity.setDMaquydoi(input.maQuyDoi());
+            entity.setDPhanvi(input.phanVi());
+            them(entity);
+            imported++;
+        }
+        return imported;
+    }
+
+    public String[] getImportColumns() {
+        return IMPORT_COLUMNS.clone();
+    }
+
+    public java.util.Map<String, String> getImportAliases() {
+        return IMPORT_ALIASES;
+    }
+
+    private Object rowValue(Object[] row, int index) {
+        if (row == null || index < 0 || index >= row.length) {
+            return null;
+        }
+        return row[index];
+    }
+
+    private String asText(Object value) {
+        return value == null ? "" : value.toString().trim();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private String safeText(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private String normalizeKey(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private java.math.BigDecimal parseDecimal(String value) {
+        if (isBlank(value)) {
+            return null;
+        }
+        String normalized = value.replace(",", "").trim();
+        try {
+            return new java.math.BigDecimal(normalized);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private static java.util.Map<String, String> buildImportAliases() {
+        java.util.Map<String, String> map = new java.util.HashMap<>();
+        map.put("phuong thuc", "phuongthuc");
+        map.put("phuongthuc", "phuongthuc");
+        map.put("to hop", "tohop");
+        map.put("tohop", "tohop");
+        map.put("mon", "mon");
+        map.put("diem a", "diema");
+        map.put("diem b", "diemb");
+        map.put("diem c", "diemc");
+        map.put("diem d", "diemd");
+        map.put("ma quy doi", "maquydoi");
+        map.put("maquydoi", "maquydoi");
+        map.put("phan vi", "phanvi");
+        return java.util.Collections.unmodifiableMap(map);
+    }
+
+    public record QuyDoiInput(
+        String phuongThuc,
+        String toHop,
+        String mon,
+        java.math.BigDecimal diemA,
+        java.math.BigDecimal diemB,
+        java.math.BigDecimal diemC,
+        java.math.BigDecimal diemD,
+        String maQuyDoi,
+        String phanVi) {
+    }
+
+    public record ImportError(
+        int rowNumber,
+        String maQuyDoi,
+        String message) {
+    }
+
+    public record ImportPreview(
+        List<QuyDoiInput> validRows,
+        List<ImportError> errors) {
+
+        public int validCount() {
+            return validRows == null ? 0 : validRows.size();
+        }
+
+        public int errorCount() {
+            return errors == null ? 0 : errors.size();
+        }
+
+        public int totalCount() {
+            return validCount() + errorCount();
+        }
     }
 }
