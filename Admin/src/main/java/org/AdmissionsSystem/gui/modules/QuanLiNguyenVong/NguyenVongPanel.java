@@ -189,7 +189,7 @@ public class NguyenVongPanel extends JPanel {
 
         nganhFilter = makeCombo(buildNganhFilterItems());
         diemFilter  = makeCombo("Mọi mức điểm", "Dưới 20 điểm", "20 - 25 điểm", "Trên 25 điểm");
-        trangThaiFilter = makeCombo("Tất cả các kết quả", "Trúng Tuyển", "Dưới Sàn", "Rớt - Ngành đã đủ chỉ tiêu", "Rớt - Đã đậu nguyện vọng khác");
+        trangThaiFilter = makeCombo("Tất cả các kết quả", "Trúng Tuyển", "Dưới Sàn", "Rớt");
         sortFilter  = makeCombo("Thứ tự ưu tiên", "Điểm từ cao xuống thấp", "Mới nhất trước");
 
         gbc.weightx = 1; gbc.gridx = 0; row.add(nganhFilter, gbc);
@@ -679,6 +679,15 @@ public class NguyenVongPanel extends JPanel {
     }
 
     private synchronized void preloadLookupCaches() {
+        preloadLookupCaches(false);
+    }
+
+    private synchronized void preloadLookupCaches(boolean forceReload) {
+        if (forceReload) {
+            nganhCache.clear();
+            thiSinhCache.clear();
+        }
+
         if (nganhCache.isEmpty()) {
             for (XtNganh nganh : nganhHocService.getAll()) {
                 String maNganh = safeText(nganh.getManganh());
@@ -1056,51 +1065,9 @@ public class NguyenVongPanel extends JPanel {
     private void loadData() {
         allRows.clear();
         try {
+            preloadLookupCaches(true);
             List<XtNguyenvongxettuyen> data = controller.taiDuLieu();
-            Map<String, XtNganh> nganhMap = new HashMap<>();
-            for (XtNganh nganh : nganhHocService.getAll()) {
-                if (nganh.getManganh() != null) {
-                    nganhMap.put(nganh.getManganh().trim().toLowerCase(Locale.ROOT), nganh);
-                }
-            }
-
-            for (XtNguyenvongxettuyen nv : data) {
-                String cccd = safeText(nv.getNnCccd());
-                XtThisinhxettuyen25 ts = thiSinhService.findByCccd(cccd);
-                String tenThiSinh = buildTenThiSinh(ts, cccd);
-                String sbd = ts != null ? safeText(ts.getSobaodanh()) : "";
-                String ngaySinh = ts != null ? safeText(ts.getNgaySinh()) : "";
-                XtNganh nganh = nganhMap.get(safeText(nv.getNvManganh()).toLowerCase(Locale.ROOT));
-                String tenNganh = nganh != null ? safeText(nganh.getTennganh()) : "";
-                String toHop = safeText(nv.getTtThm());
-                String phuongThuc = safeText(nv.getTtPhuongthuc());
-
-                BigDecimal diemThxt = nv.getDiemThxt();
-                BigDecimal diemCong = nv.getDiemCong();
-                BigDecimal diemUtqd = nv.getDiemUtqd();
-                BigDecimal diemXettuyen = nv.getDiemXettuyen();
-                String tongDiem = formatScore(diemXettuyen != null ? diemXettuyen : diemThxt);
-                String trangThai = mapTrangThai(nv.getNvKetqua());
-
-                allRows.add(new NguyenVong(
-                    nv.getIdnv(),
-                    formatThuTu(nv.getNvTt()),
-                    tenThiSinh,
-                    sbd,
-                    cccd,
-                    safeText(nv.getNvManganh()),
-                    tenNganh,
-                    toHop,
-                    phuongThuc,
-                    tongDiem,
-                    trangThai,
-                    ngaySinh,
-                    diemThxt,
-                    diemCong,
-                    diemUtqd,
-                    diemXettuyen
-                ));
-            }
+            allRows.addAll(mapToRows(data));
             filteredRows.clear();
             filteredRows.addAll(allRows);
         } catch (Exception ex) {
@@ -1111,7 +1078,7 @@ public class NguyenVongPanel extends JPanel {
     }
 
     private List<NguyenVong> loadAllRowsForReports() {
-        preloadLookupCaches();
+        preloadLookupCaches(true);
         return mapToRows(controller.taiDuLieu());
     }
 
@@ -1318,8 +1285,8 @@ public class NguyenVongPanel extends JPanel {
         if (v.isEmpty()) return "Đang chờ";
         if (v.equals("trungtuyen") || v.equals("trung") || v.equals("dat")) return "Trúng Tuyển";
         if (v.equals("duoisan") || v.contains("diemsan")) return "Dưới Sàn";
-        if (v.contains("chitieu") || v.contains("duchitieu")) return "Rớt - Ngành đã đủ chỉ tiêu";
-        if (v.contains("nguyenvongkhac") || v.contains("daunguyenvongkhac")) return "Rớt - Đã đậu nguyện vọng khác";
+        if (v.contains("chitieu") || v.contains("duchitieu")) return "Rớt";
+        if (v.contains("nguyenvongkhac") || v.contains("daunguyenvongkhac")) return "Rớt";
         if (v.contains("rot") || v.contains("truot") || v.contains("khong")) return "Rớt";
         return raw.trim();
     }

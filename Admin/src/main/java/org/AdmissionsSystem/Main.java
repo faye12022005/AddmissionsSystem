@@ -3,7 +3,7 @@ package org.AdmissionsSystem;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import org.AdmissionsSystem.gui.main.MainFrame;
+import org.AdmissionsSystem.gui.modules.Login.LoginFrame;
 
 import com.formdev.flatlaf.FlatLightLaf; // Or FlatDarkLaf for dark mode
 import javax.swing.*;
@@ -19,18 +19,8 @@ public class Main {
 		}
 
 		SwingUtilities.invokeLater(() -> {
-			MainFrame frame = new MainFrame(null, "Demo", "Admin");
+			LoginFrame frame = new LoginFrame();
 			frame.setVisible(true);
-			frame.showCard("diem_thisinh");
-
-			JOptionPane.showMessageDialog(
-					frame,
-					"Demo Quản lý điểm thí sinh:\n"
-							+ "- Thêm/Sửa/Xóa điểm\n"
-							+ "- Import Excel\n"
-							+ "- Thống kê theo loại điểm và môn",
-					"Hướng dẫn demo",
-					JOptionPane.INFORMATION_MESSAGE);
 		});
 	}
 }
