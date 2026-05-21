@@ -668,7 +668,7 @@ public class XtNguyenvongxettuyenService {
             BigDecimal diemXet = resolveDiemXetTuyen(nv);
             if (cutoff != null) {
                 if (diemXet.compareTo(cutoff) < 0) {
-                    nv.setNvKetqua(KQ_ROT_DUOI_DIEM_CHUAN);
+                    nv.setNvKetqua(KQ_ROT);
                 } else {
                     nv.setNvKetqua(KQ_ROT_DA_DAU_NV_KHAC);
                 }
@@ -937,8 +937,8 @@ public class XtNguyenvongxettuyenService {
             BigDecimal tong = d1.multiply(BigDecimal.valueOf(hs1))
                     .add(d2.multiply(BigDecimal.valueOf(hs2)))
                     .add(d3.multiply(BigDecimal.valueOf(hs3)));
-            BigDecimal dthxt = tong.divide(BigDecimal.valueOf(w), SCALE+4, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(3)).setScale(SCALE, RoundingMode.HALF_UP);
+            BigDecimal dthxt = tong.divide(BigDecimal.valueOf(w), SCALE + 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(3));
             String toHop = safeText(th.getMatohop());
             BigDecimal dcXet = resolveDiemCong(normalizeKey(nv.getNnCccd()), nv.getNvManganh(), toHop, phuongThuc, diemCongLookup);
             // Per spec: diem_cong must be taken from xt_diemcongxettuyen.diemTong (capped at 3.0).
@@ -946,7 +946,7 @@ public class XtNguyenvongxettuyenService {
 
             // Tính ĐTHGXT = ĐTHXT - dolech (dolech lấy từ toHop nếu có)
             BigDecimal dolech = nvlBigDecimal(th.getDolech());
-            BigDecimal dthgxt = dthxt.subtract(dolech).setScale(SCALE, RoundingMode.HALF_UP);
+            BigDecimal dthgxt = dthxt.subtract(dolech);
 
             // Tính ĐƯT điều chỉnh theo quy định mục 10
             BigDecimal mDuut = resolveDiemUtqd(thiSinh);
@@ -1072,7 +1072,7 @@ public class XtNguyenvongxettuyenService {
         if (result.compareTo(BigDecimal.ZERO) < 0) {
             result = BigDecimal.ZERO;
         }
-        return result.setScale(SCALE, RoundingMode.HALF_UP);
+        return result;
     }
 
     private Map<String, XtDiemthixettuyen> buildDiemThiByPhuongThuc(

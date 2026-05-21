@@ -32,7 +32,7 @@ public class DanhSachTrungTuyenTheoNganhDialog extends JDialog {
     private static final Font FONT_PLAIN_13 = new Font("SansSerif", Font.PLAIN, 13);
     private static final Font FONT_BOLD_10 = new Font("SansSerif", Font.BOLD, 10);
 
-    private static final DecimalFormat SCORE_FMT = new DecimalFormat("0.00");
+    private static final DecimalFormat SCORE_FMT = new DecimalFormat("0.00000");
 
     private static final String[] COL_NAMES = {
         "STT", "THI SINH", "CCCD", "SBD", "TO HOP", "PHUONG THUC", "DIEM XT", "NV"

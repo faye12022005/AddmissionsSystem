@@ -31,7 +31,7 @@ import java.util.Comparator;
 import java.util.List;
 
 public class ChiTietDiemXetTuyenDialog extends JDialog {
-	private final DecimalFormat numberFormat = new DecimalFormat("0.##");
+	private final DecimalFormat numberFormat = new DecimalFormat("0.00000");
 
 	public static void showDialog(Window owner, ChiTietRecord detail) {
 		ChiTietDiemXetTuyenDialog dialog = new ChiTietDiemXetTuyenDialog(owner, detail);
@@ -240,7 +240,7 @@ public class ChiTietDiemXetTuyenDialog extends JDialog {
 
 	private String formatScore(BigDecimal value) {
 		if (value == null) {
-			return "0";
+			return numberFormat.format(BigDecimal.ZERO);
 		}
 		return numberFormat.format(value);
 	}

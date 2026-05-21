@@ -77,7 +77,7 @@ public class NguyenVongPanel extends JPanel {
     private final List<NguyenVong> pageRows = new ArrayList<>();
     private final Map<String, XtThisinhxettuyen25> thiSinhCache = new HashMap<>();
     private final Map<String, XtNganh> nganhCache = new HashMap<>();
-    private static final DecimalFormat SCORE_FMT = new DecimalFormat("0.00");
+    private static final DecimalFormat SCORE_FMT = new DecimalFormat("0.00000");
 
     // ════════════════════════════════════════════════════════
     //  CONSTRUCTOR
@@ -841,8 +841,79 @@ public class NguyenVongPanel extends JPanel {
         Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
         
         // Mở dialog
-        ChiTietNguyenVong dialog = new ChiTietNguyenVong(parentFrame, data);
+        ChiTietNguyenVong dialog = new ChiTietNguyenVong(parentFrame, data, this::applyScoreUpdateFromDialog);
         dialog.setVisible(true);
+    }
+
+    private void applyScoreUpdateFromDialog(
+            Integer idnv,
+            BigDecimal diemThxt,
+            BigDecimal diemCong,
+            BigDecimal diemUtqd,
+            BigDecimal diemXettuyen) {
+        if (idnv == null) {
+            return;
+        }
+
+        String tongDiem = formatScore(diemXettuyen != null ? diemXettuyen : diemThxt);
+        updateRowScoresInList(allRows, idnv, diemThxt, diemCong, diemUtqd, diemXettuyen, tongDiem);
+        updateRowScoresInList(filteredRows, idnv, diemThxt, diemCong, diemUtqd, diemXettuyen, tongDiem);
+        updateRowScoresInList(pageRows, idnv, diemThxt, diemCong, diemUtqd, diemXettuyen, tongDiem);
+
+        if (hasActiveFilters()) {
+            String sortValue = String.valueOf(sortFilter.getSelectedItem());
+            applySort(filteredRows, sortValue);
+            refreshTableData(currentPage);
+            updatePaginationButtons();
+            paginationInfo.setText(getPaginationText());
+            return;
+        }
+
+        refreshTableData();
+        paginationInfo.setText(getPaginationText());
+    }
+
+    private void updateRowScoresInList(
+            List<NguyenVong> rows,
+            Integer idnv,
+            BigDecimal diemThxt,
+            BigDecimal diemCong,
+            BigDecimal diemUtqd,
+            BigDecimal diemXettuyen,
+            String tongDiem) {
+        if (rows == null || rows.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < rows.size(); i++) {
+            NguyenVong row = rows.get(i);
+            if (row == null || row.getIdnv() == null) {
+                continue;
+            }
+            if (!idnv.equals(row.getIdnv())) {
+                continue;
+            }
+
+            rows.set(i, new NguyenVong(
+                    row.getIdnv(),
+                    row.getThuTu(),
+                    row.getTenThiSinh(),
+                    row.getSbd(),
+                    row.getCccd(),
+                    row.getMaNganh(),
+                    row.getTenNganh(),
+                    row.getToHop(),
+                    row.getPhuongThuc(),
+                    tongDiem,
+                    row.getTrangThai(),
+                    row.getNgaySinh(),
+                    diemThxt,
+                    diemCong,
+                    diemUtqd,
+                    diemXettuyen
+            ));
+            return;
+        }
     }
 
     private void openDanhSachTrungTuyenTheoNganh() {

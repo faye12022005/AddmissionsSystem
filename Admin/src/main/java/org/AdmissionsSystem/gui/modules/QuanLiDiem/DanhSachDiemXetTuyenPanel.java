@@ -53,7 +53,7 @@ public class DanhSachDiemXetTuyenPanel extends JPanel {
 	private final JButton btnView = new JButton("Xem chi tiết");
 	private final JButton btnRefresh = new JButton("Làm mới");
 	private final DiemPaginationPanel paginationPanel = new DiemPaginationPanel(DEFAULT_PAGE_SIZE);
-	private final DecimalFormat scoreFormat = new DecimalFormat("0.##");
+	private final DecimalFormat scoreFormat = new DecimalFormat("0.00000");
 	private final JTable table;
 
 	private JPanel loadingOverlay;
@@ -332,7 +332,7 @@ public class DanhSachDiemXetTuyenPanel extends JPanel {
 
 	private String formatScore(BigDecimal value) {
 		if (value == null) {
-			return "0";
+			return scoreFormat.format(BigDecimal.ZERO);
 		}
 		return scoreFormat.format(value);
 	}

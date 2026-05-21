@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,12 +50,12 @@ public class ThisinhPanel extends JPanel {
     private final SearchPanel searchPanel;
     private final JTextField txtIdthisinh = new JTextField(6);
 
+    private static final String[] KV_KEYS = { "1", "2", "2NT", "3" };
+
     private final JLabel lblPageInfo = new JLabel("Trang 1/1", SwingConstants.RIGHT);
     private final JLabel lblStatsTotalValue = new JLabel("0", SwingConstants.CENTER);
-    private final JComboBox<String> cboStatsDoiTuong = new JComboBox<>();
-    private final JComboBox<String> cboStatsKhuVuc = new JComboBox<>();
-    private final JLabel lblStatsDoiTuongValue = new JLabel("0", SwingConstants.CENTER);
-    private final JLabel lblStatsKhuVucValue = new JLabel("0", SwingConstants.CENTER);
+    private final Map<Integer, JLabel> lblStatsDoiTuongGrid = new LinkedHashMap<>();
+    private final Map<String, JLabel> lblStatsKhuVucGrid = new LinkedHashMap<>();
     private Map<String, Long> statsDoiTuongCounts = java.util.Collections.emptyMap();
     private Map<String, Long> statsKhuVucCounts = java.util.Collections.emptyMap();
 
@@ -248,25 +249,35 @@ public class ThisinhPanel extends JPanel {
     }
 
     private JPanel buildStatsPanel() {
-        JPanel statsWrapper = new JPanel(new GridLayout(1, 3, 8, 0));
+        JPanel statsWrapper = new JPanel(new GridBagLayout());
         statsWrapper.setOpaque(false);
+        statsWrapper.setPreferredSize(new Dimension(0, 132));
 
         lblStatsTotalValue.setFont(Style.TITLE_FONT.deriveFont(20f));
         lblStatsTotalValue.setForeground(new Color(22, 163, 74));
 
-        lblStatsDoiTuongValue.setFont(Style.TITLE_FONT.deriveFont(18f));
-        lblStatsDoiTuongValue.setForeground(new Color(59, 130, 246));
-        lblStatsKhuVucValue.setFont(Style.TITLE_FONT.deriveFont(18f));
-        lblStatsKhuVucValue.setForeground(new Color(59, 130, 246));
+        JPanel totalCard = createStatsCard("Tổng thí sinh", lblStatsTotalValue);
+        totalCard.setPreferredSize(new Dimension(220, 132));
+        totalCard.setMinimumSize(new Dimension(220, 132));
 
-        cboStatsDoiTuong.setFont(Style.TABLE_FONT);
-        cboStatsKhuVuc.setFont(Style.TABLE_FONT);
-        cboStatsDoiTuong.addActionListener(e -> updateSelectedStatsValue(cboStatsDoiTuong, statsDoiTuongCounts, lblStatsDoiTuongValue));
-        cboStatsKhuVuc.addActionListener(e -> updateSelectedStatsValue(cboStatsKhuVuc, statsKhuVucCounts, lblStatsKhuVucValue));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridy = 0;
+        gbc.fill = GridBagConstraints.BOTH;
 
-        statsWrapper.add(createStatsCard("Tổng thí sinh", lblStatsTotalValue));
-        statsWrapper.add(createDropdownStatsCard("Theo đối tượng", cboStatsDoiTuong, lblStatsDoiTuongValue));
-        statsWrapper.add(createDropdownStatsCard("Theo khu vực", cboStatsKhuVuc, lblStatsKhuVucValue));
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        gbc.insets = new Insets(0, 0, 0, 8);
+        statsWrapper.add(totalCard, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        gbc.insets = new Insets(0, 0, 0, 8);
+        statsWrapper.add(createStatsCard("Theo đối tượng", createDoiTuongStatsGrid()), gbc);
+
+        gbc.gridx = 2;
+        gbc.weightx = 1;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        statsWrapper.add(createStatsCard("Theo khu vực", createKhuVucStatsGrid()), gbc);
         return statsWrapper;
     }
 
@@ -286,25 +297,61 @@ public class ThisinhPanel extends JPanel {
         return card;
     }
 
-    private JPanel createDropdownStatsCard(String title, JComboBox<String> combo, JLabel valueLabel) {
-        JPanel card = new JPanel(new BorderLayout(6, 6));
-        card.setOpaque(true);
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 225, 235)),
-                BorderFactory.createEmptyBorder(8, 10, 8, 10)));
+    private JPanel createDoiTuongStatsGrid() {
+        JPanel grid = new JPanel(new GridLayout(3, 3, 6, 4));
+        grid.setOpaque(false);
+
+        for (int dt = 1; dt <= 7; dt++) {
+            JLabel valueLabel = createStatsValueLabel();
+            lblStatsDoiTuongGrid.put(dt, valueLabel);
+            grid.add(createStatsGridCell("DT " + dt, valueLabel));
+        }
+
+        grid.add(createEmptyStatsGridCell());
+        grid.add(createEmptyStatsGridCell());
+        return grid;
+    }
+
+    private JPanel createKhuVucStatsGrid() {
+        JPanel grid = new JPanel(new GridLayout(2, 2, 6, 4));
+        grid.setOpaque(false);
+
+        for (String kv : KV_KEYS) {
+            JLabel valueLabel = createStatsValueLabel();
+            lblStatsKhuVucGrid.put(kv, valueLabel);
+            grid.add(createStatsGridCell("KV " + kv, valueLabel));
+        }
+        return grid;
+    }
+
+    private JPanel createStatsGridCell(String title, JLabel valueLabel) {
+        JPanel cell = new JPanel(new BorderLayout(4, 0));
+        cell.setOpaque(true);
+        cell.setBackground(new Color(248, 250, 253));
+        cell.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(226, 232, 240)),
+                BorderFactory.createEmptyBorder(4, 6, 4, 6)));
 
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(Style.BUTTON_FONT.deriveFont(Font.BOLD, 12f));
-        titleLabel.setForeground(new Color(60, 70, 90));
-        card.add(titleLabel, BorderLayout.NORTH);
+        titleLabel.setFont(Style.TABLE_FONT.deriveFont(Font.BOLD, 11f));
+        titleLabel.setForeground(new Color(71, 85, 105));
 
-        JPanel body = new JPanel(new BorderLayout(6, 6));
-        body.setOpaque(false);
-        body.add(combo, BorderLayout.NORTH);
-        body.add(valueLabel, BorderLayout.CENTER);
-        card.add(body, BorderLayout.CENTER);
-        return card;
+        cell.add(titleLabel, BorderLayout.WEST);
+        cell.add(valueLabel, BorderLayout.EAST);
+        return cell;
+    }
+
+    private JPanel createEmptyStatsGridCell() {
+        JPanel cell = new JPanel();
+        cell.setOpaque(false);
+        return cell;
+    }
+
+    private JLabel createStatsValueLabel() {
+        JLabel label = new JLabel("0", SwingConstants.RIGHT);
+        label.setFont(Style.TABLE_FONT.deriveFont(Font.BOLD, 12f));
+        label.setForeground(new Color(37, 99, 235));
+        return label;
     }
 
     private JPanel buildPaginationPanel() {
@@ -587,38 +634,36 @@ public class ThisinhPanel extends JPanel {
         lblStatsTotalValue.setText(String.format("%,d", total));
         statsDoiTuongCounts = doiTuongCounts == null ? java.util.Collections.emptyMap() : doiTuongCounts;
         statsKhuVucCounts = khuVucCounts == null ? java.util.Collections.emptyMap() : khuVucCounts;
-        updateStatsDropdown(cboStatsDoiTuong, statsDoiTuongCounts);
-        updateStatsDropdown(cboStatsKhuVuc, statsKhuVucCounts);
-        updateSelectedStatsValue(cboStatsDoiTuong, statsDoiTuongCounts, lblStatsDoiTuongValue);
-        updateSelectedStatsValue(cboStatsKhuVuc, statsKhuVucCounts, lblStatsKhuVucValue);
+        updateDoiTuongStatsGrid();
+        updateKhuVucStatsGrid();
     }
 
-    private void updateStatsDropdown(JComboBox<String> combo, Map<String, Long> counts) {
-        String selected = combo.getSelectedItem() == null ? null : combo.getSelectedItem().toString();
-        combo.removeAllItems();
-        if (counts == null || counts.isEmpty()) {
-            combo.addItem("(Chưa có dữ liệu)");
-            combo.setSelectedIndex(0);
-            return;
-        }
-        for (String key : counts.keySet()) {
-            combo.addItem(key);
-        }
-        if (selected != null && counts.containsKey(selected)) {
-            combo.setSelectedItem(selected);
-        } else {
-            combo.setSelectedIndex(0);
+    private void updateDoiTuongStatsGrid() {
+        for (int dt = 1; dt <= 7; dt++) {
+            JLabel label = lblStatsDoiTuongGrid.get(dt);
+            if (label == null) {
+                continue;
+            }
+            long value = 0L;
+            if (statsDoiTuongCounts != null) {
+                value = statsDoiTuongCounts.getOrDefault(String.valueOf(dt), 0L);
+            }
+            label.setText(String.format("%,d", value));
         }
     }
 
-    private void updateSelectedStatsValue(JComboBox<String> combo, Map<String, Long> counts, JLabel valueLabel) {
-        if (counts == null || counts.isEmpty()) {
-            valueLabel.setText("0");
-            return;
+    private void updateKhuVucStatsGrid() {
+        for (String kv : KV_KEYS) {
+            JLabel label = lblStatsKhuVucGrid.get(kv);
+            if (label == null) {
+                continue;
+            }
+            long value = 0L;
+            if (statsKhuVucCounts != null) {
+                value = statsKhuVucCounts.getOrDefault(kv, 0L);
+            }
+            label.setText(String.format("%,d", value));
         }
-        String selected = combo.getSelectedItem() == null ? "" : combo.getSelectedItem().toString();
-        long value = counts.getOrDefault(selected, 0L);
-        valueLabel.setText(String.format("%,d", value));
     }
 
     private record PageResult(

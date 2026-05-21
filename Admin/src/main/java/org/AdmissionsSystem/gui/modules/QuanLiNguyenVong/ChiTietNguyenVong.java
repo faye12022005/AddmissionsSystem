@@ -11,6 +11,10 @@ import java.util.Locale;
 import org.AdmissionsSystem.bus.service.XtNguyenvongxettuyenService;
 
 public class ChiTietNguyenVong extends JDialog {
+    @FunctionalInterface
+    public interface ScoreUpdateListener {
+        void onScoreUpdated(Integer idnv, BigDecimal diemThxt, BigDecimal diemCong, BigDecimal diemUtqd, BigDecimal diemXettuyen);
+    }
 
     // ────────────────────────────── Màu sắc ──────────────────────────────
     private static final Color PRIMARY     = new Color(0x13, 0x7f, 0xec);
@@ -49,7 +53,8 @@ public class ChiTietNguyenVong extends JDialog {
     private static final Font FONT_BODY_LARGE   = new Font(FONT_FAMILY, Font.PLAIN, 15);
     private static final Font FONT_BODY_BOLD_LARGE = new Font(FONT_FAMILY, Font.BOLD, 15);
 
-    private static final DecimalFormat SCORE_FMT = new DecimalFormat("0.00");
+    private static final DecimalFormat SCORE_FMT = new DecimalFormat("0.00000");
+    private static final DecimalFormat SCORE_FMT_2 = new DecimalFormat("0.00");
 
     // ────────────────────────────── Dữ liệu ──────────────────────────────
     private final Integer idnv;
@@ -71,11 +76,17 @@ public class ChiTietNguyenVong extends JDialog {
     private JLabel labelDiemCong;
     private JLabel labelDiemUtqd;
     private JLabel labelTongDiem;
+    private final ScoreUpdateListener scoreUpdateListener;
     private final XtNguyenvongxettuyenService service = new XtNguyenvongxettuyenService();
 
     // ────────────────────────────── Constructor ──────────────────────────
     public ChiTietNguyenVong(Frame owner, NguyenVongPanel.NguyenVong data) {
+        this(owner, data, null);
+    }
+
+    public ChiTietNguyenVong(Frame owner, NguyenVongPanel.NguyenVong data, ScoreUpdateListener scoreUpdateListener) {
         super(owner, "Chi tiết Nguyện vọng", true);
+        this.scoreUpdateListener = scoreUpdateListener;
         idnv       = (data != null) ? data.getIdnv()       : null;
         tenThiSinh = (data != null) ? data.getTenThiSinh() : "Nguyễn Văn An";
         sbd        = (data != null) ? data.getSbd()        : "2400015";
@@ -94,7 +105,7 @@ public class ChiTietNguyenVong extends JDialog {
         initUI();
     }
 
-    public ChiTietNguyenVong(Frame owner) { this(owner, null); }
+    public ChiTietNguyenVong(Frame owner) { this(owner, null, null); }
 
     // ────────────────────────────── Khởi tạo giao diện ───────────────────
     private void initUI() {
@@ -474,8 +485,8 @@ public class ChiTietNguyenVong extends JDialog {
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 85));
         row.add(createScoreCard("ĐTHXT", formatScore(diemThxt), true, "Điểm thi xét tuyển"));
-        row.add(createScoreCard("ĐIỂM CỘNG", formatScore(diemCong), false, "Điểm cộng từ bảng (diemTong)"));
-        row.add(createScoreCard("ĐƯT", formatScore(diemUtqd), false, "Ưu tiên xét tuyển"));
+        row.add(createScoreCard("ĐIỂM CỘNG", formatScore2(diemCong), false, "Điểm cộng từ bảng (diemTong)"));
+        row.add(createScoreCard("ĐƯT", formatScore2(diemUtqd), false, "Ưu tiên xét tuyển"));
         return row;
     }
 
@@ -618,17 +629,22 @@ public class ChiTietNguyenVong extends JDialog {
             diemThxt = result.diemThxt();
             diemCong = result.diemCongThucTe();
             diemUtqd = result.diemUtqd();
+            BigDecimal diemXettuyen = result.diemXettuyen();
             
             if (labelDiemThxt != null) labelDiemThxt.setText(formatScore(diemThxt));
-            if (labelDiemCong != null) labelDiemCong.setText(formatScore(diemCong));
-            if (labelDiemUtqd != null) labelDiemUtqd.setText(formatScore(diemUtqd));
-            if (labelTongDiem != null) labelTongDiem.setText(formatScore(result.diemXettuyen()));
+            if (labelDiemCong != null) labelDiemCong.setText(formatScore2(diemCong));
+            if (labelDiemUtqd != null) labelDiemUtqd.setText(formatScore2(diemUtqd));
+            if (labelTongDiem != null) labelTongDiem.setText(formatScore(diemXettuyen));
+
+            if (scoreUpdateListener != null) {
+                scoreUpdateListener.onScoreUpdated(idnv, diemThxt, diemCong, diemUtqd, diemXettuyen);
+            }
             
             JOptionPane.showMessageDialog(this,
                 "Tính ĐXT thành công:\n\nĐThXT (Điểm thi xét tuyển): " + formatScore(diemThxt) +
-                "\nĐiểm cộng (từ bảng): " + formatScore(diemCong) +
-                "\nĐƯT (Ưu tiên xét tuyển): " + formatScore(diemUtqd) +
-                "\n\nTổng ĐXT: " + formatScore(result.diemXettuyen()),
+                "\nĐiểm cộng (từ bảng): " + formatScore2(diemCong) +
+                "\nĐƯT (Ưu tiên xét tuyển): " + formatScore2(diemUtqd) +
+                "\n\nTổng ĐXT: " + formatScore(diemXettuyen),
                 "Kết quả", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
@@ -642,6 +658,10 @@ public class ChiTietNguyenVong extends JDialog {
     // ────────────────────────────── Helper ──────────────────────────────
     private String formatScore(BigDecimal value) {
         return (value == null) ? "--" : SCORE_FMT.format(value);
+    }
+
+    private String formatScore2(BigDecimal value) {
+        return (value == null) ? "--" : SCORE_FMT_2.format(value);
     }
 
     private String getToHopLabel(String code) {

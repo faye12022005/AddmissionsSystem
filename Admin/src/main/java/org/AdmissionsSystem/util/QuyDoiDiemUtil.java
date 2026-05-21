@@ -115,7 +115,7 @@ public final class QuyDoiDiemUtil {
         BigDecimal ratio = x.subtract(rule.a)
                 .multiply(rule.d.subtract(rule.c))
                 .divide(range, SCALE + 4, RoundingMode.HALF_UP);
-        return rule.c.add(ratio).setScale(SCALE, RoundingMode.HALF_UP);
+        return rule.c.add(ratio);
     }
 
     // Lớp nội bộ lưu thông tin khoảng quy đổi
