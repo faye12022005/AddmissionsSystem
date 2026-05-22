@@ -61,6 +61,14 @@ public class XtNguyenvongxettuyenService {
         return dao.layNguyenVongTheoTrang(page, pageSize);
     }
 
+    public List<XtNguyenvongxettuyen> layTheoTrangVaCccd(String cccdKeyword, int page, int pageSize) {
+        return dao.findPageByCccd(cccdKeyword, page, pageSize);
+    }
+
+    public long demTheoCccd(String cccdKeyword) {
+        return dao.countByCccd(cccdKeyword);
+    }
+
     /**
      * Tìm kiếm nguyện vọng theo từ khóa
      * @param keyword Từ khóa tìm kiếm (CCCD, mã ngành, kết quả, v.v.)
@@ -578,7 +586,7 @@ public class XtNguyenvongxettuyenService {
             if (diemChuan == null) {
                 diemChuan = nvlBigDecimal(nganh.getNDiemsan());
             }
-            nganh.setNDiemtrungtuyen(diemChuan);
+            nganh.setNDiemtrungtuyen(diemChuan.setScale(2, RoundingMode.HALF_UP));
             nganhCanCapNhat.add(nganh);
         }
         nganhDao.capNhatNganhHangLoat(nganhCanCapNhat);
