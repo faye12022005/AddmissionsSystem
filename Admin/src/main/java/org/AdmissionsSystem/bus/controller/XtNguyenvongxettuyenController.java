@@ -20,6 +20,14 @@ public class XtNguyenvongxettuyenController {
         return service.layTheoTrang(page, pageSize);
     }
 
+    public List<XtNguyenvongxettuyen> taiDuLieuTheoTrangVaCccd(String cccdKeyword, int page, int pageSize) {
+        return service.layTheoTrangVaCccd(cccdKeyword, page, pageSize);
+    }
+
+    public long demTheoCccd(String cccdKeyword) {
+        return service.demTheoCccd(cccdKeyword);
+    }
+
     /**
      * Tìm kiếm nguyện vọng theo từ khóa
      * @param keyword từ khóa tìm kiếm (CCCD, mã ngành, kết quả, v.v.)
