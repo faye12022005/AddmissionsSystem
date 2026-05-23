@@ -1,0 +1,14 @@
+.vscode/
+.github/
+*.md
+
+!README.md
+.env
+
+# Ignore image files
+*.png
+*.jpg
+*.jpeg
+
+# Local Maven cache generated during sandboxed builds
+Admin/.m2/
